@@ -81,6 +81,22 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
     refresh();
   };
 
+  // One-click demo — client turant /track par test kar sake (delete bhi ho jayega)
+  const loadDemo = async () => {
+    const d: Delivery = {
+      code: makeCode(), bookingId: 'demo',
+      customer: 'Demo Customer', phone: '9876543210', address: 'Vijay Nagar, Indore',
+      destLat: 22.748, destLng: 75.893,
+      agent: 'Demo Rider', agentPhone: '',
+      status: 'onway',
+      agentLat: 22.7338, agentLng: 75.8753,
+      updatedAt: new Date().toISOString(), createdAt: new Date().toISOString(),
+    };
+    await upsertDelivery(d);
+    setFocus(d.code);
+    refresh();
+  };
+
   const copy = (t: string) => navigator.clipboard?.writeText(t);
 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
@@ -95,6 +111,9 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
         <button onClick={() => setShowForm(!showForm)} className="ml-auto bg-[#1a0f1e] text-white text-[13px] font-semibold rounded-xl px-4 py-2.5 flex items-center gap-1.5">
           <Plus size={14} /> New delivery
         </button>
+        {list.length === 0 && (
+          <button onClick={loadDemo} className="text-[13px] font-semibold border rounded-xl px-4 py-2.5">Load demo delivery</button>
+        )}
       </div>
 
       {showForm && (
@@ -186,7 +205,7 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
             ))}
           </tbody>
         </table>
-        {list.length === 0 && <p className="text-center text-sm text-[#8a7584] py-10">No deliveries yet — create a New delivery, send the agent link to the delivery partner, and watch it live on this map.</p>}
+        {list.length === 0 && <p className="text-center text-sm text-[#8a7584] py-10">No deliveries yet — create a New delivery, or load the demo delivery and open its customer link to test live tracking.</p>}
       </div>
 
       <div className="admin-card p-4 text-[12.5px] text-[#3d2b36] leading-relaxed">
