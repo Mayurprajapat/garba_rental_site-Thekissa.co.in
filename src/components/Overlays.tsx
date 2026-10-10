@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { BadgeCheck, Check, CheckCircle2, CreditCard, Heart, Mail, MapPin, MessageCircle, Minus, Plus, ReceiptText, ShieldCheck, ShoppingBasket, Sparkles, Star, Trash2, Truck, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { addonTotal, lookFor, photosFor, spinFramesFor, STORE, waLink, type Accessory, type Category } from '../data/products';
 import { itemImgFor } from '../lib/items';
 import { saveBooking } from '../lib/db';
@@ -195,6 +195,16 @@ export function CartDrawer() {
   const [err, setErr] = useState('');
   const [tab, setTab] = useState<'list' | 'orders'>('list');
   const [orders, setOrders] = useState<MyOrder[]>([]);
+  const wasOpen = useRef(false);
+  // Drawer khule aur list khaali ho par orders hon — seedha My Orders dikhao (user ko View order dhoondhna na pade)
+  useEffect(() => {
+    if (open && !wasOpen.current) {
+      try {
+        if (cart.length === 0 && getMyOrders().length > 0) setTab('orders');
+      } catch { /* ignore */ }
+    }
+    wasOpen.current = open;
+  }, [open, cart.length]);
   const [order, setOrder] = useState<{ id: string; paymentId: string; mode: string; token: number; total: number; deposit: number; lines: string[] } | null>(null);
   const [payChoice, setPayChoice] = useState<'half' | 'full'>('full');
 
@@ -385,10 +395,10 @@ export function CartDrawer() {
                 <div className="mt-4 border border-black/10 rounded-2xl overflow-hidden">
                   <div className="px-4 py-3 bg-[#641629] text-white flex items-center gap-2 text-sm font-semibold"><ReceiptText size={15} /> Invoice</div>
                   <div className="p-4 text-sm space-y-1.5">
-                    <div className="flex justify-between"><span className="text-black/55">Order ID</span><b>{order.id}</b></div>
-                    <div className="flex justify-between"><span className="text-black/55">Name</span><b>{name}</b></div>
-                    {address.trim() && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Delivery</span><b className="text-[12.5px] text-right">{address.trim()}</b></div>}
-                    <div className="flex justify-between"><span className="text-black/55">Payment</span><b>{order.mode === 'upi-qr-full' ? `Full paid via QR ${formatINR(order.token)}` : order.mode === 'upi-qr-half' ? `Half paid via QR ${formatINR(order.token)} · Balance ${formatINR(order.total - order.token)} on delivery` : order.mode === 'upi-qr' ? `Token paid via QR ${formatINR(order.token)}` : 'Pay on delivery'}</b></div>
+                    <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Order ID</span><b className="text-right break-words min-w-0">{order.id}</b></div>
+                    <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Name</span><b className="text-right break-words min-w-0">{name}</b></div>
+                    {address.trim() && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Delivery</span><b className="text-[12.5px] text-right break-words min-w-0">{address.trim()}</b></div>}
+                    <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Payment</span><b className="text-right break-words min-w-0">{order.mode === 'upi-qr-full' ? `Full paid via QR ${formatINR(order.token)}` : order.mode === 'upi-qr-half' ? `Half paid via QR ${formatINR(order.token)} · Balance ${formatINR(order.total - order.token)} on delivery` : order.mode === 'upi-qr' ? `Token paid via QR ${formatINR(order.token)}` : 'Pay on delivery'}</b></div>
                     {order.paymentId && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Txn ID</span><b className="text-[12px] text-right break-all">{order.paymentId}</b></div>}
                     <div className="border-t border-black/10 my-2 pt-2 flex justify-between"><span>Total rent</span><b>{formatINR(order.total)}</b></div>
                     <div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Security deposit (on delivery, refundable)</span><b>{formatINR(order.deposit)}</b></div>
@@ -515,7 +525,18 @@ export function CartDrawer() {
             ) : (
               <>
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#fafafa]">
-                  {rows.length === 0 && <p className="text-center text-black/50 py-16">Your list is empty.<br />Add a dress from the shop 👆</p>}
+                  {orders.length > 0 && rows.length > 0 && (
+                    <button onClick={() => setTab('orders')} className="w-full flex items-center justify-center gap-1.5 text-[12.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-2 hover:bg-emerald-100 transition">
+                      ✓ You have {orders.length} order{orders.length === 1 ? '' : 's'} — View →
+                    </button>
+                  )}
+                  {rows.length === 0 && orders.length > 0 && (
+                    <div className="bg-white rounded-2xl p-4 border border-emerald-200 text-center">
+                      <p className="text-[13px] font-bold text-emerald-800">✓ You have {orders.length} order{orders.length === 1 ? '' : 's'}</p>
+                      <button onClick={() => setTab('orders')} className="mt-2 w-full bg-[#221114] text-white text-[13px] font-bold rounded-full py-2.5">View my order →</button>
+                    </div>
+                  )}
+                  {rows.length === 0 && orders.length === 0 && <p className="text-center text-black/50 py-16">Your list is empty.<br />Add a dress from the shop 👆</p>}
                   {rows.map((r) => (
                     <div key={`${r.id}-${r.size}-${r.plan}-${(r.addons ?? []).join('+')}-${r.single?.name ?? ''}`} className="flex gap-3 bg-white rounded-2xl p-2.5 border border-black/10">
                       <img src={r.single?.img ?? r.p.img} className="w-16 h-20 object-cover rounded-xl" alt={r.single?.name ?? r.p.name} />

@@ -15,9 +15,9 @@ export function FeatureBanner() {
     <div className="bg-[#faf8f6]">
       <div className="container-x pt-3">
         <div className="bg-white border border-black/10 rounded-b-2xl rounded-t-lg shadow-[0_18px_40px_-24px_rgba(0,0,0,.25)]">
-          <div className="flex items-center justify-center gap-4 sm:gap-10 overflow-x-auto no-scrollbar whitespace-nowrap px-4 py-2">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 sm:gap-x-10 px-4 py-2">
             {items.map((it) => (
-              <span key={it.t} className="flex items-center gap-2 shrink-0 text-[12px] sm:text-[13px] font-bold text-[#221114]">
+              <span key={it.t} className="flex items-center gap-2 text-[12px] sm:text-[13px] font-bold text-[#221114]">
                 <it.icon size={15} className="text-[#641629] shrink-0" />{it.t}
               </span>
             ))}

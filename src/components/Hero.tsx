@@ -64,7 +64,7 @@ export default function Hero() {
             <span className="flex items-center gap-1.5"><Lock size={14} className="text-emerald-700" /> 100% Secure payments</span>
           </div>
           <div className="mt-5 rounded-2xl bg-gradient-to-r from-[#3d0a26] via-[#641629] to-[#8e1a4f] text-white px-5 py-4 shadow-[0_20px_45px_-20px_rgba(61,10,38,.6)] ring-1 ring-white/10">
-            <p className="font-display font-black text-[26px] sm:text-[32px] leading-none tracking-tight">100% Refundable Deposit</p>
+            <p className="font-display font-black text-[22px] min-[400px]:text-[26px] sm:text-[32px] leading-tight tracking-tight break-words text-balance">100% Refundable Deposit</p>
             <p className="text-white/70 text-[12.5px] sm:text-[13px] mt-1.5">Returned via UPI/cash within 24 hours of return — no deductions on normal wear</p>
           </div>
         </motion.div>

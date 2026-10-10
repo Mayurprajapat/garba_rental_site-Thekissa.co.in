@@ -58,7 +58,7 @@ export const DEFAULT_CONTENT: SiteContent = {
     addressLong: 'Online-only rental studio · Indore, Madhya Pradesh, India (no walk-in store — doorstep delivery & pickup)',
     hours: 'Delivery 9 AM – 10 PM daily (Navratri day 3–6: 4 PM – 10 PM)',
     hoursShort: '9 AM – 10 PM',
-    upi: '9425417744@ptaxis',
+    upi: 'thekissa.co@ptaxis',
   },
   announcement: { show: true, badge: 'NAVRATRI SLOTS OPEN', msg: 'Rent from ₹299 · 100% Secure QR Payments · Same-day delivery' },
   hero: {
@@ -159,8 +159,8 @@ function normalize(c: SiteContent): SiteContent {
       brand: !savedStore.brand || savedStore.brand === 'TheKissa.co.in'
         ? DEFAULT_CONTENT.store.brand
         : savedStore.brand,
-      // UPI khaali ho to default (pehle save ho chuki khaali value migrate)
-      upi: savedStore.upi?.trim() ? savedStore.upi : DEFAULT_CONTENT.store.upi,
+      // UPI khaali / purani ho to default (pehle save ho chuki value migrate)
+      upi: savedStore.upi?.trim() && savedStore.upi.trim() !== '9425417744@ptaxis' ? savedStore.upi : DEFAULT_CONTENT.store.upi,
       // Purana default email ho to naya admin email kar do
       email: !savedStore.email || savedStore.email === 'hello@thekissa.in'
         ? DEFAULT_CONTENT.store.email

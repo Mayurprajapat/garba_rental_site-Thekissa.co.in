@@ -109,16 +109,16 @@ export function buildNotifyMsg(kind: NotifyKind, b: BookingRow): string {
     const payLine = utr
       ? `✅ Your payment of ${inr(paid)} (UTR: ${utr}) for Order ${oid} has been VERIFIED.`
       : `✅ Your payment of ${inr(paid)} for Order ${oid} has been VERIFIED.`;
-    return `Namaste ${nm} ji! 🙏\n\n${payLine}\n\nThank you for choosing TheKissa.co! 🙏`;
+    return `Hello ${nm}!\n\n${payLine}\n\nThank you for choosing TheKissa.co!`;
   }
   if (kind === 'dispatched') {
     const addr = String(b.address || '').trim() || 'Delivery address to be confirmed.';
-    return `Namaste ${nm} ji! 🙏\n\n📦 Your festive outfit (${itemsShort(b)}) has been packed and DISPATCHED for doorstep delivery!\n\n📍 Address: ${addr}\n\nThank you for choosing TheKissa.co! 🙏`;
+    return `Hello ${nm}!\n\n📦 Your festive outfit (${itemsShort(b)}) has been packed and DISPATCHED for doorstep delivery!\n\n📍 Address: ${addr}\n\nThank you for choosing TheKissa.co!`;
   }
   if (kind === 'ready') {
     const when = b.ready_date ? ` (available by ${b.ready_date})` : '';
     const balLine = bal > 0 ? `\n\n💰 Balance of ${inr(bal)} due on delivery.` : '';
-    return `Namaste ${nm} ji! 🙏\n\n✅ Your order ${oid} is READY${when}!${balLine}\n\nThank you for choosing TheKissa.co! 🙏`;
+    return `Hello ${nm}!\n\n✅ Your order ${oid} is READY${when}!${balLine}\n\nThank you for choosing TheKissa.co!`;
   }
   const decision = b.status === 'confirmed' ? 'Confirmed — we will deliver your outfit.'
     : b.status === 'cancelled' ? 'We are sorry — we cannot fulfil this order.'
@@ -167,31 +167,31 @@ function ReplyCell({ b, reload, notify }: { b: BookingRow; reload: () => void; n
   const [msg, setMsgText] = useState(() => buildNotifyMsg('update', b));
   useEffect(() => { setMsgText(buildNotifyMsg(kind, b)); }, [kind, b.id]);
   return (
-    <div className="min-w-[210px] max-w-[250px] space-y-1.5">
+    <div className="min-w-[168px] max-w-[200px] space-y-1">
       <div className="flex gap-1">
-        <button onClick={() => setDecision('confirmed')} className={`flex-1 text-[11px] font-bold rounded-full px-2 py-1 border ${b.status === 'confirmed' ? 'bg-emerald-600 text-white border-emerald-600' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white'} transition`}>✓ Will give</button>
-        <button onClick={() => setDecision('cancelled')} className={`flex-1 text-[11px] font-bold rounded-full px-2 py-1 border ${b.status === 'cancelled' ? 'bg-rose-600 text-white border-rose-600' : 'border-rose-300 text-rose-700 hover:bg-rose-600 hover:text-white'} transition`}>✕ Can't give</button>
+        <button onClick={() => setDecision('confirmed')} className={`flex-1 text-[10.5px] font-bold rounded-full px-1.5 py-0.5 border ${b.status === 'confirmed' ? 'bg-emerald-600 text-white border-emerald-600' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white'} transition`}>✓ Will give</button>
+        <button onClick={() => setDecision('cancelled')} className={`flex-1 text-[10.5px] font-bold rounded-full px-1.5 py-0.5 border ${b.status === 'cancelled' ? 'bg-rose-600 text-white border-rose-600' : 'border-rose-300 text-rose-700 hover:bg-rose-600 hover:text-white'} transition`}>✕ Can't give</button>
       </div>
       <div className="flex flex-wrap gap-1">
         {['Available — will deliver', 'Out of stock', 'Not available on this date'].map((r) => (
-          <button key={r} onClick={() => saveNote(r)} title="Send this reason to the customer" className="text-[10.5px] font-semibold bg-white border rounded-full px-2 py-0.5 hover:border-black">{r}</button>
+          <button key={r} onClick={() => saveNote(r)} title="Send this reason to the customer" className="text-[10px] font-semibold bg-white border rounded-full px-1.5 py-px hover:border-black">{r}</button>
         ))}
       </div>
       <input value={note} onChange={(e) => setNote(e.target.value)} onBlur={(e) => { if (e.target.value !== String(b.admin_note || '')) saveNote(e.target.value); }}
         onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-        placeholder="Message for customer…" className="admin-input !py-1.5 !text-[12px]" />
-      <label className="label-pro block">Notify template
-        <select value={kind} onChange={(e) => setKind(e.target.value as NotifyKind)} className="admin-input mt-1 !py-1.5 !text-[12px]">
+        placeholder="Message for customer…" className="admin-input !py-1 !text-[11.5px]" />
+      <label className="label-pro block !text-[10.5px]">Notify template
+        <select value={kind} onChange={(e) => setKind(e.target.value as NotifyKind)} className="admin-input mt-0.5 !py-1 !text-[11.5px]">
           <option value="update">Order update</option>
           <option value="verified">Payment verified ✅</option>
           <option value="dispatched">Packed & dispatched 📦</option>
           <option value="ready">Ready for delivery ✅</option>
         </select>
       </label>
-      <textarea value={msg} onChange={(e) => setMsgText(e.target.value)} rows={4} title="Preview — bhejne se pehle edit kar sakte ho"
-        className="admin-input !text-[11.5px] leading-relaxed resize-y" />
+      <textarea value={msg} onChange={(e) => setMsgText(e.target.value)} rows={2} title="Preview — you can edit before sending"
+        className="admin-input !text-[11px] !py-1 leading-snug resize-y" />
       {wa
-        ? <a href={`https://wa.me/91${String(b.phone || '').replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '')}?text=${encodeURIComponent(msg)}`} target="_blank" className="flex items-center justify-center gap-1 text-[11.5px] font-bold text-white bg-[#1e9e52] rounded-full px-3 py-1.5 hover:brightness-110 transition">Send on WhatsApp →</a>
+        ? <a href={`https://wa.me/91${String(b.phone || '').replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '')}?text=${encodeURIComponent(msg)}`} target="_blank" className="flex items-center justify-center gap-1 text-[11px] font-bold text-white bg-[#1e9e52] rounded-full px-2 py-1 hover:brightness-110 transition">Send on WhatsApp →</a>
         : <span className="block text-[11px] text-[#8a7584]">No valid mobile — can't WhatsApp.</span>}
     </div>
   );
@@ -211,6 +211,7 @@ export default function Admin() {
   const [catFilter, setCatFilter] = useState('all');
   const [prodStatus, setProdStatus] = useState<'all' | 'live' | 'oos' | 'hidden'>('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [bq, setBq] = useState('');
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [uploading, setUploading] = useState(false);
   const [pwCur, setPwCur] = useState('');
@@ -294,7 +295,12 @@ export default function Admin() {
     const okS = prodStatus === 'all' ? true : prodStatus === 'live' ? p.active && (p.stock ?? 0) > 0 : prodStatus === 'oos' ? (p.stock ?? 0) <= 0 : !p.active;
     return okQ && okC && okS;
   });
-  const filteredBookings = bookings.filter((b) => (statusFilter === 'all' ? true : b.status === statusFilter));
+  const filteredBookings = bookings.filter((b) => {
+    if (statusFilter !== 'all' && b.status !== statusFilter) return false;
+    const s = bq.trim().toLowerCase();
+    if (!s) return true;
+    return `${b.order_id || ''} ${b.id || ''} ${b.name || ''} ${b.phone || ''}`.toLowerCase().includes(s);
+  });
 
   const login = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -660,11 +666,19 @@ export default function Admin() {
 
             {view === 'bookings' && (
               <div>
-                <div className="flex gap-1.5 flex-wrap items-center">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <label className="flex-1 flex items-center gap-2 bg-white border rounded-xl px-3.5">
+                    <Search size={15} className="text-[#8a7584] shrink-0" />
+                    <input value={bq} onChange={(e) => setBq(e.target.value)} placeholder="Search by name, order ID or mobile…" className="py-2.5 outline-none w-full text-sm bg-transparent" />
+                    {bq && <button onClick={() => setBq('')} title="Clear search" className="text-[#8a7584] hover:text-black text-lg leading-none">×</button>}
+                  </label>
+                  <button onClick={() => downloadCSV('bookings.csv', filteredBookings)} className="text-xs font-bold border rounded-xl px-3.5 py-2.5 bg-white shrink-0">Export CSV</button>
+                </div>
+                {bq.trim() && <p className="text-[12px] text-[#8a7584] mt-2">{filteredBookings.length} result{filteredBookings.length === 1 ? '' : 's'} for “{bq.trim()}” <button onClick={() => setBq('')} className="underline hover:text-black">clear</button></p>}
+                <div className="flex gap-1.5 flex-wrap items-center mt-2.5">
                   {['all', ...STATUSES].map((s) => (
                     <button key={s} onClick={() => setStatusFilter(s)} className={`text-xs font-bold rounded-full px-3.5 py-1.5 border capitalize ${statusFilter === s ? 'bg-[#1a0f1e] text-white border-[#1a0f1e]' : 'bg-white'}`}>{s} {s !== 'all' ? `· ${bookings.filter((b) => b.status === s).length}` : ''}</button>
                   ))}
-                  <button onClick={() => downloadCSV('bookings.csv', filteredBookings)} className="ml-auto text-xs font-bold border rounded-full px-3.5 py-1.5 bg-white">Export CSV</button>
                 </div>
                 <div className="admin-card mt-4 overflow-x-auto">
                   <table className="w-full min-w-[1340px]">
@@ -752,7 +766,7 @@ export default function Admin() {
                       ))}
                     </tbody>
                   </table>
-                  {filteredBookings.length === 0 && <p className="text-center text-sm text-[#8a7584] py-10">No bookings in this view.</p>}
+                  {filteredBookings.length === 0 && <p className="text-center text-sm text-[#8a7584] py-10">{bq.trim() ? `No bookings match “${bq.trim()}”.` : 'No bookings in this view.'}</p>}
                 </div>
               </div>
             )}

@@ -247,7 +247,7 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
           </div>
           <div className="mt-3 bg-emerald-50/70 border border-emerald-200 rounded-xl p-3">
             <b className="text-[12.5px]">Live control — run it from here, no need to copy the link</b>
-            <p className="text-[11.5px] text-[#6f5b6a] mt-0.5">Isi browser ka GPS agent location banega · customer ka map live update hoga.</p>
+            <p className="text-[11.5px] text-[#6f5b6a] mt-0.5">This browser's GPS acts as the agent location · the customer map updates live.</p>
             <div className="flex flex-wrap gap-1.5 mt-2">
               {!sharing
                 ? <button onClick={() => startShare(current)} className="text-[11.5px] font-bold rounded-full px-3.5 py-2 bg-emerald-600 text-white hover:bg-emerald-700 transition">Start live location</button>

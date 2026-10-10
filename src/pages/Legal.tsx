@@ -280,14 +280,14 @@ export function TrackPage() {
       <P>See how far your delivery partner has reached — live on the map. You get the tracking code on SMS/WhatsApp after dispatch, or enter your mobile number below.</P>
       <div className="grid sm:grid-cols-2 gap-3">
         <form onSubmit={findByCode} className="card p-4">
-          <b className="text-[14px] flex items-center gap-1.5"><Search size={14} /> Tracking code se</b>
+          <b className="text-[14px] flex items-center gap-1.5"><Search size={14} /> Via tracking code</b>
           <div className="flex gap-2 min-w-0">
             <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="e.g. A1B2C3" className="input-pro uppercase min-w-0" maxLength={10} />
             <button className="btn-primary !py-2.5 !px-5 shrink-0 !text-[13px]">Track</button>
           </div>
         </form>
         <form onSubmit={findByPhone} className="card p-4">
-          <b className="text-[14px] flex items-center gap-1.5"><Navigation size={14} /> Mobile number se</b>
+          <b className="text-[14px] flex items-center gap-1.5"><Navigation size={14} /> Via mobile number</b>
           <div className="flex gap-2 min-w-0">
             <input value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile" inputMode="numeric" className="input-pro min-w-0" maxLength={10} />
             <button className="btn-primary !py-2.5 !px-5 shrink-0 !text-[13px]">Find</button>

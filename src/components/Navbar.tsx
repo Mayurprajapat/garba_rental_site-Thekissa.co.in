@@ -52,11 +52,11 @@ export default function Navbar() {
     <header className={`sticky top-0 z-40 transition-all duration-300 ${scrolled ? 'shadow-[0_16px_40px_-20px_rgba(0,0,0,.35)]' : ''}`}>
       {site.announcement.show && (
         <div className="bg-[#171013] text-white">
-          <div className="container-x flex items-center justify-center gap-2.5 py-1.5 text-[11px] sm:text-xs tracking-wide">
+          <div className="container-x flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 py-1.5 px-3 text-[11px] sm:text-xs tracking-wide text-center">
             <span className="glow-green inline-flex items-center gap-1 rounded-full border border-emerald-300/70 bg-emerald-500/15 text-emerald-200 text-[10px] sm:text-[10.5px] font-bold tracking-[0.08em] px-2.5 py-1 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" /> {site.announcement.badge}
             </span>
-            <p className="truncate font-medium text-[#f7ead0]">{site.announcement.msg}</p>
+            <p className="font-medium text-[#f7ead0] leading-snug break-words min-w-0">{site.announcement.msg}</p>
           </div>
         </div>
       )}
