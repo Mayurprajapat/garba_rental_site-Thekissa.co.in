@@ -3,7 +3,6 @@
 // Client ke asli close-up milte hi public/images/item-*.jpg replace kar dena.
 
 const ITEM_IMG: [RegExp, string][] = [
-  [/kids.*jhumka|jhumka.*kid/i, '/images/item-kids-jhumka.jpg'],
   [/jhumka|earring|bali/i, '/images/item-jhumka.jpg'],
   [/kamar|tagdi/i, '/images/item-kamarbandh.jpg'],
   [/jewell|necklace|haar/i, '/images/item-jewellery-set.jpg'],

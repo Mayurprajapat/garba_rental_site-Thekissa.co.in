@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Gem, Heart, Search, SearchX, ShoppingBasket, SlidersHorizontal, Star, X } from 'lucide-react';
+import { Gem, Heart, SearchX, ShoppingBasket, SlidersHorizontal, Star, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { lookFor, type Product } from '../data/products';
-import { categoriesEvent, getCategories, type ShopCategory } from '../lib/categories';
+import { categoriesEvent, getCategories, matchesCategory, type ShopCategory } from '../lib/categories';
 import { itemImgFor } from '../lib/items';
 import { useProducts } from '../lib/ProductsContext';
+import { getSiteContent, useSiteVersion } from '../lib/siteContent';
 import { useStore } from '../store/useStore';
 
 export interface SingleItem {
@@ -103,10 +104,10 @@ function SingleCard({ item, plan }: { item: SingleItem; plan: '3day' | '9day' })
       <div className="p-3.5 sm:p-4 flex flex-col flex-1">
         <div className="flex items-center gap-1 text-xs font-semibold text-[#8a6d00]">
           <Gem size={12} className="text-[#c9960a]" />
-          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">Bina dress · One-size</span>
+          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">Without dress · One-size</span>
         </div>
         <h3 className="font-display font-semibold text-[14.5px] sm:text-[15.5px] leading-snug mt-1.5 line-clamp-2 text-black tracking-tight min-h-[42px]">{item.name}</h3>
-        <p className="text-[12px] text-neutral-500 mt-2 leading-relaxed line-clamp-2">Akela rent — kisi bhi look ke saath pehno, dress ki jarurat nahi.</p>
+        <p className="text-[12px] text-neutral-500 mt-2 leading-relaxed line-clamp-2">Rent alone — wear with any look, no dress needed.</p>
         <div className="hairline-premium my-2.5" />
         <div className="flex items-baseline gap-2 mt-auto">
           <b className="font-display text-[21px] sm:text-[22px] text-[#641629] tabular-nums leading-none">₹{item.price.toLocaleString('en-IN')}</b>
@@ -124,6 +125,7 @@ function SingleCard({ item, plan }: { item: SingleItem; plan: '3day' | '9day' })
 
 export default function Shop() {
   const { products: PRODUCTS, loading, live } = useProducts();
+  useSiteVersion();
   const search = useStore((s) => s.search);
   const setSearch = useStore((s) => s.setSearch);
   const sort = useStore((s) => s.sort);
@@ -132,6 +134,9 @@ export default function Shop() {
   const setMaxPrice = useStore((s) => s.setMaxPrice);
   const activeCat = useStore((s) => s.activeCat);
   const setActiveCat = useStore((s) => s.setActiveCat);
+  const wishOnly = useStore((s) => s.wishOnly);
+  const setWishOnly = useStore((s) => s.setWishOnly);
+  const wishlist = useStore((s) => s.wishlist);
   const [plan, setPlan] = useState<'3day' | '9day'>('3day');
   const [showFilters, setShowFilters] = useState(false);
   const [cats, setCats] = useState<ShopCategory[]>(() => getCategories());
@@ -151,9 +156,10 @@ export default function Shop() {
     if (!c) {
       setActiveCat(null);
       setSearch('');
+      setWishOnly(false);
       return;
     }
-    setActiveCat({ id: c.id, label: c.label, kind: c.kind, query: c.query });
+    setActiveCat({ id: c.id, label: c.label, kind: c.kind, query: c.query, cats: c.cats });
     setSearch('');
   };
 
@@ -162,12 +168,15 @@ export default function Shop() {
 
   const list = useMemo(() => {
     let l = [...PRODUCTS];
-    if (activeCat?.kind === 'dress' && activeCat.query.trim()) {
-      const words = activeCat.query.toLowerCase().split(/[,\s]+/).filter(Boolean);
-      l = l.filter((p) => {
-        const hay = `${p.name} ${p.hindi} ${p.id} ${p.desc} ${p.category} ${p.fabric} ${p.colors.join(' ')} ${(p.accessories ?? []).map((a) => a.name).join(' ')}`.toLowerCase();
-        return words.every((w) => hay.includes(w));
-      });
+    if (activeCat?.kind === 'dress') {
+      // Dress group filter (women/men/kids/…) — phir keyword (comma = OR)
+      if (activeCat.cats?.length) l = l.filter((p) => activeCat.cats!.includes(p.category));
+      if (activeCat.query.trim()) {
+        l = l.filter((p) => {
+          const hay = `${p.name} ${p.hindi} ${p.id} ${p.desc} ${p.category} ${p.fabric} ${p.colors.join(' ')} ${(p.accessories ?? []).map((a) => a.name).join(' ')}`.toLowerCase();
+          return matchesCategory(hay, activeCat.query);
+        });
+      }
     }
     l = l.filter((p) => p.rent3 <= maxPrice);
     if (search.trim()) {
@@ -180,23 +189,25 @@ export default function Shop() {
     if (sort === 'low') l = [...l].sort((a, b) => a.rent3 - b.rent3);
     if (sort === 'high') l = [...l].sort((a, b) => b.rent3 - a.rent3);
     if (sort === 'rating') l = [...l].sort((a, b) => b.rating - a.rating);
+    if (wishOnly) l = l.filter((p) => wishlist.includes(p.id));
     return l;
-  }, [PRODUCTS, activeCat, search, sort, maxPrice]);
+  }, [PRODUCTS, activeCat, search, sort, maxPrice, wishOnly, wishlist]);
 
-  // Item mode — SIRF single-rent items (dress mix nahi)
+  // Item mode — SIRF single-rent items (dress mix nahi). Comma = OR, space = AND.
   const itemList = useMemo(() => {
     if (!isItemMode) return [];
-    const words = (activeCat?.query ?? '').toLowerCase().split(/[,\s]+/).filter(Boolean);
+    const q = (activeCat?.query ?? '').trim();
     let items = singlesFor(PRODUCTS).filter((it) =>
-      !words.length || words.some((w) => it.name.toLowerCase().includes(w))
+      !q || matchesCategory(it.name.toLowerCase(), q)
     );
     items = items.filter((it) => it.price <= maxPrice);
+    if (wishOnly) items = items.filter((it) => wishlist.includes(it.productId));
     if (sort === 'low') items = [...items].sort((a, b) => a.price - b.price);
     if (sort === 'high') items = [...items].sort((a, b) => b.price - a.price);
     return items;
-  }, [PRODUCTS, activeCat, maxPrice, sort, isItemMode]);
+  }, [PRODUCTS, activeCat, maxPrice, sort, isItemMode, wishOnly, wishlist]);
 
-  const activeFilters = (maxPrice < 4000 ? 1 : 0) + (sort !== 'pop' ? 1 : 0);
+  const activeFilters = (maxPrice < 4000 ? 1 : 0) + (sort !== 'pop' ? 1 : 0) + (wishOnly ? 1 : 0);
 
   return (
     <section id="shop" className="bg-[#faf8f6] border-b border-[#641629]/10 scroll-mt-[100px]">
@@ -205,7 +216,7 @@ export default function Shop() {
           <div>
             <p className="eyebrow">{isItemMode ? activeCat?.label ?? 'The festive collection' : 'The festive collection'}</p>
             <h2 className="premium-heading font-display font-black text-2xl sm:text-[30px] mt-1 text-black">
-              {isItemMode ? <>{activeCat?.label} — <span className="font-display-i text-[#641629]">sirf items</span></> : <>Dress for Every <span className="font-display-i text-[#641629]">Celebration</span></>}
+              {isItemMode ? <>{activeCat?.label} — <span className="font-display-i text-[#641629]">items only</span></> : <>Dress for Every <span className="font-display-i text-[#641629]">Celebration</span></>}
             </h2>
           </div>
           <p className="text-[12.5px] text-neutral-400 sm:ml-auto">
@@ -214,12 +225,37 @@ export default function Shop() {
         </div>
       </div>
 
+      {/* Photo category strip — har kapda/item alag tile, tap = filter */}
+      {cats.length > 0 && (
+        <div className="container-x pb-3">
+          <div className="flex gap-2.5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
+            {cats.map((c) => {
+              const on = activeCat?.id === c.id;
+              return (
+                <button key={c.id} onClick={() => pickCat(on ? null : c)}
+                  className={`shrink-0 w-[104px] sm:w-[124px] rounded-2xl overflow-hidden border bg-white text-left transition-all duration-200 ${on ? 'border-[#c9273a] ring-2 ring-[#c9273a]/60 shadow-[0_10px_24px_-12px_rgba(201,39,58,.6)]' : 'border-black/10 hover:border-[#c9273a]/50'}`}>
+                  <div className="h-[76px] sm:h-[88px] overflow-hidden bg-[#f4f1ea]">
+                    {c.img
+                      ? <img src={c.img} alt={c.label} loading="lazy" className="w-full h-full object-cover" />
+                      : <div className="w-full h-full grid place-items-center text-[10px] text-neutral-400">No photo</div>}
+                  </div>
+                  <div className="px-2 py-1.5">
+                    <p className="text-[11px] font-bold leading-tight truncate text-black">{c.label}</p>
+                    <p className="text-[9.5px] font-semibold text-neutral-400">{c.kind === 'item' ? 'Only item' : 'Dresses'}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Sticky filter bar — collection scroll ho, filters haath me rahen */}
       <div className="sticky top-[100px] z-30 glass border-y border-black/[.07] shadow-[0_12px_28px_-22px_rgba(0,0,0,.45)]">
         <div className="container-x py-2.5 flex flex-col gap-2">
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
             <button onClick={() => pickCat(null)}
-              className={`shrink-0 rounded-full px-4 py-2 text-[12.5px] font-bold border transition-all duration-200 ${!activeCat && !search.trim() ? 'bg-[#c9273a] text-white border-[#c9273a] shadow-[0_8px_18px_-8px_rgba(201,39,58,.7)]' : 'bg-white text-[#3d2b36] border-black/10 hover:border-[#c9273a]/50 hover:text-[#641629]'}`}>
+              className={`shrink-0 rounded-full px-4 py-2 text-[12.5px] font-bold border transition-all duration-200 ${!activeCat && !search.trim() && !wishOnly ? 'bg-[#c9273a] text-white border-[#c9273a] shadow-[0_8px_18px_-8px_rgba(201,39,58,.7)]' : 'bg-white text-[#3d2b36] border-black/10 hover:border-[#c9273a]/50 hover:text-[#641629]'}`}>
               All Outfits
             </button>
             {cats.map((c) => (
@@ -241,18 +277,27 @@ export default function Shop() {
             </button>
           </div>
 
-          <div className="flex gap-2">
-            <label id="shop-search" className="flex-1 flex items-center gap-2 bg-white border border-black/10 rounded-full px-4 py-2.5 shadow-[0_10px_24px_-18px_rgba(100,22,41,.35)] focus-within:border-[#c9273a]/50 focus-within:shadow-[0_10px_28px_-16px_rgba(201,39,58,.45)] transition">
-              <Search size={16} className="text-[#c9273a] shrink-0" />
-              <input value={search} onChange={(e) => { setSearch(e.target.value); if (e.target.value) clearCat(); }} placeholder="Search dress code…" className="bg-transparent outline-none w-full text-[13px]" />
-              {search && <button onClick={() => setSearch('')} aria-label="Clear search"><X size={14} className="text-black/35" /></button>}
-            </label>
-          </div>
+          {search.trim() && (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 bg-black text-white text-[12px] font-semibold rounded-full pl-3.5 pr-1.5 py-1">
+                “{search.trim()}”
+                <button onClick={() => setSearch('')} aria-label="Clear search" className="w-5 h-5 grid place-items-center rounded-full bg-white/20 hover:bg-white hover:text-black transition"><X size={12} /></button>
+              </span>
+            </div>
+          )}
           {activeCat && (
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 bg-[#641629] text-white text-[12px] font-semibold rounded-full pl-3.5 pr-1.5 py-1">
-                {activeCat.label} · {isItemMode ? 'sirf items' : 'dresses'}
+                {activeCat.label} · {isItemMode ? 'items only' : 'dresses'}
                 <button onClick={clearCat} aria-label="Clear category" className="w-5 h-5 grid place-items-center rounded-full bg-white/20 hover:bg-white hover:text-black transition"><X size={12} /></button>
+              </span>
+            </div>
+          )}
+          {wishOnly && (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 bg-black text-white text-[12px] font-semibold rounded-full pl-3.5 pr-1.5 py-1">
+                ♥ Wishlist only
+                <button onClick={() => setWishOnly(false)} aria-label="Show all" className="w-5 h-5 grid place-items-center rounded-full bg-white/20 hover:bg-white hover:text-black transition"><X size={12} /></button>
               </span>
             </div>
           )}
@@ -270,7 +315,7 @@ export default function Shop() {
                 <input type="range" min={799} max={4000} step={100} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-32 accent-black" aria-label="Maximum price" />
               </label>
               {activeFilters > 0 && (
-                <button onClick={() => { setMaxPrice(4000); setSort('pop'); setSearch(''); clearCat(); }} className="text-[12px] font-semibold text-black underline underline-offset-2">Clear all</button>
+                <button onClick={() => { setMaxPrice(4000); setSort('pop'); setSearch(''); clearCat(); setWishOnly(false); }} className="text-[12px] font-semibold text-black underline underline-offset-2">Clear all</button>
               )}
             </div>
           )}
@@ -304,8 +349,8 @@ export default function Shop() {
             {itemList.length === 0 && !loading && (
               <div className="text-center py-14">
                 <span className="mx-auto w-14 h-14 rounded-full bg-[#641629]/[.06] grid place-items-center"><Gem size={22} className="text-[#641629]" /></span>
-                <p className="font-display font-semibold text-lg mt-4">Is category me abhi koi item nahi</p>
-                <button onClick={() => { clearCat(); setSearch(''); setMaxPrice(4000); }} className="btn-primary mt-4 !py-2.5 !text-[13px]">Sab dikhao</button>
+                <p className="font-display font-semibold text-lg mt-4">No items in this category yet</p>
+                <button onClick={() => { clearCat(); setSearch(''); setMaxPrice(4000); setWishOnly(false); }} className="btn-primary mt-4 !py-2.5 !text-[13px]">Show all</button>
               </div>
             )}
           </>
@@ -321,14 +366,14 @@ export default function Shop() {
             {list.length === 0 && !loading && (
               <div className="text-center py-14">
                 <span className="mx-auto w-14 h-14 rounded-full bg-[#641629]/[.06] grid place-items-center"><SearchX size={22} className="text-[#641629]" /></span>
-                <p className="font-display font-semibold text-lg mt-4">Kuch nahi mila</p>
+                <p className="font-display font-semibold text-lg mt-4">Nothing found</p>
                 <p className="text-[#6f5b6a] text-[13px] mt-1">Try another search or price.</p>
-                <button onClick={() => { clearCat(); setSearch(''); setMaxPrice(4000); }} className="btn-primary mt-4 !py-2.5 !text-[13px]">Sab dikhao</button>
+                <button onClick={() => { clearCat(); setSearch(''); setMaxPrice(4000); setWishOnly(false); }} className="btn-primary mt-4 !py-2.5 !text-[13px]">Show all</button>
               </div>
             )}
           </>
         )}
-        <p className="text-center text-xs text-[#8a7584] mt-6">1-day, 3-day or 9-day rentals · 100% refundable deposit · Codes: NAVRATRI20, GROUP25, FIRST10</p>
+        <p className="text-center text-xs text-[#8a7584] mt-6">{getSiteContent().shopNote}</p>
       </div>
     </section>
   );

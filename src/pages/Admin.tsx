@@ -4,6 +4,7 @@ import {
   CalendarDays,
   Eye,
   EyeOff,
+  Globe,
   IndianRupee,
   LayoutDashboard,
   LayoutGrid,
@@ -18,23 +19,27 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
-import { ADMIN_PASSWORD,
+import {
   addLocalBooking,
   adminLockRemaining,
   clearAdminFails,
   getLocalBookings,
   getLocalProducts,
+  hasCustomPassword,
   isLocalAdmin,
   recordAdminFail,
   saveLocalProducts,
+  setAdminPassword,
   setLocalAdmin,
   updateLocalBooking,
+  verifyAdminPassword,
   type LocalBooking,
 } from '../lib/localAdmin';
 import { getCategories, resetCategories, saveCategories, type ShopCategory } from '../lib/categories';
 import type { LiveProduct } from '../lib/ProductsContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import DeliveriesPanel from './admin/DeliveriesPanel';
+import WebsitePanel from './admin/WebsitePanel';
 
 type ProductRow = LiveProduct & { badge: string };
 type BookingRow = LocalBooking & { [k: string]: any };
@@ -79,7 +84,7 @@ export default function Admin() {
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [msg, setMsg] = useState('');
-  const [view, setView] = useState<'overview' | 'products' | 'categories' | 'bookings' | 'deliveries' | 'settings'>('overview');
+  const [view, setView] = useState<'overview' | 'products' | 'categories' | 'website' | 'bookings' | 'deliveries' | 'settings'>('overview');
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [cats, setCats] = useState<ShopCategory[]>([]);
   const [bookings, setBookings] = useState<BookingRow[]>([]);
@@ -88,6 +93,22 @@ export default function Admin() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [pwCur, setPwCur] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwMsg, setPwMsg] = useState('');
+  const [pwCustom, setPwCustom] = useState(() => hasCustomPassword());
+
+  const changePw = async () => {
+    setPwMsg('');
+    if (pwNew !== pwConfirm) { setPwMsg('New passwords do not match.'); return; }
+    const err = await setAdminPassword(pwCur, pwNew);
+    if (err) { setPwMsg(err); return; }
+    setPwCur(''); setPwNew(''); setPwConfirm('');
+    setPwCustom(true);
+    setMsg('Password updated — old password no longer works.');
+    setTimeout(() => setMsg(''), 3000);
+  };
 
   const loggedIn = useCloud ? !!cloudUser : localAuth;
 
@@ -161,7 +182,7 @@ export default function Admin() {
       } else {
         clearAdminFails();
       }
-    } else if (pass === ADMIN_PASSWORD) {
+    } else if (await verifyAdminPassword(pass)) {
       clearAdminFails();
       setLocalAdmin(true);
       setLocalAuth(true);
@@ -267,6 +288,7 @@ export default function Admin() {
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'products', label: 'Products', icon: Package },
     { id: 'categories', label: 'Categories', icon: LayoutGrid },
+    { id: 'website', label: 'Website', icon: Globe },
     { id: 'bookings', label: 'Bookings', icon: CalendarDays },
     { id: 'deliveries', label: 'Deliveries · Map', icon: MapPin },
     { id: 'settings', label: 'Settings', icon: Settings },
@@ -293,7 +315,7 @@ export default function Admin() {
           </nav>
           <div className="mt-6 rounded-2xl border border-[#e8c66a]/20 bg-[#e8c66a]/[.06] p-4">
             <p className="text-[10px] tracking-[0.18em] font-bold text-[#e8c66a]">CONCIERGE TIP</p>
-            <p className="text-[12px] text-white/65 mt-1.5 leading-relaxed">Low-stock pieces (≤2) ko Hide karke waiting list banao — demand badhti hai.</p>
+            <p className="text-[12px] text-white/65 mt-1.5 leading-relaxed">Hide low-stock pieces (≤2) to build a waiting list — demand grows.</p>
           </div>
           <div className="mt-auto space-y-3">
             <a href="/" className="flex items-center gap-2 text-[13px] text-white/65 hover:text-white px-3"><Store size={15} /> View website</a>
@@ -376,7 +398,7 @@ export default function Admin() {
                     <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products…" className="py-2.5 outline-none w-full text-sm bg-transparent" />
                   </label>
                   <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className="admin-input !w-auto">
-                    {['all', 'women', 'men', 'kids', 'combo', 'premium'].map((c) => <option key={c} value={c}>{c}</option>)}
+                    {['all', 'women', 'premium'].map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                   <button onClick={() => setEditing({ ...emptyProduct, id: `RL-${Date.now().toString().slice(-4)}` })} className="bg-[#1a0f1e] text-white text-[13px] font-semibold rounded-xl px-4 py-2.5 flex items-center justify-center gap-1.5"><Plus size={14} /> New product</button>
                   <button onClick={() => downloadCSV('products.csv', filteredProducts)} className="text-[13px] font-semibold border rounded-xl px-4 py-2.5">Export CSV</button>
@@ -431,9 +453,10 @@ export default function Admin() {
             {view === 'categories' && (
               <div>
                 <div className="admin-card p-4 text-[13px] text-[#3d2b36] leading-relaxed">
-                  <b>Shop by category</b> — website par Hero ke neeche photo cards dikhte hain. Tap = us keyword se collection filter.
-                  <b>Dress</b> = sirf dresses · <b>Item</b> = sirf single-rent items (jewellery jaise, dress mix nahi).
-                  Keyword comma/space se alag karo (jaise <code>jhumka, jewellery, tagdi</code>).
+                  <b>Shop by category</b> — website par photo tiles dikhte hain (har kapda / item alag). Tap = collection filter.
+                  <b>Dress</b> = dresses · <b>Item</b> = single-rent items only (jhumka, kamarbandh — without a dress).
+                  Keyword comma (,) means <b>OR</b> (e.g. <code>dupatta, bandhani</code>); words inside one comma part must all match (e.g. <code>oxidised jhumka</code>).
+                  Khaali keyword = us group ke sab products.
                 </div>
                 <div className="flex flex-wrap gap-2 mt-4">
                   <button onClick={() => persistCats([{ id: `cat-${Date.now().toString(36)}`, label: 'New category', query: '', img: '/images/g-hero.webp', kind: 'dress' }, ...cats])} className="bg-[#1a0f1e] text-white text-[13px] font-semibold rounded-xl px-4 py-2.5 flex items-center gap-1.5"><Plus size={14} /> New category</button>
@@ -449,13 +472,30 @@ export default function Admin() {
                         <label className="label-pro block">Name<input value={c.label} onChange={(e) => persistCats(cats.map((x) => (x.id === c.id ? { ...x, label: e.target.value } : x)))} className="admin-input mt-1" /></label>
                         <div className="grid grid-cols-2 gap-2">
                           <label className="label-pro block">Type
-                            <select value={c.kind} onChange={(e) => persistCats(cats.map((x) => (x.id === c.id ? { ...x, kind: e.target.value as 'dress' | 'item' } : x)))} className="admin-input mt-1">
+                            <select value={c.kind} onChange={(e) => persistCats(cats.map((x) => (x.id === c.id ? { ...x, kind: e.target.value as 'dress' | 'item', cats: undefined } : x)))} className="admin-input mt-1">
                               <option value="dress">Dress</option>
                               <option value="item">Item</option>
                             </select>
                           </label>
                           <label className="label-pro block">Keyword<input value={c.query} onChange={(e) => persistCats(cats.map((x) => (x.id === c.id ? { ...x, query: e.target.value.toLowerCase() } : x)))} placeholder="blouse" className="admin-input mt-1" /></label>
                         </div>
+                        {c.kind === 'dress' && (
+                          <div>
+                            <p className="label-pro">Dress group (unticked = all groups)</p>
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {(['women', 'premium'] as const).map((g) => {
+                                const has = c.cats?.includes(g) ?? false;
+                                return (
+                                  <button type="button" key={g} onClick={() => {
+                                    const cur = c.cats ?? [];
+                                    const next = has ? cur.filter((x) => x !== g) : [...cur, g];
+                                    persistCats(cats.map((x) => (x.id === c.id ? { ...x, cats: next.length ? next : undefined } : x)));
+                                  }} className={`text-[11.5px] font-bold rounded-full px-3 py-1 border capitalize ${has ? 'bg-[#1a0f1e] text-white border-[#1a0f1e]' : 'bg-white text-[#3d2b36] hover:border-black'}`}>{g}</button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                         <div className="flex gap-1.5">
                           <input value={c.img} onChange={(e) => persistCats(cats.map((x) => (x.id === c.id ? { ...x, img: e.target.value } : x)))} placeholder="/images/… or URL" className="admin-input" />
                           <label title="Upload photo" className="shrink-0 grid place-items-center w-10 rounded-lg border cursor-pointer hover:bg-black hover:text-white transition text-sm">⇪
@@ -472,7 +512,7 @@ export default function Admin() {
                     </div>
                   ))}
                 </div>
-                {cats.length === 0 && <p className="text-center text-sm text-[#8a7584] py-10">No categories — website par strip nahi dikhega. Add ya Reset karo.</p>}
+                {cats.length === 0 && <p className="text-center text-sm text-[#8a7584] py-10">No categories — no strip will show on the website. Add or Reset.</p>}
               </div>
             )}
 
@@ -535,10 +575,14 @@ export default function Admin() {
 
             {view === 'deliveries' && <DeliveriesPanel bookings={bookings} />}
 
+            {view === 'website' && <WebsitePanel />}
+
             {view === 'settings' && (
+              <>
               <div className="admin-card p-6 max-w-2xl">
                 <b>Store settings</b>
                 <p className="text-[13px] text-[#6f5b6a] mt-1">{useCloud ? 'Supabase cloud connected. Data syncs across all devices.' : 'Local mode — data is stored in this browser. For multi-device sync, connect Supabase (optional).'}</p>
+                <button onClick={() => setView('website')} className="mt-4 text-[13px] font-semibold bg-[#1a0f1e] text-white rounded-full px-4 py-2.5">Edit website text, number & photos →</button>
                 <div className="mt-4 text-[13px] space-y-2 bg-[#faf7ef] border rounded-xl p-4">
                   <p><b>Website:</b> <Link to="/" className="underline">Open storefront</Link></p>
                   <p><b>Mode:</b> {useCloud ? 'Cloud (Supabase)' : 'Local (browser storage)'}</p>
@@ -546,6 +590,23 @@ export default function Admin() {
                 </div>
                 <button onClick={() => { if (confirm('Reset demo data?')) { localStorage.removeItem('raasleela-admin-products'); localStorage.removeItem('raasleela-admin-bookings'); localStorage.removeItem('raasleela-seeded'); loadProducts(); loadBookings(); } }} className="mt-4 text-[13px] font-semibold text-rose-700 border border-rose-200 rounded-full px-4 py-2">Reset local demo data</button>
               </div>
+              <div className="admin-card p-6 max-w-2xl mt-4">
+                <b>Admin password</b>
+                <p className="text-[13px] mt-1">
+                  {pwCustom
+                    ? <span className="text-emerald-700 font-semibold">Custom password is ON — the default password no longer works anywhere.</span>
+                    : <span className="text-amber-700 font-semibold">Default password is active — set your own now to lock out the old one.</span>}
+                </p>
+                <div className="grid gap-2.5 mt-3 max-w-sm">
+                  <label className="label-pro">Current password<input type="password" value={pwCur} onChange={(e) => setPwCur(e.target.value)} className="admin-input mt-1.5" autoComplete="current-password" /></label>
+                  <label className="label-pro">New password (min 6 characters)<input type="password" value={pwNew} onChange={(e) => setPwNew(e.target.value)} className="admin-input mt-1.5" autoComplete="new-password" /></label>
+                  <label className="label-pro">Confirm new password<input type="password" value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)} className="admin-input mt-1.5" autoComplete="new-password" /></label>
+                </div>
+                {pwMsg && <p className="text-[12.5px] text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 mt-3 max-w-sm">{pwMsg}</p>}
+                <button onClick={changePw} className="mt-3 text-[13px] font-semibold bg-[#1a0f1e] text-white rounded-full px-5 py-2.5">Update password</button>
+                <p className="text-[11.5px] text-[#8a7584] mt-3">The password is stored only in this browser — repeat this on each device you use. If you forget it, clear this site's browser data to start over with the default.</p>
+              </div>
+              </>
             )}
           </main>
         </div>
@@ -565,7 +626,7 @@ export default function Admin() {
                 <label className="label-pro">Product ID<input value={editing.id} onChange={(e) => setEditing({ ...editing, id: e.target.value })} className="admin-input mt-1.5" placeholder="RL-17" required /></label>
                 <label className="label-pro">Category
                   <select value={editing.category} onChange={(e) => setEditing({ ...editing, category: e.target.value as any })} className="admin-input mt-1.5">
-                    {['women', 'men', 'kids', 'combo', 'premium'].map((c) => <option key={c} value={c}>{c}</option>)}
+                    {['women', 'premium'].map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </label>
               </div>
@@ -581,7 +642,7 @@ export default function Admin() {
                 <label className="label-pro">Stock<input type="number" min={0} value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: Number(e.target.value) })} className="admin-input mt-1.5" /></label>
               </div>
               <div>
-                <p className="label-pro">Photos (pehli line = main photo, ek line me ek URL/photo)</p>
+                <p className="label-pro">Photos (first line = main photo, one URL per line)</p>
                 <div className="flex gap-3 mt-1.5">
                   <div className="flex gap-1.5 shrink-0">
                     {[editing.img, ...(editing.images ?? [])].filter(Boolean).slice(0, 4).map((src, i) => (
@@ -630,7 +691,7 @@ export default function Admin() {
                   placeholder={'Oxidised jhumka | 99 @ 67,24\nBandhani dupatta | included\nDandiya pair | free'}
                 />
               </label>
-              <p className="text-[11.5px] text-[#8a7584] -mt-2">Khaali chhodo to category ka default look apne aap lagega.</p>
+              <p className="text-[11.5px] text-[#8a7584] -mt-2">Leave empty to use the category default look.</p>
               <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={editing.active} onChange={(e) => setEditing({ ...editing, active: e.target.checked })} className="w-4 h-4 accent-[#3d0a26]" /> Show on website</label>
               <div className="flex gap-2 pt-2">
                 <button className="flex-1 bg-[#1a0f1e] text-white font-semibold rounded-full py-3 text-sm">Save product</button>

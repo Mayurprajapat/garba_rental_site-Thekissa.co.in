@@ -7,6 +7,7 @@ import { saveBooking } from '../lib/db';
 import { formatINR, isValidIndianPhone, makeOrderId, tokenAdvance } from '../lib/order';
 import { useProducts } from '../lib/ProductsContext';
 import { RAZORPAY_KEY_ID, payWithRazorpay } from '../lib/razorpay';
+import { promoCodesText, useSiteVersion } from '../lib/siteContent';
 import { promoDiscount, useStore } from '../store/useStore';
 
 export function QuickView() {
@@ -23,6 +24,13 @@ export function QuickView() {
   const [activeHot, setActiveHot] = useState<string | null>(null);
   const [photoIdx, setPhotoIdx] = useState(0);
   useEffect(() => { setPicked([]); setActiveHot(null); setPhotoIdx(0); }, [id]);
+  // Modal khula ho to background page lock — saara scroll card ke andar
+  useEffect(() => {
+    if (!p) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [p]);
   const look = useMemo(() => (p ? lookFor(p) : []), [p]);
   const spots = useMemo(() => (p ? hotspotsFor(p) : []), [p]);
   const photos = useMemo(() => (p ? photosFor(p) : []), [p]);
@@ -44,9 +52,9 @@ export function QuickView() {
         <motion.div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => setQuickView(null)} />
           <motion.div initial={{ y: 60, scale: 0.99 }} animate={{ y: 0, scale: 1 }} exit={{ y: 60, scale: 0.99 }} transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-            className="relative bg-white rounded-t-[1.5rem] sm:rounded-[1.5rem] max-w-4xl w-full overflow-hidden grid md:grid-cols-[0.9fr_1.1fr] max-h-[94dvh] sm:max-h-[92vh] shadow-[0_60px_120px_-40px_rgba(0,0,0,.7)] ring-1 ring-black/10">
+            className="relative bg-white rounded-t-[1.5rem] sm:rounded-[1.5rem] max-w-4xl w-full overflow-y-auto md:overflow-hidden overscroll-contain grid md:grid-cols-[0.9fr_1.1fr] max-h-[94dvh] sm:max-h-[92vh] shadow-[0_60px_120px_-40px_rgba(0,0,0,.7)] ring-1 ring-black/10">
             <div className="bg-[#f4f1ea] flex flex-col min-h-0 img-sheen">
-              <div className="relative aspect-[3/4] max-h-[62dvh] md:aspect-auto md:h-[540px] md:max-h-[80vh] overflow-hidden shrink-0">
+              <div className="relative aspect-[3/4] max-h-[54dvh] md:aspect-auto md:h-[540px] md:max-h-[80vh] overflow-hidden shrink-0">
                 <img key={photos[photoIdx] ?? p.img} src={photos[photoIdx] ?? p.img} alt={p.name} className="w-full h-full object-cover" />
                 {p.badge && <span className="absolute top-4 left-4 bg-gradient-to-br from-[#f0d78c] to-[#c9a44a] text-[#641629] text-[10px] font-bold tracking-[0.12em] rounded-full px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)] z-[2]">{p.badge}</span>}
                 {photoIdx === 0 ? (
@@ -60,9 +68,8 @@ export function QuickView() {
                   <button key={s.key} onClick={() => tapSpot(s.key)} aria-label={s.name} title={s.name}
                     className="absolute -translate-x-1/2 -translate-y-1/2 group"
                     style={{ left: `${s.x}%`, top: `${s.y}%` }}>
-                    <span className={`relative grid place-items-center w-7 h-7 rounded-full border-2 shadow-lg transition ${on ? 'bg-[#641629] text-white border-white scale-110' : 'bg-white/95 text-black border-black/20 group-hover:scale-110'}`}>
-                      {!on && <span className="absolute inline-flex h-full w-full rounded-full bg-white opacity-60 animate-ping" />}
-                      <Plus size={14} className="relative" />
+                    <span className={`relative grid place-items-center w-5 h-5 rounded-full border shadow-md backdrop-blur-[2px] transition ${on ? 'bg-[#641629] text-white border-white scale-125' : 'bg-white/55 text-black/70 border-white/70 hover:scale-125 hover:bg-white/85'}`}>
+                      <Plus size={10} strokeWidth={3} className="relative" />
                     </span>
                   </button>
                 );
@@ -105,7 +112,7 @@ export function QuickView() {
               </div>
             )}
             </div>
-            <div className="p-5 sm:p-7 overflow-y-auto min-h-0 max-h-[46dvh] sm:max-h-[48vh] md:max-h-[88vh] overscroll-contain">
+            <div className="p-5 sm:p-7 min-h-0 md:max-h-[88vh] md:overflow-y-auto md:overscroll-contain">
               <button onClick={() => setQuickView(null)} aria-label="Close" className="absolute top-4 right-4 w-9 h-9 grid place-items-center rounded-full bg-black/[.06] backdrop-blur hover:bg-[#641629] hover:text-white transition z-[3]"><X size={16} /></button>
               <p className="text-[11px] font-bold tracking-[0.14em] text-neutral-400">{p.id} · {p.fabric.toUpperCase()}</p>
               <h3 className="premium-heading font-display font-black text-[26px] leading-tight mt-1.5 text-black">{p.name}</h3>
@@ -188,6 +195,7 @@ export function QuickView() {
 
 export function CartDrawer() {
   const { products } = useProducts();
+  useSiteVersion();
   const open = useStore((s) => s.cartOpen);
   const setOpen = useStore((s) => s.setCartOpen);
   const cart = useStore((s) => s.cart);
@@ -370,7 +378,7 @@ export function CartDrawer() {
                 <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email for confirmation (optional)" inputMode="email" className="mt-2 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-black" />
                 <button onClick={resetAndClose} className="w-full mt-3 bg-[#641629] text-white font-semibold rounded-full py-3 text-sm">Continue shopping</button>
                 <a href="/track" className="w-full mt-2 border border-black/15 font-semibold rounded-full py-3 text-sm hover:bg-[#641629] hover:border-[#641629] hover:text-white transition flex items-center justify-center gap-2">📍 Track delivery boy</a>
-                <p className="text-[11px] text-black/45 text-center mt-2">Dispatch hote hi tracking link SMS/WhatsApp par milega</p>
+                <p className="text-[11px] text-black/45 text-center mt-2">You will get the tracking link on SMS/WhatsApp after dispatch</p>
               </div>
             ) : step === 'details' ? (
               <div className="flex-1 overflow-y-auto p-5 space-y-3">
@@ -428,7 +436,7 @@ export function CartDrawer() {
                 </div>
                 <div className="p-4 border-t border-black/10 bg-white space-y-2.5">
                   <label className="block text-[11px] font-bold tracking-wide">PROMO CODE
-                    <input value={promo} onChange={(e) => setPromo(e.target.value)} placeholder="NAVRATRI20 / GROUP25 / FIRST10" className="mt-1 w-full border border-black/15 rounded-xl px-3 py-2 text-sm font-normal uppercase outline-none focus:border-black" />
+                    <input value={promo} onChange={(e) => setPromo(e.target.value)} placeholder={promoCodesText()} className="mt-1 w-full border border-black/15 rounded-xl px-3 py-2 text-sm font-normal uppercase outline-none focus:border-black" />
                   </label>
                   <div className="text-sm space-y-1">
                     <div className="flex justify-between"><span>Subtotal</span><b>{formatINR(subtotal)}</b></div>

@@ -11,7 +11,7 @@ if (isSupabaseConfigured) {
   client = createClient(url!, anon!);
 } else {
   console.warn(
-    '[Supabase] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY nahi mile — local PRODUCTS data se chalega. .env me add karo backend ke liye.'
+    '[Supabase] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY not found — running on local PRODUCTS data. Add them in .env for backend mode.'
   );
 }
 

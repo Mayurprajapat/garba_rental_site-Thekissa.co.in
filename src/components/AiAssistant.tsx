@@ -101,7 +101,7 @@ export default function AiAssistant() {
 
             <div className="p-3 border-t border-black/10 bg-white">
               <div className="flex gap-1.5 flex-wrap mb-2">
-                {['Women look under 1500', 'Kids dress 4-6Y', 'Men kediyu XL', 'Deposit refund?'].map((s) => (
+                {['Women look under 1500', 'Blouse under 800', 'Premium bridal look', 'Deposit refund?'].map((s) => (
                   <button key={s} onClick={() => send(s)} className="text-[11px] font-semibold border border-black/10 rounded-full px-2.5 py-1 hover:bg-[#641629] hover:border-[#641629] hover:text-white transition">{s}</button>
                 ))}
               </div>

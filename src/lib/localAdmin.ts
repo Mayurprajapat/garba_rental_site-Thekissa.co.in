@@ -7,6 +7,56 @@ const A_KEY = 'raasleela-admin-auth';
 
 export const ADMIN_PASSWORD = (import.meta.env.VITE_ADMIN_PASSWORD as string) || 'admin123';
 
+// ---- Admin password: client khud badal sakta hai (Settings → Security) ----
+// Custom password lagte hi default/env password kaam karna BAND ho jata hai,
+// taaki handover ke baad purana password kahi kaam na kare. Hash me store hota hai.
+const PW_KEY = 'raasleela-admin-pw';
+
+async function sha256Hex(text: string): Promise<string> {
+  const salted = `raasleela::${text}`;
+  try {
+    if (typeof crypto !== 'undefined' && crypto.subtle) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salted));
+      return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+  } catch { /* fallback below */ }
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < salted.length; i++) {
+    const ch = salted.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return `f${(h2 >>> 0).toString(16)}${(h1 >>> 0).toString(16)}`;
+}
+
+/** Client ne apna password lagaya hai ya abhi default chal raha hai */
+export function hasCustomPassword(): boolean {
+  try { return !!localStorage.getItem(PW_KEY); } catch { return false; }
+}
+
+export async function verifyAdminPassword(pass: string): Promise<boolean> {
+  try {
+    const saved = localStorage.getItem(PW_KEY);
+    if (saved) return (await sha256Hex(pass)) === saved;
+  } catch { /* ignore */ }
+  return pass === ADMIN_PASSWORD;
+}
+
+/** Returns error message, or null on success */
+export async function setAdminPassword(current: string, next: string): Promise<string | null> {
+  if (!(await verifyAdminPassword(current))) return 'Current password is incorrect.';
+  if (next.length < 6) return 'New password must be at least 6 characters.';
+  if (next.length > 64) return 'New password is too long (max 64 characters).';
+  try {
+    localStorage.setItem(PW_KEY, await sha256Hex(next));
+  } catch {
+    return 'Could not save — browser storage is blocked.';
+  }
+  return null;
+}
+
 // Secret admin URL path — /admin kabhi public nahi hota.
 // Vercel me VITE_ADMIN_PATH set karo (e.g. rl-manager-2026).
 export const ADMIN_PATH = (import.meta.env.VITE_ADMIN_PATH as string) || 'rl-manager-2026';
@@ -49,14 +99,32 @@ export function clearAdminFails() {
 }
 
 export function getLocalProducts(): LiveProduct[] {
+  const fresh = () => PRODUCTS.map((p) => ({ ...p, stock: 5, active: true }));
+  // Hataye hue demo products (ladies-only site) — saved list me hon to saaf kar do
+  const REMOVED_IDS = ['RL-02', 'RL-03', 'RL-04', 'RL-07', 'RL-10', 'RL-11', 'RL-12', 'RL-14', 'RL-18', 'RL-19', 'RL-20', 'RL-21', 'RL-22'];
   try {
     const raw = localStorage.getItem(P_KEY);
     if (raw) {
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr) && arr.length) return arr;
+      let arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.length) {
+        if (arr.some((p: any) => REMOVED_IDS.includes(p?.id))) {
+          arr = arr.filter((p: any) => !REMOVED_IDS.includes(p?.id));
+          try { localStorage.setItem(P_KEY, JSON.stringify(arr)); } catch { /* ignore */ }
+          if (!arr.length) return fresh();
+        }
+        // Naye demo products jo saved list me nahi hain — upar merge kar do (admin edits safe)
+        const ids = new Set(arr.map((p: any) => p.id));
+        const missing = PRODUCTS.filter((p) => !ids.has(p.id)).map((p) => ({ ...p, stock: 5, active: true }));
+        if (missing.length) {
+          const merged = [...missing, ...arr];
+          try { localStorage.setItem(P_KEY, JSON.stringify(merged)); } catch { /* ignore */ }
+          return merged as LiveProduct[];
+        }
+        return arr;
+      }
     }
   } catch { /* ignore */ }
-  return PRODUCTS.map((p) => ({ ...p, stock: 5, active: true }));
+  return fresh();
 }
 
 export function saveLocalProducts(list: LiveProduct[]) {

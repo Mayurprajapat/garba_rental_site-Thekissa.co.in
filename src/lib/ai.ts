@@ -18,12 +18,9 @@ function pickProducts(query: string, limit = 3): ChatProduct[] {
   const q = query.toLowerCase();
   let list = [...PRODUCTS];
 
-  // category detect
-  if (/kid|bach|child|2-8|girl|boy/.test(q)) list = list.filter((p) => p.category === 'kids');
-  else if (/kediyu|dhoti|men|pagdi|mard|boy.*men/.test(q)) list = list.filter((p) => p.category === 'men');
-  else if (/couple|combo|family|maa|mother/.test(q)) list = list.filter((p) => p.category === 'combo');
-  else if (/bridal|premium|designer|dulhan/.test(q)) list = list.filter((p) => p.category === 'premium');
-  else if (/chaniya|choli|women|ladies|girl.*women/.test(q)) list = list.filter((p) => p.category === 'women');
+  // category detect (ladies-only catalog)
+  if (/bridal|premium|designer|dulhan|lehenga/.test(q)) list = list.filter((p) => p.category === 'premium');
+  else if (/chaniya|choli|blouse|ghaghra|women|ladies|koti|dupatta/.test(q)) list = list.filter((p) => p.category === 'women');
 
   // budget detect — "1500", "₹2000", "under 2000"
   const m = q.match(/(\d{3,5})/);
@@ -57,6 +54,9 @@ function localReply(query: string): { text: string; products: ChatProduct[] } {
       products: pickProducts('', 3),
     };
   }
+  if (/couple|combo|groom|dulha|men|kediyu|dhoti|kid|bacha|bachi|child|children|chhota|nanha/.test(q)) {
+    return { text: 'We are a ladies-only rental studio — no menswear, couple sets or kids range. Here are the best 3 ladies options for you:', products: pickProducts('', 3) };
+  }
   if (/jhumka|jewell|accessor|kamarbandh|mojari|pagdi|dandiya|dupatta|latkan|complete look|poora look|model ne/.test(q)) {
     return { text: 'Every dress page has a "The model wore this" list. Tick items to add them with the dress — and if you like a single item (e.g. only the jhumkas), press "Only this" to rent it alone without the dress. Which dress are you looking at?', products: pickProducts(query, 3) };
   }
@@ -70,7 +70,7 @@ function localReply(query: string): { text: string; products: ChatProduct[] } {
     return { text: 'Presize available — tell me your size and I will suggest the best option.', products: pickProducts(query, 3) };
   }
   if (/price|rate|rent|cost|charge|paisa/.test(q) && !/\d/.test(q)) {
-    return { text: 'Rent starts at ₹799 — Kids ₹799+, Men ₹999+, Women ₹1299+, Premium ₹2499+. What is your budget?', products: pickProducts('', 3) };
+    return { text: 'Rent starts at ₹499 — Blouse ₹499+, Chaniya Choli ₹1299+, Premium Bridal ₹2499+. What is your budget?', products: pickProducts('', 3) };
   }
   if (/book|order|reserve|buy|lena hai/.test(q)) {
     const recs = pickProducts(query, 3);

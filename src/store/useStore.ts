@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Category } from '../data/products';
+import { getSiteContent } from '../lib/siteContent';
 
 export interface CartItem {
   id: string;
@@ -17,6 +18,7 @@ export interface ActiveCat {
   label: string;
   kind: 'dress' | 'item';
   query: string;
+  cats?: Category[];
 }
 
 interface Toast { id: number; msg: string; }
@@ -32,6 +34,8 @@ interface Store {
   cartOpen: boolean;
   activeCat: ActiveCat | null;
   setActiveCat: (c: ActiveCat | null) => void;
+  wishOnly: boolean;
+  setWishOnly: (b: boolean) => void;
   eventDate: string;
   promo: string;
   toasts: Toast[];
@@ -65,6 +69,8 @@ export const useStore = create<Store>()(
       cartOpen: false,
       activeCat: null,
       setActiveCat: (activeCat) => set({ activeCat }),
+      wishOnly: false,
+      setWishOnly: (wishOnly) => set({ wishOnly }),
       eventDate: '',
       promo: '',
       toasts: [],
@@ -111,9 +117,10 @@ export const useStore = create<Store>()(
 );
 
 export function promoDiscount(subtotal: number, promo: string): number {
+  // Promo codes Admin panel → Website se aate hain (NAVRATRI20 jaise fixed nahi)
   const p = promo.trim().toUpperCase();
-  if (p === 'NAVRATRI20') return Math.round(subtotal * 0.2);
-  if (p === 'GROUP25') return Math.round(subtotal * 0.25);
-  if (p === 'FIRST10') return Math.round(subtotal * 0.1);
-  return 0;
+  if (!p) return 0;
+  const found = getSiteContent().promos.find((x) => (x.code || '').toUpperCase() === p);
+  if (!found || !(found.percent > 0)) return 0;
+  return Math.round((subtotal * Math.min(90, found.percent)) / 100);
 }

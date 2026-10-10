@@ -1,21 +1,63 @@
 // TheKissa.co.in — single source of truth for store contact details.
-// Client ka real phone/address mile to SIRF YAHI badlo — poori site + admin + invoice apne aap update.
-export const STORE = {
-  name: 'TheKissa.co.in Garba Rental',
-  brand: 'TheKissa.co.in',
-  tagline: 'GARBA RENTAL',
-  // WhatsApp + call — same number, digits only for wa.me
-  phoneDisplay: '+91 62683 05900',
-  phoneShort: '62683 05900',
-  phoneHref: 'tel:+916268305900',
-  waNumber: '916268305900',
-  email: 'hello@thekissa.in',
-  addressShort: 'Online only · Doorstep delivery in Indore',
-  addressLong: 'Online-only rental studio · Indore, Madhya Pradesh, India (no walk-in store — doorstep delivery & pickup)',
-  hours: 'Delivery 9 AM – 10 PM daily (Navratri day 3–6: 4 PM – 10 PM)',
-  hoursShort: '9 AM – 10 PM',
-  city: 'Indore',
-} as const;
+// NUMBER/EMAIL AB CODE ME NAHI — Admin panel → Website → Store/Contact se badlo.
+// Ye object hamesha wahi values deta hai (proxy), isliye save karte hi poori site update.
+
+import { getSiteContent } from '../lib/siteContent';
+
+export interface StoreShape {
+  name: string;
+  brand: string;
+  tagline: string;
+  phoneDisplay: string;
+  phoneShort: string;
+  phoneHref: string;
+  waNumber: string;
+  email: string;
+  addressShort: string;
+  addressLong: string;
+  hours: string;
+  hoursShort: string;
+  city: string;
+}
+
+function digits(s: string): string {
+  const d = (s || '').replace(/\D/g, '');
+  // aakhri 10 digit = mobile, usse pehle 91 lagao
+  const m = d.slice(-10).padStart(10, '0');
+  return `91${m}`;
+}
+
+function current(): StoreShape {
+  const s = getSiteContent().store;
+  const wa = digits(s.phone);
+  const m = wa.slice(-10);
+  const pretty = `+91 ${m.slice(0, 5)} ${m.slice(5)}`;
+  const short = `${m.slice(0, 5)} ${m.slice(5)}`;
+  return {
+    name: `${s.brand} Garba Rental`,
+    brand: s.brand,
+    tagline: 'GARBA RENTAL',
+    phoneDisplay: pretty,
+    phoneShort: short,
+    phoneHref: `tel:+${wa}`,
+    waNumber: wa,
+    email: s.email,
+    addressShort: s.addressShort,
+    addressLong: s.addressLong,
+    hours: s.hours,
+    hoursShort: s.hoursShort,
+    city: s.city,
+  };
+}
+
+const FALLBACK: StoreShape = current();
+
+export const STORE: StoreShape = new Proxy(FALLBACK, {
+  get(_t, prop: string) {
+    const c = current();
+    return prop in c ? c[prop as keyof StoreShape] : undefined;
+  },
+});
 
 export const waLink = (msg: string) =>
   `https://wa.me/${STORE.waNumber}?text=${encodeURIComponent(msg)}`;

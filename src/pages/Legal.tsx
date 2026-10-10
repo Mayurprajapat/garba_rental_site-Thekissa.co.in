@@ -22,7 +22,7 @@ function Shell({ title, updated, children }: { title: string; updated: string; c
         <div className="container-x py-4 flex items-center gap-2.5">
           <Link to="/" className="flex items-center gap-2.5">
             <span className="w-9 h-9 rounded-xl grid place-items-center font-display font-black bg-white text-[#641629]">K</span>
-            <span className="font-display text-lg">TheKissa.co.in</span>
+            <span className="font-display text-lg whitespace-nowrap">{STORE.brand}</span>
           </Link>
           <Link to="/" className="ml-auto text-xs font-semibold text-white/70 hover:text-white">← Back to website</Link>
         </div>
@@ -259,7 +259,7 @@ export function TrackPage() {
     if (!code.trim()) return;
     const d = await getDelivery(code.trim());
     setResult(d);
-    if (!d) setMsg('Ye code nahi mila — code SMS/WhatsApp wale link se copy karke dalo.');
+    if (!d) setMsg('Code not found — please copy it from the SMS/WhatsApp link.');
   };
 
   const findByPhone = async (e: React.FormEvent) => {
@@ -267,16 +267,16 @@ export function TrackPage() {
     setMsg('');
     setResult(undefined);
     const digits = phone.replace(/\D/g, '').slice(-10);
-    if (digits.length < 10) { setMsg('Sahi 10-digit mobile number dalo.'); return; }
+    if (digits.length < 10) { setMsg('Please enter a valid 10-digit mobile number.'); return; }
     const all = await listDeliveries();
     const found = all.filter((d) => (d.phone || '').replace(/\D/g, '').slice(-10) === digits);
     setMatches(found);
-    if (!found.length) setMsg('Is number par koi live delivery nahi mili — dispatch hote hi link SMS/WhatsApp par aayega.');
+    if (!found.length) setMsg('No live delivery found for this number — the link arrives on SMS/WhatsApp after dispatch.');
   };
 
   return (
     <Shell title="Track your delivery" updated="October 2026">
-      <P>Delivery boy kaha tak pahuncha — live map par dekho. Tracking code dispatch ke baad SMS/WhatsApp par milta hai, ya neeche apna mobile number dalo.</P>
+      <P>See how far your delivery partner has reached — live on the map. You get the tracking code on SMS/WhatsApp after dispatch, or enter your mobile number below.</P>
       <div className="grid sm:grid-cols-2 gap-3">
         <form onSubmit={findByCode} className="card p-4">
           <b className="text-[14px] flex items-center gap-1.5"><Search size={14} /> Tracking code se</b>
@@ -299,7 +299,7 @@ export function TrackPage() {
           <span className="w-10 h-10 rounded-xl grid place-items-center bg-[#641629] text-[#e8c66a] shrink-0"><MapPin size={17} /></span>
           <span className="min-w-0">
             <b className="block text-[14px]">Live delivery · {result.code}</b>
-            <span className="text-[12.5px] text-[#6f5b6a] capitalize">{result.status} · {result.agent} · tap karke map dekho →</span>
+            <span className="text-[12.5px] text-[#6f5b6a] capitalize">{result.status} · {result.agent} · tap to see the map →</span>
           </span>
         </Link>
       )}
@@ -310,13 +310,13 @@ export function TrackPage() {
               <span className="w-10 h-10 rounded-xl grid place-items-center bg-[#641629] text-[#e8c66a] shrink-0"><MapPin size={17} /></span>
               <span className="min-w-0">
                 <b className="block text-[14px]">Live delivery · {d.code}</b>
-                <span className="text-[12.5px] text-[#6f5b6a] capitalize">{d.status} · {d.agent} · tap karke map dekho →</span>
+                <span className="text-[12.5px] text-[#6f5b6a] capitalize">{d.status} · {d.agent} · tap to see the map →</span>
               </span>
             </Link>
           ))}
         </div>
       )}
-      <P><span className="text-[13px] text-[#8a7584]">Note: live location tabhi dikhegi jab delivery boy ne apne phone par sharing ON ki ho. Help chahiye to <a className="underline font-semibold" href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a> par likho.</span></P>
+      <P><span className="text-[13px] text-[#8a7584]">Note: live location appears only when the delivery partner has sharing ON on their phone. For help, write to <a className="underline font-semibold" href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a>.</span></P>
     </Shell>
   );
 }

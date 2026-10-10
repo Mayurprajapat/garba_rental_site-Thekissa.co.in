@@ -1,12 +1,17 @@
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
+import { getSiteContent, useSiteVersion } from '../lib/siteContent';
 import { useStore } from '../store/useStore';
 
 export default function Hero() {
   const setSearch = useStore((s) => s.setSearch);
   const setCategory = useStore((s) => s.setCategory);
+  const setActiveCat = useStore((s) => s.setActiveCat);
+  const setWishOnly = useStore((s) => s.setWishOnly);
   const [q, setQ] = useState('');
+  useSiteVersion();
+  const hero = getSiteContent().hero;
 
   const goShop = () => {
     document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' });
@@ -14,6 +19,8 @@ export default function Hero() {
   const onSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCategory('all');
+    setActiveCat(null);
+    setWishOnly(false);
     setSearch(q.trim());
     goShop();
   };
@@ -23,19 +30,25 @@ export default function Hero() {
       <div className="max-w-6xl mx-auto px-4 py-5 sm:py-6 md:py-8 relative grid md:grid-cols-[1.15fr_.85fr] gap-5 items-center [&>*]:min-w-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="min-w-0">
           <h1 className="premium-heading font-semibold tracking-tight text-balance text-[24px] min-[400px]:text-[27px] sm:text-[42px] leading-[1.1] mt-2.5">
-            Rent designer Garba looks.
+            {hero.titleA}
             <br />
-            <span className="font-display-i bg-gradient-to-r from-[#f3dfa4] via-[#e8c66a] to-[#c9a44a] bg-clip-text text-transparent">Return easily.</span>
+            <span className="font-display-i bg-gradient-to-r from-[#f3dfa4] via-[#e8c66a] to-[#c9a44a] bg-clip-text text-transparent">{hero.titleB}</span>
           </h1>
           <p className="text-white/60 max-w-xl text-[13px] sm:text-[13.5px] leading-relaxed mt-2">
-            Chaniya Choli, Kediyu-Dhoti and bridal couture — on rent from <b className="text-white">₹799</b>. Sanitised, steam-pressed, same-day delivery.
+            {hero.subtitle.includes('{price}') ? (
+              <>
+                {hero.subtitle.split('{price}')[0]}
+                <b className="text-white">{hero.minPrice}</b>
+                {hero.subtitle.split('{price}').slice(1).join('{price}')}
+              </>
+            ) : hero.subtitle}
           </p>
 
           {/* Search — seedha yahin se dhoondho */}
           <form onSubmit={onSearch} className="mt-3.5 flex items-center gap-2 bg-white rounded-full p-1.5 pl-4 max-w-lg shadow-[0_20px_50px_-20px_rgba(0,0,0,.8)] ring-1 ring-white/20">
             <Search size={17} className="text-black/35 shrink-0" />
             <input value={q} onChange={(e) => setQ(e.target.value)}
-              placeholder="Kya dhoondh rahe ho? — kediyu, mirror, red…"
+              placeholder="What are you looking for? — mirror, red, blouse…"
               className="flex-1 bg-transparent outline-none text-[14px] text-black placeholder:text-black/35 min-w-0" />
             <button type="submit" className="bg-gradient-to-r from-[#d92b3f] to-[#641629] text-white text-[12.5px] sm:text-[13px] font-bold rounded-full px-4 sm:px-5 py-2.5 shrink-0 hover:brightness-110 transition ring-1 ring-white/20">Search</button>
           </form>
