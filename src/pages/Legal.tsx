@@ -129,26 +129,21 @@ export function TermsPage() {
       <H>3. Security deposit</H>
       <P>
         A refundable deposit (shown per product, typically ₹1,000–₹4,000) is collected on delivery. It is refunded via
-        UPI/cash within 24 hours of return and quality check. Normal wear and light dry-cleanable stains are never charged.
+        UPI/cash within 24 hours of return and quality check.
       </P>
       <H>4. Damage &amp; loss</H>
       <P>
         Major damage (tears, burns, permanent stains) is charged at actual repair cost only; loss of an outfit is charged
         at the listed buy price minus rent already paid. An optional ₹199 damage cover waives minor-damage charges.
       </P>
-      <H>5. Fitting &amp; size exchange</H>
-      <P>
-        If a confirmed outfit does not fit or cannot be made available, we offer an
-        equivalent replacement or a full refund of amounts paid — your choice.
-      </P>
-      <H>6. Conduct &amp; misuse</H>
+      <H>5. Conduct &amp; misuse</H>
       <P>
         Outfits are for personal wear only and may not be sub-rented, copied for commercial production, or used in a
         way that damages them beyond normal festive wear.
       </P>
-      <H>7. Governing law</H>
+      <H>6. Governing law</H>
       <P>These terms are governed by the laws of India. Disputes fall under the jurisdiction of courts in Indore, Madhya Pradesh.</P>
-      <H>8. Contact</H>
+      <H>7. Contact</H>
       <P>
         Questions about these terms: <a className="underline font-semibold" href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a> /{' '}
         <a className="underline font-semibold" href={BUSINESS.phoneHref}>{BUSINESS.phone}</a>.
