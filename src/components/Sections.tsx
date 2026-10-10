@@ -150,7 +150,7 @@ export function Faq() {
   const [open, setOpen] = useState(0);
   const faqs: [string, string][] = [
     ['How long is the rental period?', 'Standard rental is 3 days — event day plus pickup and return. The full-Navratri plan covers 9 days with three outfits.'],
-    ['What if the size doesn’t fit?', 'Alterations up to 2–3 inches are free. Share your size on email or WhatsApp and we confirm fit before dispatch — a wrong size gets exchanged at your doorstep.'],
+    ['What if the size doesn’t fit?', 'Share your size on email or WhatsApp and we confirm fit before dispatch — a wrong size gets exchanged at your doorstep.'],
     ['Is the deposit refundable?', 'Yes, 100%. Refunded via UPI within 24 hours of return and quality check. Normal wear is never charged.'],
     ['What about stains or minor damage?', 'Light dry-cleanable stains are on us. Major damage is charged at repair cost only — optional ₹199 damage cover removes the worry.'],
     ['Where do you deliver?', 'Same-day in Indore. 1–2 days across MP, 3–5 days pan-India. Free delivery on bulk orders.'],
@@ -205,7 +205,7 @@ export function Booking() {
             <h2 className="premium-heading font-display font-black text-2xl sm:text-[30px] mt-2 leading-tight">Reserve your outfit in two minutes</h2>
             <p className="text-white/60 text-[13px] mt-2 leading-relaxed">Fill the form — it opens your email app with everything pre-written. Send it and your outfit enquiry is locked.</p>
             <ul className="text-[13px] mt-4 space-y-2">
-              {[['Ruler', 'Free alteration, all sizes XS–XXL'], ['Clock', 'Same-day slots in Indore'], ['ShieldCheck', 'Refundable deposit, no hidden fees']].map(([icon, t]) => (
+              {[['Ruler', 'All sizes XS–XXL available'], ['Clock', 'Same-day slots in Indore'], ['ShieldCheck', 'Refundable deposit, no hidden fees']].map(([icon, t]) => (
                 <li key={t} className="flex items-center gap-2.5 text-white/75">
                   {icon === 'Ruler' ? <Ruler size={15} className="text-[#e8c66a]" /> : icon === 'Clock' ? <Clock size={15} className="text-[#e8c66a]" /> : <ShieldCheck size={15} className="text-[#e8c66a]" />}{t}
                 </li>

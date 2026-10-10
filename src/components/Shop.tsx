@@ -209,7 +209,7 @@ export default function Shop() {
             </h2>
           </div>
           <p className="text-[12.5px] text-neutral-400 sm:ml-auto">
-            Fitting, finishing & deposit included · {loading ? 'Updating…' : live ? 'Live availability' : 'Ready to book'}
+            Steam-pressed finishing & deposit included · {loading ? 'Updating…' : live ? 'Live availability' : 'Ready to book'}
           </p>
         </div>
       </div>

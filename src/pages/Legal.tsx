@@ -61,7 +61,7 @@ export function AboutPage() {
       <P>
         <b>{BUSINESS.name}</b> ({BUSINESS.brand}) is an online-only Garba outfit rental brand from Indore, serving
         customers across the city since 2018. We rent designer Chaniya Choli, Kediyu-Dhoti sets, kids Garba outfits, couple/family
-        combos and premium bridal couture — with free size alteration, steam-pressed finishing and
+        combos and premium bridal couture — with steam-pressed finishing and
         doorstep delivery &amp; return.
       </P>
       <H>What we offer</H>
@@ -137,9 +137,9 @@ export function TermsPage() {
         Major damage (tears, burns, permanent stains) is charged at actual repair cost only; loss of an outfit is charged
         at the listed buy price minus rent already paid. An optional ₹199 damage cover waives minor-damage charges.
       </P>
-      <H>5. Fitting &amp; alteration</H>
+      <H>5. Fitting &amp; size exchange</H>
       <P>
-        Alterations up to 2–3 inches are free. If a confirmed outfit cannot be fitted or made available, we offer an
+        If a confirmed outfit does not fit or cannot be made available, we offer an
         equivalent replacement or a full refund of amounts paid — your choice.
       </P>
       <H>6. Conduct &amp; misuse</H>

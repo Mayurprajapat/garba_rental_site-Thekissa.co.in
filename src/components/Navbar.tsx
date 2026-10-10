@@ -34,7 +34,7 @@ export default function Navbar() {
           <span className="glow-green inline-flex items-center gap-1 rounded-full border border-emerald-300/70 bg-emerald-500/15 text-emerald-200 text-[10px] sm:text-[10.5px] font-bold tracking-[0.08em] px-2.5 py-1 shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" /> NAVRATRI SLOTS OPEN
           </span>
-          <p className="truncate font-medium text-[#f7ead0]">Rent from ₹799 · Free alteration · Same-day delivery</p>
+          <p className="truncate font-medium text-[#f7ead0]">Rent from ₹799 · Same-day delivery</p>
         </div>
       </div>
 

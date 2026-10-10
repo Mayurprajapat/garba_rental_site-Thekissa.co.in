@@ -51,7 +51,7 @@ export default function Hero() {
             <span className="font-display-i bg-gradient-to-r from-[#f3dfa4] via-[#e8c66a] to-[#c9a44a] bg-clip-text text-transparent">Return easily.</span>
           </h1>
           <p className="text-white/60 max-w-xl text-[13px] sm:text-[13.5px] leading-relaxed mt-2">
-            Chaniya Choli, Kediyu-Dhoti and bridal couture — on rent from <b className="text-white">₹799</b>. Sanitised, altered to fit, same-day delivery.
+            Chaniya Choli, Kediyu-Dhoti and bridal couture — on rent from <b className="text-white">₹799</b>. Sanitised, steam-pressed, same-day delivery.
           </p>
 
           {/* Search — seedha yahin se dhoondho */}
@@ -63,7 +63,7 @@ export default function Hero() {
             <button type="submit" className="bg-gradient-to-r from-[#d92b3f] to-[#641629] text-white text-[12.5px] sm:text-[13px] font-bold rounded-full px-4 sm:px-5 py-2.5 shrink-0 hover:brightness-110 transition ring-1 ring-white/20">Search</button>
           </form>
 
-          <p className="text-[11px] text-white/45 mt-3.5">Sanitised · Free alteration · Same-day delivery · Refundable deposit</p>
+          <p className="text-[11px] text-white/45 mt-3.5">Sanitised · Same-day delivery · Refundable deposit</p>
         </motion.div>
 
         <motion.div

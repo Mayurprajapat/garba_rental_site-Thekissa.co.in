@@ -176,7 +176,7 @@ export function QuickView() {
               <div className="grid grid-cols-3 gap-2 mt-5 text-[11px] font-medium text-[#6f5b6a] border-t border-[#641629]/8 pt-4">
                 <span className="flex items-center gap-1.5"><ShieldCheck size={13} className="text-emerald-600" /> Sanitised</span>
                 <span className="flex items-center gap-1.5"><Truck size={13} className="text-emerald-600" /> Same-day</span>
-                <span className="flex items-center gap-1.5"><BadgeCheck size={13} className="text-emerald-600" /> Free fitting</span>
+                <span className="flex items-center gap-1.5"><BadgeCheck size={13} className="text-emerald-600" /> Quality checked</span>
               </div>
             </div>
           </motion.div>
