@@ -159,6 +159,8 @@ export interface LocalBooking {
   ready_date?: string | null;
   /** Admin ka customer ke liye message — Out of stock / Available etc. */
   admin_note?: string | null;
+  /** Customer ka delivery address (checkout me bhara hua) */
+  address?: string | null;
   status: string;
   created_at: string;
 }

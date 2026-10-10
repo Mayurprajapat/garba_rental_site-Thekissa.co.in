@@ -83,14 +83,51 @@ function downloadCSV(name: string, rows: Record<string, any>[]) {
 function waCustomerLink(b: BookingRow): string | null {
   const digits = String(b.phone || '').replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '');
   if (!/^[6-9]\d{9}$/.test(digits)) return null;
+  return `https://wa.me/91${digits}?text=${encodeURIComponent(buildNotifyMsg('update', b))}`;
+}
+
+const inr = (n: any) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+
+/** Booking items ko chhoti line me — "Lehenga x1, Blouse" */
+function itemsShort(b: BookingRow): string {
+  const items = Array.isArray(b.items) ? b.items : [];
+  if (!items.length) return 'your festive outfit';
+  const parts = items.slice(0, 2).map((it: any) => `${it?.name || it?.id || 'Outfit'}${it?.qty > 1 ? ` x${it.qty}` : ''}`);
+  return parts.join(', ') + (items.length > 2 ? ` +${items.length - 2} more` : '');
+}
+
+export type NotifyKind = 'update' | 'verified' | 'dispatched' | 'ready';
+
+/** Admin → customer ready-made WhatsApp messages (booking data se auto-bharta hai) */
+export function buildNotifyMsg(kind: NotifyKind, b: BookingRow): string {
+  const nm = b.name || 'Customer';
+  const oid = b.order_id || '';
+  const paid = Number(b.token_amount || 0);
+  const utr = String(b.payment_id || '').trim();
+  const bal = Number(b.total || b.subtotal || 0) - paid;
+  if (kind === 'verified') {
+    const payLine = utr
+      ? `✅ Your payment of ${inr(paid)} (UTR: ${utr}) for Order ${oid} has been VERIFIED.`
+      : `✅ Your payment of ${inr(paid)} for Order ${oid} has been VERIFIED.`;
+    return `Namaste ${nm} ji! 🙏\n\n${payLine}\n\nThank you for choosing TheKissa.co! 🙏`;
+  }
+  if (kind === 'dispatched') {
+    const addr = String(b.address || '').trim() || 'Delivery address to be confirmed.';
+    return `Namaste ${nm} ji! 🙏\n\n📦 Your festive outfit (${itemsShort(b)}) has been packed and DISPATCHED for doorstep delivery!\n\n📍 Address: ${addr}\n\nThank you for choosing TheKissa.co! 🙏`;
+  }
+  if (kind === 'ready') {
+    const when = b.ready_date ? ` (available by ${b.ready_date})` : '';
+    const balLine = bal > 0 ? `\n\n💰 Balance of ${inr(bal)} due on delivery.` : '';
+    return `Namaste ${nm} ji! 🙏\n\n✅ Your order ${oid} is READY${when}!${balLine}\n\nThank you for choosing TheKissa.co! 🙏`;
+  }
   const decision = b.status === 'confirmed' ? 'Confirmed — we will deliver your outfit.'
     : b.status === 'cancelled' ? 'We are sorry — we cannot fulfil this order.'
     : b.status === 'delivered' ? 'Your outfit has been delivered. Enjoy!'
     : 'We have received your order and will update you shortly.';
-  const parts = [`Hello ${b.name}! TheKissa.co — update on your order ${b.order_id || ''}:`, decision];
+  const parts = [`Hello ${nm}! TheKissa.co — update on your order ${oid}:`, decision];
   if (b.admin_note) parts.push(String(b.admin_note));
   if (b.ready_date) parts.push(`Available by: ${b.ready_date}.`);
-  return `https://wa.me/91${digits}?text=${encodeURIComponent(parts.join(' '))}`;
+  return parts.join(' ');
 }
 
 /** Per-booking reply cell — dena hai ya nahi + wajah + WhatsApp notify */
@@ -126,8 +163,11 @@ function ReplyCell({ b, reload, notify }: { b: BookingRow; reload: () => void; n
   };
 
   const wa = waCustomerLink(b);
+  const [kind, setKind] = useState<NotifyKind>('update');
+  const [msg, setMsgText] = useState(() => buildNotifyMsg('update', b));
+  useEffect(() => { setMsgText(buildNotifyMsg(kind, b)); }, [kind, b.id]);
   return (
-    <div className="min-w-[190px] max-w-[230px] space-y-1.5">
+    <div className="min-w-[210px] max-w-[250px] space-y-1.5">
       <div className="flex gap-1">
         <button onClick={() => setDecision('confirmed')} className={`flex-1 text-[11px] font-bold rounded-full px-2 py-1 border ${b.status === 'confirmed' ? 'bg-emerald-600 text-white border-emerald-600' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white'} transition`}>✓ Will give</button>
         <button onClick={() => setDecision('cancelled')} className={`flex-1 text-[11px] font-bold rounded-full px-2 py-1 border ${b.status === 'cancelled' ? 'bg-rose-600 text-white border-rose-600' : 'border-rose-300 text-rose-700 hover:bg-rose-600 hover:text-white'} transition`}>✕ Can't give</button>
@@ -140,8 +180,18 @@ function ReplyCell({ b, reload, notify }: { b: BookingRow; reload: () => void; n
       <input value={note} onChange={(e) => setNote(e.target.value)} onBlur={(e) => { if (e.target.value !== String(b.admin_note || '')) saveNote(e.target.value); }}
         onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
         placeholder="Message for customer…" className="admin-input !py-1.5 !text-[12px]" />
+      <label className="label-pro block">Notify template
+        <select value={kind} onChange={(e) => setKind(e.target.value as NotifyKind)} className="admin-input mt-1 !py-1.5 !text-[12px]">
+          <option value="update">Order update</option>
+          <option value="verified">Payment verified ✅</option>
+          <option value="dispatched">Packed & dispatched 📦</option>
+          <option value="ready">Ready for delivery ✅</option>
+        </select>
+      </label>
+      <textarea value={msg} onChange={(e) => setMsgText(e.target.value)} rows={4} title="Preview — bhejne se pehle edit kar sakte ho"
+        className="admin-input !text-[11.5px] leading-relaxed resize-y" />
       {wa
-        ? <a href={wa} target="_blank" className="flex items-center justify-center gap-1 text-[11.5px] font-bold text-white bg-[#1e9e52] rounded-full px-3 py-1.5 hover:brightness-110 transition">WhatsApp customer →</a>
+        ? <a href={`https://wa.me/91${String(b.phone || '').replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '')}?text=${encodeURIComponent(msg)}`} target="_blank" className="flex items-center justify-center gap-1 text-[11.5px] font-bold text-white bg-[#1e9e52] rounded-full px-3 py-1.5 hover:brightness-110 transition">Send on WhatsApp →</a>
         : <span className="block text-[11px] text-[#8a7584]">No valid mobile — can't WhatsApp.</span>}
     </div>
   );
@@ -623,7 +673,7 @@ export default function Admin() {
                       {filteredBookings.map((b) => (
                         <tr key={b.id} className="hover:bg-[#faf7ef]">
                           <td className="admin-td font-bold">{b.order_id || `#${String(b.id).slice(-6)}`}<span className="block text-[11px] font-normal text-[#8a7584]">#{String(b.id).slice(-6)}</span></td>
-                          <td className="admin-td"><b className="block text-[13px]">{b.name}</b><a href={`tel:${b.phone}`} className="text-[12px] text-blue-700 hover:underline">{b.phone}</a></td>
+                          <td className="admin-td"><b className="block text-[13px]">{b.name}</b><a href={`tel:${b.phone}`} className="text-[12px] text-blue-700 hover:underline">{b.phone}</a>{b.address && <span className="block text-[11.5px] text-[#3d2b36] mt-0.5 max-w-[180px]">📍 {String(b.address)}</span>}</td>
                           <td className="admin-td text-[12.5px] text-[#3d2b36]">{b.event_date || '—'}<span className="block text-[#8a7584]">{b.category} · {b.size}</span></td>
                           <td className="admin-td">
                             <input type="date" value={b.ready_date || ''} title="Set the date by which this order will be ready — the customer sees it in My Orders"

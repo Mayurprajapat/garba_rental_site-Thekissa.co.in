@@ -186,6 +186,7 @@ export function CartDrawer() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
   const [utr, setUtr] = useState('');
   const [copied, setCopied] = useState(false);
   // Honeypot bot-trap — humans kabhi nahi bharte (off-screen field)
@@ -325,6 +326,7 @@ export function CartDrawer() {
         event_date: eventDate || null,
         plan: 'cart',
         honeypot: company,
+        address: address.trim() || null,
         note: rows.map((r2) => r2.single ? `${r2.p.id} SINGLE:${r2.single.name} x${r2.qty}` : `${r2.p.id} ${r2.size} ${r2.plan} x${r2.qty}${r2.addons?.length ? ` +${r2.addons.join('+')}` : ''}`).join(' | ').slice(0, 500),
         items: rows.map((r2) => ({ id: r2.p.id, name: r2.single ? `${r2.single.name} (accessory only)` : r2.p.name, size: r2.size, plan: r2.plan, qty: r2.qty, addons: r2.addons ?? [], single: r2.single ?? null })),
         subtotal,
@@ -385,6 +387,7 @@ export function CartDrawer() {
                   <div className="p-4 text-sm space-y-1.5">
                     <div className="flex justify-between"><span className="text-black/55">Order ID</span><b>{order.id}</b></div>
                     <div className="flex justify-between"><span className="text-black/55">Name</span><b>{name}</b></div>
+                    {address.trim() && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Delivery</span><b className="text-[12.5px] text-right">{address.trim()}</b></div>}
                     <div className="flex justify-between"><span className="text-black/55">Payment</span><b>{order.mode === 'upi-qr-full' ? `Full paid via QR ${formatINR(order.token)}` : order.mode === 'upi-qr-half' ? `Half paid via QR ${formatINR(order.token)} · Balance ${formatINR(order.total - order.token)} on delivery` : order.mode === 'upi-qr' ? `Token paid via QR ${formatINR(order.token)}` : 'Pay on delivery'}</b></div>
                     {order.paymentId && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Txn ID</span><b className="text-[12px] text-right break-all">{order.paymentId}</b></div>}
                     <div className="border-t border-black/10 my-2 pt-2 flex justify-between"><span>Total rent</span><b>{formatINR(order.total)}</b></div>
@@ -416,6 +419,7 @@ export function CartDrawer() {
                   <label className="text-xs font-bold">EMAIL (for order confirmation)<input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" inputMode="email" className="mt-1.5 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm font-normal outline-none focus:border-black" /></label>
                   <label aria-hidden className="hp-trap">COMPANY<input value={company} onChange={(e) => setCompany(e.target.value)} tabIndex={-1} autoComplete="off" className="mt-1.5 w-full border rounded-xl px-3.5 py-2.5 text-sm" /></label>
                   <label className="text-xs font-bold">EVENT DATE *<input type="date" value={eventDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setEventDate(e.target.value)} className="mt-1.5 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm font-normal" /></label>
+                  <label className="text-xs font-bold">DELIVERY ADDRESS (for doorstep delivery)<textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="House no, street, area, city" rows={2} className="mt-1.5 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm font-normal outline-none focus:border-black resize-none" /></label>
                 </div>
                 <div className="bg-[#fafafa] border border-black/10 rounded-2xl p-4 text-sm space-y-1">
                   <div className="flex justify-between"><span>Subtotal</span><b>{formatINR(subtotal)}</b></div>
