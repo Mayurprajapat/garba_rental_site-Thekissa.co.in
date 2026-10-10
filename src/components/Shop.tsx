@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Gem, Heart, SearchX, ShoppingBasket, SlidersHorizontal, Star, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { lookFor, type Product } from '../data/products';
+import { lookFor, spinFramesFor, type Product } from '../data/products';
 import { categoriesEvent, getCategories, matchesCategory, type ShopCategory } from '../lib/categories';
 import { itemImgFor } from '../lib/items';
 import { useProducts } from '../lib/ProductsContext';
@@ -37,6 +37,7 @@ function ProductCard({ p, plan, index }: { p: Product; plan: '3day' | '9day'; in
   const price = plan === '3day' ? p.rent3 : p.rent9;
   const rank = index < 3 ? `N°0${index + 1}` : null;
   const sizeChip = p.sizes.length > 1 ? `${p.sizes[0]} – ${p.sizes[p.sizes.length - 1]}` : p.sizes[0];
+  const frames = spinFramesFor(p);
   const catLabel = { women: 'Women', men: 'Men', kids: 'Kids', combo: 'Combo', premium: 'Premium' }[p.category] ?? p.category;
 
   return (
@@ -61,6 +62,9 @@ function ProductCard({ p, plan, index }: { p: Product; plan: '3day' | '9day'; in
         >
           <Heart size={15} className={wished ? 'fill-[#c9273a] text-[#c9273a]' : 'text-black'} />
         </button>
+        {frames.length > 1 && (
+          <span className="absolute bottom-3 left-3 z-[2] bg-black/65 backdrop-blur text-white text-[10px] font-bold tracking-wide rounded-full px-2.5 py-1">⟳ 360°</span>
+        )}
       </div>
       <div className="p-3.5 sm:p-4 flex flex-col flex-1">
         <h3 className="font-display font-semibold text-[14.5px] sm:text-[15.5px] leading-snug line-clamp-2 text-black tracking-tight min-h-[42px]">{p.name}</h3>

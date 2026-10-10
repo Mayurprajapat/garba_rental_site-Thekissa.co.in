@@ -159,6 +159,12 @@ export function photosFor(p: Pick<Product, 'img' | 'images'>): string[] {
   return [p.img, ...extra.filter((x) => x !== p.img)].slice(0, 5);
 }
 
+/** 360° spin frames — main + saare angles (thumbs se zyada, smooth rotation ke liye) */
+export function spinFramesFor(p: Pick<Product, 'img' | 'images'>): string[] {
+  const extra = (p.images ?? []).filter(Boolean);
+  return [p.img, ...extra.filter((x) => x !== p.img)].slice(0, 24);
+}
+
 export const CATEGORIES: { id: Category | 'all'; label: string; img: string; note: string }[] = [
   { id: 'women', label: 'Women Chaniya Choli', img: '/images/g-girls2.jpg', note: 'Rent from ₹1299' },
   { id: 'men', label: 'Men Kediyu-Dhoti', img: '/images/g-kedia-green.jpg', note: 'Rent from ₹999' },

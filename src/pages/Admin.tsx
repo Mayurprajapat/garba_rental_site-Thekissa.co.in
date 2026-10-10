@@ -642,7 +642,7 @@ export default function Admin() {
                 <label className="label-pro">Stock<input type="number" min={0} value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: Number(e.target.value) })} className="admin-input mt-1.5" /></label>
               </div>
               <div>
-                <p className="label-pro">Photos (first line = main photo, one URL per line)</p>
+                <p className="label-pro">Photos (line 1 = main photo, next lines = 360° spin angles in order)</p>
                 <div className="flex gap-3 mt-1.5">
                   <div className="flex gap-1.5 shrink-0">
                     {[editing.img, ...(editing.images ?? [])].filter(Boolean).slice(0, 4).map((src, i) => (

@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { BadgeCheck, Check, CheckCircle2, CreditCard, Heart, Mail, MapPin, MessageCircle, Plus, ReceiptText, ShieldCheck, ShoppingBasket, Sparkles, Star, Trash2, Truck, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { addonTotal, hotspotsFor, lookFor, photosFor, STORE, waLink, type Accessory, type Category, type Hotspot } from '../data/products';
+import { addonTotal, hotspotsFor, lookFor, photosFor, spinFramesFor, STORE, waLink, type Accessory, type Category, type Hotspot } from '../data/products';
 import { itemImgFor } from '../lib/items';
 import { saveBooking } from '../lib/db';
 import { formatINR, isValidIndianPhone, makeOrderId, tokenAdvance } from '../lib/order';
@@ -9,6 +9,7 @@ import { useProducts } from '../lib/ProductsContext';
 import { RAZORPAY_KEY_ID, payWithRazorpay } from '../lib/razorpay';
 import { promoCodesText, useSiteVersion } from '../lib/siteContent';
 import { promoDiscount, useStore } from '../store/useStore';
+import SpinViewer from './SpinViewer';
 
 export function QuickView() {
   const { products } = useProducts();
@@ -23,7 +24,8 @@ export function QuickView() {
   const [picked, setPicked] = useState<string[]>([]);
   const [activeHot, setActiveHot] = useState<string | null>(null);
   const [photoIdx, setPhotoIdx] = useState(0);
-  useEffect(() => { setPicked([]); setActiveHot(null); setPhotoIdx(0); }, [id]);
+  const [spin, setSpin] = useState(false);
+  useEffect(() => { setPicked([]); setActiveHot(null); setPhotoIdx(0); setSpin(false); }, [id]);
   // Modal khula ho to background page lock — saara scroll card ke andar
   useEffect(() => {
     if (!p) return;
@@ -34,6 +36,8 @@ export function QuickView() {
   const look = useMemo(() => (p ? lookFor(p) : []), [p]);
   const spots = useMemo(() => (p ? hotspotsFor(p) : []), [p]);
   const photos = useMemo(() => (p ? photosFor(p) : []), [p]);
+  const frames = useMemo(() => (p ? spinFramesFor(p) : []), [p]);
+  const canSpin = frames.length > 1;
   const activeSpot: Hotspot | null = spots.find((s) => s.key === activeHot) ?? null;
   const paidAddons = look.filter((a) => a.tag === 'addon');
   const pickedTotal = p ? addonTotal(p, picked) : 0;
@@ -55,6 +59,10 @@ export function QuickView() {
             className="relative bg-white rounded-t-[1.5rem] sm:rounded-[1.5rem] max-w-4xl w-full overflow-y-auto md:overflow-hidden overscroll-contain grid md:grid-cols-[0.9fr_1.1fr] max-h-[94dvh] sm:max-h-[92vh] shadow-[0_60px_120px_-40px_rgba(0,0,0,.7)] ring-1 ring-black/10">
             <div className="bg-[#f4f1ea] flex flex-col min-h-0 img-sheen">
               <div className="relative aspect-[3/4] max-h-[54dvh] md:aspect-auto md:h-[540px] md:max-h-[80vh] overflow-hidden shrink-0">
+                {spin && canSpin ? (
+                  <SpinViewer photos={frames} name={p.name} />
+                ) : (
+                <>
                 <img key={photos[photoIdx] ?? p.img} src={photos[photoIdx] ?? p.img} alt={p.name} className="w-full h-full object-cover" />
                 {p.badge && <span className="absolute top-4 left-4 bg-gradient-to-br from-[#f0d78c] to-[#c9a44a] text-[#641629] text-[10px] font-bold tracking-[0.12em] rounded-full px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)] z-[2]">{p.badge}</span>}
                 {photoIdx === 0 ? (
@@ -99,11 +107,19 @@ export function QuickView() {
                   </div>
                 </div>
               )}
-            </div>
+                </>
+                )}
+                {canSpin && (
+                  <button onClick={() => { setSpin((v) => !v); setActiveHot(null); }}
+                    className="absolute bottom-3 right-3 z-[2] bg-black/65 backdrop-blur text-white text-[11px] font-bold rounded-full px-3.5 py-2 hover:bg-[#641629] transition">
+                    {spin ? '✕ Photos' : '⟳ 360°'}
+                  </button>
+                )}
+              </div>
             {photos.length > 1 && (
               <div className="flex gap-1.5 sm:gap-2 p-2 sm:p-2.5 bg-white border-t border-black/10 shrink-0">
                 {photos.map((src, i) => (
-                  <button key={`${src}-${i}`} onClick={() => { setPhotoIdx(i); setActiveHot(null); }} aria-label={`Photo ${i + 1}`}
+                  <button key={`${src}-${i}`} onClick={() => { setPhotoIdx(i); setActiveHot(null); setSpin(false); }} aria-label={`Photo ${i + 1}`}
                     className={`rounded-lg sm:rounded-xl overflow-hidden border-2 transition shrink-0 ${i === photoIdx ? 'border-black' : 'border-transparent opacity-60 hover:opacity-100'}`}>
                     <img src={src} alt="" className="w-11 h-13 sm:w-14 sm:h-16 object-cover" />
                   </button>
