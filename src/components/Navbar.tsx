@@ -4,6 +4,7 @@ import { waLink } from '../data/products';
 import { STORE } from '../data/store';
 import { getSiteContent, useSiteVersion } from '../lib/siteContent';
 import { useStore } from '../store/useStore';
+import Logo from './Logo';
 
 export default function Navbar() {
   const cart = useStore((s) => s.cart);
@@ -63,7 +64,7 @@ export default function Navbar() {
       <div className="glass border-b border-black/[.07]">
         <div className="container-x h-[60px] sm:h-[68px] flex items-center justify-between gap-1.5 sm:gap-3">
           <a href="#top" className="flex items-center gap-2 group min-w-0">
-            <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl grid place-items-center font-semibold text-white text-base sm:text-lg bg-gradient-to-br from-[#d92b3f] to-[#641629] ring-1 ring-[#641629]/20 shadow-[inset_0_1px_0_rgba(255,255,255,.25)] group-hover:scale-105 transition shrink-0">{STORE.brand.charAt(0).toUpperCase()}</span>
+            <span className="group-hover:scale-105 transition"><Logo /></span>
             <span className="leading-tight min-w-0 shrink-0">
               <b className="font-display font-black text-[15px] min-[400px]:text-[19px] sm:text-[22px] block text-[#c9273a] tracking-tight whitespace-nowrap">{STORE.brand}</b>
               <small className="hidden min-[400px]:block text-[8.5px] sm:text-[9px] tracking-[0.2em] text-[#8a6d00] font-bold">GARBHA & FESTIVE RENTALS</small>

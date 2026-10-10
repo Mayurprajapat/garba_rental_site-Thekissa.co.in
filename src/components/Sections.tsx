@@ -5,6 +5,7 @@ import { waLink } from '../data/products';
 import { STORE } from '../data/store';
 import { saveBooking } from '../lib/db';
 import { getSiteContent, DEFAULT_CONTENT, useSiteVersion } from '../lib/siteContent';
+import Logo from './Logo';
 
 export function FeatureBanner() {
   useSiteVersion();
@@ -213,7 +214,7 @@ export function Footer() {
       <div className="container-x py-7 grid grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
         <div>
           <div className="flex items-center gap-2.5">
-            <span className="w-10 h-10 rounded-xl grid place-items-center font-display font-black text-lg bg-white text-[#0c0a0f] ring-1 ring-white/10">K</span>
+            <Logo className="w-10 h-10" />
             <span><b className="font-display text-xl text-white block">TheKissa.co.in</b><small className="text-[10px] tracking-[0.22em] text-white/40">GARBA RENTAL</small></span>
           </div>
           <p className="mt-4 text-[13px] leading-relaxed text-white/55">{foot.about}</p>

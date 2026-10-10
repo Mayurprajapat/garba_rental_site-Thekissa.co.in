@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Navigation, Search } from 'lucide-react';
+import Logo from '../components/Logo';
 import { Footer } from '../components/Sections';
 import { STORE } from '../data/store';
 import { getDelivery, listDeliveries, type Delivery } from '../lib/delivery';
@@ -21,7 +22,7 @@ function Shell({ title, updated, children }: { title: string; updated: string; c
       <header className="bg-gradient-to-r from-[#4d0f1f] via-[#641629] to-[#4d0f1f] text-white">
         <div className="container-x py-4 flex items-center gap-2.5">
           <Link to="/" className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-xl grid place-items-center font-display font-black bg-white text-[#641629]">K</span>
+            <Logo className="w-9 h-9" />
             <span className="font-display text-lg whitespace-nowrap">{STORE.brand}</span>
           </Link>
           <Link to="/" className="ml-auto text-xs font-semibold text-white/70 hover:text-white">← Back to website</Link>

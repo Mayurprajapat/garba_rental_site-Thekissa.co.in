@@ -40,6 +40,7 @@ import type { LiveProduct } from '../lib/ProductsContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import DeliveriesPanel from './admin/DeliveriesPanel';
 import WebsitePanel from './admin/WebsitePanel';
+import Logo from '../components/Logo';
 
 type ProductRow = LiveProduct & { badge: string };
 type BookingRow = LocalBooking & { [k: string]: any };
@@ -254,7 +255,7 @@ export default function Admin() {
       <div className="min-h-screen grid lg:grid-cols-2 bg-[#14101a]">
         <div className="hidden lg:flex flex-col justify-between p-12 text-white relative overflow-hidden" style={{ background: 'linear-gradient(160deg,#1a0f1e,#3d0a26 70%)' }}>
           <Link to="/" className="flex items-center gap-2.5">
-            <span className="w-10 h-10 rounded-xl grid place-items-center font-display font-black text-lg bg-white text-[#3d0a26]">K</span>
+            <Logo className="w-10 h-10" />
             <span className="font-display text-xl">TheKissa.co.in</span>
           </Link>
           <div>
@@ -300,7 +301,7 @@ export default function Admin() {
         {/* Sidebar */}
         <aside className="hidden md:flex w-[264px] shrink-0 flex-col bg-[#0e0a12] text-white p-5 sticky top-0 h-screen border-r border-[#e8c66a]/15">
           <Link to="/" className="flex items-center gap-2.5 px-1">
-            <span className="w-9 h-9 rounded-xl grid place-items-center font-display font-black bg-gradient-to-br from-[#e8c66a] to-[#b8860b] text-[#1a0f1e]">K</span>
+            <Logo className="w-9 h-9" />
             <span className="leading-tight"><b className="font-display block text-[17px]">TheKissa.co.in</b><small className="text-[9.5px] tracking-[0.24em] text-[#e8c66a]/80 font-bold">STUDIO · ADMIN</small></span>
           </Link>
           <div className="hairline-light my-5" />

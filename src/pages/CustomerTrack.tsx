@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import DeliveryMap from '../components/DeliveryMap';
+import Logo from '../components/Logo';
 import { STORE } from '../data/store';
 import { STORE_POS, etaMin, getDelivery, haversineKm } from '../lib/delivery';
 
@@ -39,7 +40,7 @@ export default function CustomerTrack() {
     <div className="min-h-screen bg-[#fdf9f0]">
       <div className="container-x py-6 sm:py-8 max-w-3xl">
         <Link to="/" className="flex items-center gap-2">
-          <span className="w-9 h-9 rounded-xl grid place-items-center font-display font-black bg-gradient-to-br from-[#d92b3f] to-[#641629] text-white">K</span>
+          <Logo className="w-9 h-9" />
           <b className="font-display text-lg whitespace-nowrap">{STORE.brand} Atelier</b>
         </Link>
         <p className="eyebrow mt-5">Live delivery · {d.code}</p>
