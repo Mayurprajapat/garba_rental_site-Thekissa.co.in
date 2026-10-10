@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { BadgeCheck, Check, CheckCircle2, CreditCard, Heart, Mail, MapPin, MessageCircle, Minus, Plus, ReceiptText, ShieldCheck, ShoppingBasket, Sparkles, Star, Trash2, Truck, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { addonTotal, hotspotsFor, lookFor, photosFor, spinFramesFor, STORE, waLink, type Accessory, type Category, type Hotspot } from '../data/products';
+import { addonTotal, lookFor, photosFor, spinFramesFor, STORE, waLink, type Accessory, type Category } from '../data/products';
 import { itemImgFor } from '../lib/items';
 import { saveBooking } from '../lib/db';
 import { formatINR, halfAdvance, isValidIndianPhone, makeOrderId } from '../lib/order';
@@ -23,11 +23,10 @@ export function QuickView() {
   const wishlist = useStore((s) => s.wishlist);
   const p = products.find((x) => x.id === id) ?? null;
   const [picked, setPicked] = useState<string[]>([]);
-  const [activeHot, setActiveHot] = useState<string | null>(null);
   const [photoIdx, setPhotoIdx] = useState(0);
   const [spin, setSpin] = useState(false);
   const [qty, setQty] = useState(1);
-  useEffect(() => { setPicked([]); setActiveHot(null); setPhotoIdx(0); setSpin(false); setQty(1); }, [id]);
+  useEffect(() => { setPicked([]); setPhotoIdx(0); setSpin(false); setQty(1); }, [id]);
   // Modal khula ho to background page lock — saara scroll card ke andar
   useEffect(() => {
     if (!p) return;
@@ -36,11 +35,9 @@ export function QuickView() {
     return () => { document.body.style.overflow = prev; };
   }, [p]);
   const look = useMemo(() => (p ? lookFor(p) : []), [p]);
-  const spots = useMemo(() => (p ? hotspotsFor(p) : []), [p]);
   const photos = useMemo(() => (p ? photosFor(p) : []), [p]);
   const frames = useMemo(() => (p ? spinFramesFor(p) : []), [p]);
   const canSpin = frames.length > 1;
-  const activeSpot: Hotspot | null = spots.find((s) => s.key === activeHot) ?? null;
   const paidAddons = look.filter((a) => a.tag === 'addon');
   const pickedTotal = p ? addonTotal(p, picked) : 0;
   const soldOut = (p?.stock ?? 1) <= 0;
@@ -51,7 +48,6 @@ export function QuickView() {
     addToCart(p.id, 'Free size', '1day', picked.length ? picked : undefined, undefined, qty);
     setQuickView(null);
   };
-  const tapSpot = (key: string) => setActiveHot((prev) => (prev === key ? null : key));
 
   return (
     <AnimatePresence>
@@ -69,52 +65,13 @@ export function QuickView() {
                 <img key={photos[photoIdx] ?? p.img} src={photos[photoIdx] ?? p.img} alt={p.name} className="w-full h-full object-cover" />
                 {soldOut && <span className="absolute inset-0 grid place-items-center bg-black/45 z-[2]"><span className="bg-white text-black text-[12px] font-black tracking-[0.14em] rounded-full px-4 py-2">OUT OF STOCK</span></span>}
                 {p.badge && !soldOut && <span className="absolute top-4 left-4 bg-gradient-to-br from-[#f0d78c] to-[#c9a44a] text-[#641629] text-[10px] font-bold tracking-[0.12em] rounded-full px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)] z-[2]">{p.badge}</span>}
-                {photoIdx === 0 ? (
-                  <span className="absolute top-4 right-4 bg-black/60 backdrop-blur text-white text-[10.5px] font-semibold rounded-full px-3 py-1.5">Tap the dots • see every item</span>
-                ) : (
+                {photoIdx > 0 && (
                   <span className="absolute top-4 right-4 bg-black/60 backdrop-blur text-white text-[10.5px] font-semibold rounded-full px-3 py-1.5">Same dress • another angle</span>
                 )}
-              {photoIdx === 0 && spots.map((s) => {
-                const on = activeHot === s.key;
-                return (
-                  <button key={s.key} onClick={() => tapSpot(s.key)} aria-label={s.name} title={s.name}
-                    className="absolute -translate-x-1/2 -translate-y-1/2 group"
-                    style={{ left: `${s.x}%`, top: `${s.y}%` }}>
-                    <span className={`relative grid place-items-center w-5 h-5 rounded-full border shadow-md backdrop-blur-[2px] transition ${on ? 'bg-[#641629] text-white border-white scale-125' : 'bg-white/55 text-black/70 border-white/70 hover:scale-125 hover:bg-white/85'}`}>
-                      <Plus size={10} strokeWidth={3} className="relative" />
-                    </span>
-                  </button>
-                );
-              })}
-              {photoIdx === 0 && activeSpot && (
-                <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur rounded-2xl p-3 shadow-2xl border border-black/10">
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <b className="text-[13.5px] block leading-tight">{activeSpot.name}</b>
-                      <span className={`inline-block mt-1 text-[10px] font-bold rounded-full px-2 py-0.5 ${activeSpot.tag === 'free' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : activeSpot.tag === 'dress' ? 'bg-[#641629] text-white' : activeSpot.tag === 'addon' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-black/[.05] text-black/60'}`}>
-                        {activeSpot.tag === 'free' ? 'FREE' : activeSpot.tag === 'dress' ? `RENT ₹${(activeSpot.price ?? 0).toLocaleString('en-IN')}` : activeSpot.tag === 'addon' ? `+₹${(activeSpot.price ?? 0).toLocaleString('en-IN')}` : 'INCLUDED'}
-                      </span>
-                    </div>
-                    <button onClick={() => setActiveHot(null)} aria-label="Close" className="w-7 h-7 grid place-items-center rounded-full bg-black/5 hover:bg-[#641629] hover:text-white transition shrink-0"><X size={13} /></button>
-                  </div>
-                  <div className="flex gap-1.5 mt-2">
-                    {activeSpot.tag === 'dress' ? (
-                      <button onClick={addDress} className="flex-1 bg-[#641629] text-white text-[12px] font-bold rounded-full py-2 flex items-center justify-center gap-1.5"><ShoppingBasket size={13} /> Add to list</button>
-                    ) : activeSpot.tag === 'addon' ? (
-                      <>
-                        <button onClick={() => { if (!picked.includes(activeSpot.name)) togglePick(activeSpot.name); setActiveHot(null); }} className="flex-1 bg-[#641629] text-white text-[12px] font-bold rounded-full py-2">+ With the dress</button>
-                        <button onClick={() => { addToCart(p.id, 'One-size', '1day', undefined, { name: activeSpot.name, price: activeSpot.price ?? 0, img: itemImgFor(activeSpot.name, p.img) }, qty); }} className="flex-1 border border-emerald-600 text-emerald-700 text-[12px] font-bold rounded-full py-2">Only this</button>
-                      </>
-                    ) : (
-                      <p className="text-[11.5px] text-black/55">This is included in the dress rental — no need to tick it below.</p>
-                    )}
-                  </div>
-                </div>
-              )}
                 </>
                 )}
                 {canSpin && (
-                  <button onClick={() => { setSpin((v) => !v); setActiveHot(null); }}
+                  <button onClick={() => { setSpin((v) => !v); }}
                     className="absolute bottom-3 right-3 z-[2] bg-black/65 backdrop-blur text-white text-[11px] font-bold rounded-full px-3.5 py-2 hover:bg-[#641629] transition">
                     {spin ? '✕ Photos' : '⟳ 360°'}
                   </button>
@@ -123,7 +80,7 @@ export function QuickView() {
             {photos.length > 1 && (
               <div className="flex gap-1.5 sm:gap-2 p-2 sm:p-2.5 bg-white border-t border-black/10 shrink-0">
                 {photos.map((src, i) => (
-                  <button key={`${src}-${i}`} onClick={() => { setPhotoIdx(i); setActiveHot(null); setSpin(false); }} aria-label={`Photo ${i + 1}`}
+                  <button key={`${src}-${i}`} onClick={() => { setPhotoIdx(i); setSpin(false); }} aria-label={`Photo ${i + 1}`}
                     className={`rounded-lg sm:rounded-xl overflow-hidden border-2 transition shrink-0 ${i === photoIdx ? 'border-black' : 'border-transparent opacity-60 hover:opacity-100'}`}>
                     <img src={src} alt="" className="w-11 h-13 sm:w-14 sm:h-16 object-cover" />
                   </button>
@@ -145,7 +102,7 @@ export function QuickView() {
                   <p className="text-[11.5px] text-neutral-500 mt-0.5">The complete look is right here — nothing to search for.</p>
                   <div className="mt-2.5 space-y-1.5">
                     {look.filter((a) => a.tag !== 'addon').map((a) => (
-                      <div key={a.name} className={`flex items-center gap-2 text-[12.5px] bg-white border rounded-xl px-3 py-2 transition ${activeHot === a.name ? 'border-black ring-2 ring-black/15' : 'border-black/[.07]'}`}>
+                      <div key={a.name} className="flex items-center gap-2 text-[12.5px] bg-white border border-black/[.07] rounded-xl px-3 py-2 transition">
                         <Check size={14} className="text-emerald-600 shrink-0" />
                         <span className="font-medium flex-1">{a.name}</span>
                         <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 ${a.tag === 'free' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-black/[.05] text-black/60'}`}>
@@ -158,7 +115,7 @@ export function QuickView() {
                       return (
                         <div key={a.name} className="flex gap-1.5">
                           <button onClick={() => togglePick(a.name)} title="Add with the dress"
-                            className={`flex-1 flex items-center gap-2 text-[12.5px] border rounded-xl px-3 py-2 transition text-left ${on ? 'border-[#641629] bg-[#641629] text-white' : activeHot === a.name ? 'bg-white border-[#641629] ring-2 ring-[#641629]/25' : 'bg-white border-[#641629]/15 hover:border-[#641629]/50'}`}>
+                            className={`flex-1 flex items-center gap-2 text-[12.5px] border rounded-xl px-3 py-2 transition text-left ${on ? 'border-[#641629] bg-[#641629] text-white' : 'bg-white border-[#641629]/15 hover:border-[#641629]/50'}`}>
                             <span className={`w-4 h-4 rounded-md border grid place-items-center shrink-0 ${on ? 'bg-white text-black border-white' : 'border-black/25'}`}>
                               {on && <Check size={12} />}
                             </span>
