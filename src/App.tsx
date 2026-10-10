@@ -18,7 +18,7 @@ function PageLoader() {
   return (
     <div className="min-h-screen grid place-items-center bg-[#fdf9f0] p-6 text-center">
       <div>
-        <p className="font-display font-black text-2xl">The Kissa…</p>
+        <p className="font-display font-black text-2xl">TheKissa.co.in…</p>
         <p className="text-sm text-black/50 mt-1">Loading…</p>
       </div>
     </div>

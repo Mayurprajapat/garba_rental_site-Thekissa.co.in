@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { BadgeCheck, Check, CheckCircle2, CreditCard, Heart, MessageCircle, Plus, ReceiptText, ShieldCheck, ShoppingBasket, Sparkles, Star, Trash2, Truck, X } from 'lucide-react';
+import { BadgeCheck, Check, CheckCircle2, CreditCard, Heart, MapPin, MessageCircle, Plus, ReceiptText, ShieldCheck, ShoppingBasket, Sparkles, Star, Trash2, Truck, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { addonTotal, hotspotsFor, lookFor, photosFor, waLink, type Accessory, type Category, type Hotspot } from '../data/products';
 import { itemImgFor } from '../lib/items';
@@ -172,7 +172,7 @@ export function QuickView() {
                 <button onClick={addDress} className="btn-primary !py-3 !text-[13px]"><ShoppingBasket size={15} /> Add to list{pickedTotal ? ` +₹${pickedTotal.toLocaleString('en-IN')}` : ''}</button>
                 <button onClick={() => toggleWish(p.id)} className="btn-outline-dark !py-3 !text-[13px]"><Heart size={15} className={wishlist.includes(p.id) ? 'fill-[#c9273a] text-[#c9273a]' : ''} /> Wishlist</button>
               </div>
-              <a href={waLink(`Hi The Kissa! Is ${p.name} (${p.id}), size ${size}, ${plan === '3day' ? '3-day' : '9-day'} available?`)} target="_blank" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 border border-[#641629]/15 rounded-full py-3 text-[13px] font-semibold hover:border-[#641629] transition"><MessageCircle size={15} /> Ask on WhatsApp</a>
+              <a href={waLink(`Hi TheKissa.co.in! Is ${p.name} (${p.id}), size ${size}, ${plan === '3day' ? '3-day' : '9-day'} available?`)} target="_blank" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 border border-[#641629]/15 rounded-full py-3 text-[13px] font-semibold hover:border-[#641629] transition"><MessageCircle size={15} /> Ask on WhatsApp</a>
               <div className="grid grid-cols-3 gap-2 mt-5 text-[11px] font-medium text-[#6f5b6a] border-t border-[#641629]/8 pt-4">
                 <span className="flex items-center gap-1.5"><ShieldCheck size={13} className="text-emerald-600" /> Sanitised</span>
                 <span className="flex items-center gap-1.5"><Truck size={13} className="text-emerald-600" /> Same-day</span>
@@ -238,7 +238,7 @@ export function CartDrawer() {
     const lines = rows.map((r, i) => r.single
       ? `${i + 1}. ${r.single.name} (accessory only — ${r.p.id} look) x${r.qty} = ${formatINR(r.single.price * r.qty)}`
       : `${i + 1}. ${r.p.name} (${r.p.id}) — ${rowLabel(r)} = ${formatINR(rowPrice(r) * r.qty)}`);
-    return `Hi The Kissa! New Order ${orderId}\n\n${lines.join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate}\nSubtotal: ${formatINR(subtotal)}\nDiscount: -${formatINR(disc)}\nTotal rent: ${formatINR(total)}\nToken: ${payInfo}\nBalance on delivery: ${formatINR(balance)}\nDeposit (refundable): ${formatINR(deposit)}`;
+    return `Hi TheKissa.co.in! New Order ${orderId}\n\n${lines.join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate}\nSubtotal: ${formatINR(subtotal)}\nDiscount: -${formatINR(disc)}\nTotal rent: ${formatINR(total)}\nToken: ${payInfo}\nBalance on delivery: ${formatINR(balance)}\nDeposit (refundable): ${formatINR(deposit)}`;
   };
 
   const confirmWithoutPayment = async () => {
@@ -451,9 +451,9 @@ export function Toasts() {
   );
 }
 
-export function WaFloat() {
+export function TrackFloat() {
   return (
-    <a href={waLink('Hi! I want to rent a Garba dress')} target="_blank"
-      className="fixed bottom-20 right-4 sm:bottom-5 sm:right-5 z-40 w-14 h-14 grid place-items-center rounded-full bg-[#25d366] text-white text-2xl shadow-2xl hover:scale-110 transition" aria-label="WhatsApp">💬</a>
+    <a href="/track"
+      className="fixed bottom-20 right-4 sm:bottom-5 sm:right-5 z-40 w-14 h-14 grid place-items-center rounded-full bg-gradient-to-br from-[#d92b3f] to-[#641629] text-white shadow-2xl hover:scale-110 transition ring-1 ring-white/20" aria-label="Track your delivery"><MapPin size={24} /></a>
   );
 }

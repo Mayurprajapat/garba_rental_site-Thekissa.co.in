@@ -53,7 +53,7 @@ function localReply(query: string): { text: string; products: ChatProduct[] } {
 
   if (/namaste|hello|hi\b|hey|sat sri|kem cho/.test(q) && q.length < 20) {
     return {
-      text: 'Hello! I am the The Kissa assistant. Tell me your budget, size and occasion — e.g. "women white look under 1500, size M" — and I will share the 3 best options.',
+      text: 'Hello! I am the TheKissa.co.in assistant. Tell me your budget, size and occasion — e.g. "women white look under 1500, size M" — and I will share the 3 best options.',
       products: pickProducts('', 3),
     };
   }
@@ -96,7 +96,7 @@ export async function askAssistant(query: string): Promise<{ text: string; produ
           messages: [
             {
               role: 'system',
-              content: `You are The Kissa Garba Rental assistant. Reply in English, short. Only suggest from this catalog: ${PRODUCTS.map((p) => `${p.id}:${p.name}:Rs${p.rent3}:${p.category}`).join(', ')}. Never invent price.`,
+              content: `You are TheKissa.co.in Garba Rental assistant. Reply in English, short. Only suggest from this catalog: ${PRODUCTS.map((p) => `${p.id}:${p.name}:Rs${p.rent3}:${p.category}`).join(', ')}. Never invent price.`,
             },
             { role: 'user', content: query },
           ],

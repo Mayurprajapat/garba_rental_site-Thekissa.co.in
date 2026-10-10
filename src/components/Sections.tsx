@@ -153,7 +153,7 @@ export function Booking() {
     setSaving(false);
     setDone(true);
     const subject = `New Booking — ${f.name} (${f.date || 'date TBD'})`;
-    const body = `Hi The Kissa! New booking:\nName: ${f.name}\nMobile: ${f.phone}\nCategory: ${f.cat}\nSize: ${f.size}\nEvent: ${f.date}\nPlan: ${f.days}\nNote: ${f.note}`;
+    const body = `Hi TheKissa.co.in! New booking:\nName: ${f.name}\nMobile: ${f.phone}\nCategory: ${f.cat}\nSize: ${f.size}\nEvent: ${f.date}\nPlan: ${f.days}\nNote: ${f.note}`;
     window.location.href = `mailto:${STORE.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
   return (
@@ -214,16 +214,16 @@ export function MobileBar() {
 export function Footer() {  return (
     <footer id="contact" className="bg-gradient-to-b from-[#3d0a1a] to-[#1c0409] text-white/70 relative overflow-hidden">
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#c9a44a]/60 to-transparent" />
-      <div aria-hidden className="pointer-events-none select-none absolute -bottom-6 left-1/2 -translate-x-1/2 font-display font-black whitespace-nowrap leading-none text-[24vw] sm:text-[13rem] text-white/[.035]">The Kissa</div>
+      <div aria-hidden className="pointer-events-none select-none absolute -bottom-6 left-1/2 -translate-x-1/2 font-display font-black whitespace-nowrap leading-none text-[24vw] sm:text-[13rem] text-white/[.035]">TheKissa.co.in</div>
       <div className="container-x py-7 grid grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
         <div>
           <div className="flex items-center gap-2.5">
             <span className="w-10 h-10 rounded-xl grid place-items-center font-display font-black text-lg bg-white text-[#0c0a0f] ring-1 ring-white/10">K</span>
-            <span><b className="font-display text-xl text-white block">The Kissa</b><small className="text-[10px] tracking-[0.22em] text-white/40">GARBA RENTAL</small></span>
+            <span><b className="font-display text-xl text-white block">TheKissa.co.in</b><small className="text-[10px] tracking-[0.22em] text-white/40">GARBA RENTAL</small></span>
           </div>
           <p className="mt-4 text-[13px] leading-relaxed text-white/55">Designer Garba outfits on rent — perfect fitting, doorstep delivery, easy return.</p>
           <p className="mt-4 text-[13px]">📞 <a href={STORE.phoneHref} className="text-white font-semibold">{STORE.phoneDisplay}</a><br />
-            💬 <a href={waLink('Hi The Kissa!')} target="_blank" className="text-white font-semibold">WhatsApp us</a><br />✉️ {STORE.email}</p>
+            💬 <a href={waLink('Hi TheKissa.co.in!')} target="_blank" className="text-white font-semibold">WhatsApp us</a><br />✉️ {STORE.email}</p>
         </div>
         <div><h4 className="text-white font-semibold mb-4 text-[13px] tracking-wide">SHOP</h4><div className="space-y-2.5 flex flex-col text-[13.5px]">{[['Women Chaniya Choli', '/#shop'], ['Men Kediyu', '/#shop'], ['Kids Garba', '/#shop'], ['Couple Combo', '/#shop']].map(([l, h]) => <a key={l as string} href={h as string} className="hover:text-white w-fit">{l as string}</a>)}</div></div>
         <div><h4 className="text-white font-semibold mb-4 text-[13px] tracking-wide">SUPPORT</h4><div className="space-y-2.5 flex flex-col text-[13.5px]">{[['How it works', '/#process'], ['FAQs', '/#faq'], ['Track delivery', '/track'], ['Book now', '/#book'], ['About us', '/about'], ['Contact us', '/contact']].map(([l, h]) => <a key={l as string} href={h as string} className="hover:text-white w-fit">{l as string}</a>)}</div></div>
@@ -233,7 +233,7 @@ export function Footer() {  return (
       </div>
       <div className="border-t border-white/10">
         <div className="container-x py-5 flex flex-col sm:flex-row items-center gap-2 text-[11.5px] text-white/40">
-          <p>© 2026 The Kissa Garba Rental. All rights reserved.</p>
+          <p>© 2026 TheKissa.co.in Garba Rental. All rights reserved.</p>
           <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 sm:ml-auto">
             <a href="/terms" className="hover:text-white underline underline-offset-2">Terms &amp; Conditions</a>
             <a href="/privacy" className="hover:text-white underline underline-offset-2">Privacy Policy</a>

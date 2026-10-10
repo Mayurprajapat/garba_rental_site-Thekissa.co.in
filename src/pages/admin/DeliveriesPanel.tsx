@@ -157,7 +157,7 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
               <div className="flex gap-1.5 mt-2">
                 <button onClick={() => copy(`${origin}/t/${current.code}`)} className="text-[11px] font-bold border rounded-full px-3 py-1.5 flex items-center gap-1"><Copy size={11} /> Copy</button>
                 <a href={`${origin}/t/${current.code}`} target="_blank" className="text-[11px] font-bold border rounded-full px-3 py-1.5 flex items-center gap-1">Open <ExternalLink size={11} /></a>
-                <a href={`https://wa.me/91${current.phone}?text=${encodeURIComponent(`The Kissa delivery live: ${origin}/t/${current.code} — track your outfit here`)}`} target="_blank" className="text-[11px] font-bold rounded-full px-3 py-1.5 bg-[#25d366] text-white">WhatsApp customer</a>
+                <a href={`https://wa.me/91${current.phone}?text=${encodeURIComponent(`TheKissa.co.in delivery live: ${origin}/t/${current.code} — track your outfit here`)}`} target="_blank" className="text-[11px] font-bold rounded-full px-3 py-1.5 bg-[#25d366] text-white">WhatsApp customer</a>
               </div>
             </div>
           </div>

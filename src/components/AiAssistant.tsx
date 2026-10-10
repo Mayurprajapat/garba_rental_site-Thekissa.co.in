@@ -65,7 +65,7 @@ export default function AiAssistant() {
             <div className="bg-gradient-to-r from-[#641629] to-[#8e1a2e] text-white px-5 py-4 flex items-center gap-3">
               <span className="w-9 h-9 rounded-full bg-white text-black grid place-items-center"><Sparkles size={16} /></span>
               <div className="flex-1">
-                <b className="text-sm block">The Kissa Assistant</b>
+                <b className="text-sm block">TheKissa.co.in Assistant</b>
                 <span className="text-[11px] text-white/60">Demo AI · suggests from our catalog only</span>
               </div>
               <button onClick={() => setOpen(false)} aria-label="Close" className="text-white/60 hover:text-white"><X size={17} /></button>

@@ -1,4 +1,4 @@
-/* The Kissa — app-level tweaks (Tailwind handles most styling) */
+/* TheKissa.co.in — app-level tweaks (Tailwind handles most styling) */
 ::selection { background: #3d0a26; color: #fdf9f0; }
 img { user-select: none; }
 /* premium scrollbar */

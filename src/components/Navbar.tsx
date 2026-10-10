@@ -42,7 +42,7 @@ export default function Navbar() {
           <a href="#top" className="flex items-center gap-2 group min-w-0">
             <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl grid place-items-center font-semibold text-white text-base sm:text-lg bg-gradient-to-br from-[#d92b3f] to-[#641629] ring-1 ring-[#641629]/20 shadow-[inset_0_1px_0_rgba(255,255,255,.25)] group-hover:scale-105 transition shrink-0">K</span>
             <span className="leading-tight min-w-0">
-              <b className="font-display font-black text-[19px] sm:text-[22px] block text-[#c9273a] tracking-tight truncate">Kissa</b>
+              <b className="font-display font-black text-[19px] sm:text-[22px] block text-[#c9273a] tracking-tight truncate">TheKissa.co.in</b>
               <small className="hidden min-[400px]:block text-[8.5px] sm:text-[9px] tracking-[0.2em] text-[#8a6d00] font-bold">GARBHA & FESTIVE RENTALS</small>
             </span>
           </a>
@@ -57,7 +57,7 @@ export default function Navbar() {
             <a href={STORE.phoneHref} className="hidden xl:flex items-center gap-1.5 text-[13px] font-semibold text-black border border-black/10 rounded-full px-4 py-2 hover:bg-black hover:text-white transition">
               <Phone size={14} /> {STORE.phoneShort}
             </a>
-            <a href={waLink('Hi Kissa! I need help with a rental.')} target="_blank"
+            <a href={waLink('Hi TheKissa.co.in! I need help with a rental.')} target="_blank"
               className="hidden md:inline-flex items-center gap-1.5 text-[12.5px] font-bold text-white rounded-full px-4 py-2.5 bg-gradient-to-r from-[#2ecc71] to-[#1e9e52] shadow-[0_8px_20px_-10px_rgba(46,204,113,.7)] hover:brightness-110 transition">
               <MessageCircle size={14} /> WhatsApp Support
             </a>

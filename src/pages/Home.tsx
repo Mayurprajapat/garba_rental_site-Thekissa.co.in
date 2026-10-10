@@ -1,7 +1,7 @@
 import AiAssistant from '../components/AiAssistant';
 import Hero from '../components/Hero';
 import Navbar from '../components/Navbar';
-import { CartDrawer, QuickView, Toasts, WaFloat } from '../components/Overlays';
+import { CartDrawer, QuickView, Toasts, TrackFloat } from '../components/Overlays';
 import { Booking, Faq, FeatureBanner, Footer, Looks, MobileBar, Process } from '../components/Sections';
 import Shop from '../components/Shop';
 
@@ -24,7 +24,7 @@ export default function Home() {
       <CartDrawer />
       <Toasts />
       <AiAssistant />
-      <WaFloat />
+      <TrackFloat />
     </div>
   );
 }

@@ -22,7 +22,7 @@ function Shell({ title, updated, children }: { title: string; updated: string; c
         <div className="container-x py-4 flex items-center gap-2.5">
           <Link to="/" className="flex items-center gap-2.5">
             <span className="w-9 h-9 rounded-xl grid place-items-center font-display font-black bg-white text-[#641629]">K</span>
-            <span className="font-display text-lg">The Kissa</span>
+            <span className="font-display text-lg">TheKissa.co.in</span>
           </Link>
           <Link to="/" className="ml-auto text-xs font-semibold text-white/70 hover:text-white">← Back to website</Link>
         </div>
@@ -59,17 +59,16 @@ export function AboutPage() {
   return (
     <Shell title="About Us" updated="October 2026">
       <P>
-        <b>{BUSINESS.name}</b> ({BUSINESS.brand}) is an online-only Garba outfit rental brand from Indore, serving
-        customers across the city since 2018. We rent designer Chaniya Choli, Kediyu-Dhoti sets, kids Garba outfits, couple/family
-        combos and premium bridal couture — with steam-pressed finishing and
+        <b>{BUSINESS.name}</b> is an online-only Garba outfit rental brand from Indore, serving
+        customers across the city since 2026. We rent designer Chaniya Choli, blouse and jewellery — with steam-pressed
+        finishing and
         doorstep delivery &amp; return.
       </P>
       <H>What we offer</H>
       <Ul
         items={[
-          '3-day standard rental and 9-day full-Navratri rental plans.',
-          'Free size-exchange at your doorstep if the fit is off.',
-          'Same-day delivery in Indore; 1–2 days across MP, 3–5 days pan-India.',
+          '1-day, 3-day standard rental and 9-day full-Navratri rental plans.',
+          'Delivery in Indore in 1–2 hours.',
           'Every outfit is dry-cleaned, sanitised and quality-checked before dispatch.',
         ]}
       />
@@ -95,7 +94,7 @@ export function ContactPage() {
       <P>Online only — doorstep delivery &amp; pickup across Indore (1–2 days across MP, 3–5 days pan-India). No walk-in store.</P>
       <H>Phone &amp; WhatsApp</H>
       <P>
-        <a className="underline font-semibold" href={BUSINESS.phoneHref}>{BUSINESS.phone}</a> — call or WhatsApp “Hi The Kissa!”.
+        <a className="underline font-semibold" href={BUSINESS.phoneHref}>{BUSINESS.phone}</a> — call or WhatsApp “Hi TheKissa.co.in!”.
       </P>
       <H>Email</H>
       <P>
@@ -111,7 +110,7 @@ export function TermsPage() {
   return (
     <Shell title="Terms & Conditions" updated="October 2026">
       <P>
-        By booking or renting from {BUSINESS.name} (“The Kissa”, “we”), you agree to these terms. If you do not agree,
+        By booking or renting from {BUSINESS.name} (“TheKissa.co.in”, “we”), you agree to these terms. If you do not agree,
         please do not place a booking.
       </P>
       <H>1. Rental period</H>

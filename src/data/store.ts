@@ -1,8 +1,8 @@
-// The Kissa — single source of truth for store contact details.
+// TheKissa.co.in — single source of truth for store contact details.
 // Client ka real phone/address mile to SIRF YAHI badlo — poori site + admin + invoice apne aap update.
 export const STORE = {
-  name: 'The Kissa Garba Rental',
-  brand: 'The Kissa',
+  name: 'TheKissa.co.in Garba Rental',
+  brand: 'TheKissa.co.in',
   tagline: 'GARBA RENTAL',
   // WhatsApp + call — same number, digits only for wa.me
   phoneDisplay: '+91 98765 43210',

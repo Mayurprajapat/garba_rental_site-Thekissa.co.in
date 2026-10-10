@@ -234,7 +234,7 @@ export default function Admin() {
         <div className="hidden lg:flex flex-col justify-between p-12 text-white relative overflow-hidden" style={{ background: 'linear-gradient(160deg,#1a0f1e,#3d0a26 70%)' }}>
           <Link to="/" className="flex items-center gap-2.5">
             <span className="w-10 h-10 rounded-xl grid place-items-center font-display font-black text-lg bg-white text-[#3d0a26]">K</span>
-            <span className="font-display text-xl">The Kissa</span>
+            <span className="font-display text-xl">TheKissa.co.in</span>
           </Link>
           <div>
             <p className="text-[11px] tracking-[0.24em] text-[#e8c66a] font-bold">STORE MANAGER</p>
@@ -246,7 +246,7 @@ export default function Admin() {
               ))}
             </div>
           </div>
-          <p className="text-[11px] text-white/40">© 2026 The Kissa Garba Rental · Indore</p>
+          <p className="text-[11px] text-white/40">© 2026 TheKissa.co.in Garba Rental · Indore</p>
         </div>
         <div className="grid place-items-center p-6 bg-[#f7f3ea]">
           <form onSubmit={login} className="w-full max-w-sm admin-card p-8">
@@ -279,7 +279,7 @@ export default function Admin() {
         <aside className="hidden md:flex w-[264px] shrink-0 flex-col bg-[#0e0a12] text-white p-5 sticky top-0 h-screen border-r border-[#e8c66a]/15">
           <Link to="/" className="flex items-center gap-2.5 px-1">
             <span className="w-9 h-9 rounded-xl grid place-items-center font-display font-black bg-gradient-to-br from-[#e8c66a] to-[#b8860b] text-[#1a0f1e]">K</span>
-            <span className="leading-tight"><b className="font-display block text-[17px]">The Kissa</b><small className="text-[9.5px] tracking-[0.24em] text-[#e8c66a]/80 font-bold">STUDIO · ADMIN</small></span>
+            <span className="leading-tight"><b className="font-display block text-[17px]">TheKissa.co.in</b><small className="text-[9.5px] tracking-[0.24em] text-[#e8c66a]/80 font-bold">STUDIO · ADMIN</small></span>
           </Link>
           <div className="hairline-light my-5" />
           <nav className="space-y-1">
