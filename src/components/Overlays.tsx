@@ -8,6 +8,7 @@ import { formatINR, isValidIndianPhone, makeOrderId, tokenAdvance } from '../lib
 import { useProducts } from '../lib/ProductsContext';
 import { RAZORPAY_KEY_ID, payWithRazorpay } from '../lib/razorpay';
 import { promoCodesText, useSiteVersion } from '../lib/siteContent';
+import { clearMyOrders, getMyOrders, saveMyOrder, type MyOrder } from '../lib/myOrders';
 import { promoDiscount, useStore } from '../store/useStore';
 import SpinViewer from './SpinViewer';
 
@@ -221,10 +222,19 @@ export function CartDrawer() {
   const [email, setEmail] = useState('');
   const [paying, setPaying] = useState(false);
   const [err, setErr] = useState('');
+  const [tab, setTab] = useState<'list' | 'orders'>('list');
+  const [orders, setOrders] = useState<MyOrder[]>([]);
   const [order, setOrder] = useState<{ id: string; paymentId: string; mode: string; token: number; total: number; deposit: number; lines: string[] } | null>(null);
 
   const rowPrice = (r: { p: { rent3: number; rent9: number; category: Category; desc: string; accessories?: Accessory[] }; plan: '3day' | '9day'; addons?: string[]; single?: { price: number } }) =>
     r.single ? r.single.price : ((r.plan === '3day' ? r.p.rent3 : r.p.rent9) + addonTotal(r.p, r.addons));
+
+  useEffect(() => {
+    const refreshOrders = () => setOrders(getMyOrders());
+    refreshOrders();
+    window.addEventListener('raasleela-orders-updated', refreshOrders);
+    return () => window.removeEventListener('raasleela-orders-updated', refreshOrders);
+  }, []);
 
   const rows = useMemo(() => cart.map((c) => ({ ...c, p: products.find((x) => x.id === c.id)! })).filter((r) => r.p), [cart, products]);
   const subtotal = rows.reduce((a, r) => a + rowPrice(r) * r.qty, 0);
@@ -252,6 +262,25 @@ export function CartDrawer() {
     const base = `${r.plan === '3day' ? '3-day' : '9-day'} · Free size x${r.qty}`;
     return r.addons?.length ? `${base} + ${r.addons.join(', ')}` : base;
   };
+
+  // Website par order hamesha rahe — My Orders snapshot (confirm se pehle banao)
+  const snapOrder = (orderId: string, token: number, mode: string) => saveMyOrder({
+    id: orderId,
+    date: new Date().toISOString(),
+    name: name.trim(),
+    phone: phone.trim(),
+    event: eventDate || 'TBD',
+    items: rows.map((r) => ({
+      name: r.single ? r.single.name : r.p.name,
+      detail: r.single ? `${r.p.id} look · without dress` : rowLabel(r),
+      qty: r.qty,
+      price: rowPrice(r) * r.qty,
+    })),
+    total,
+    deposit,
+    token,
+    mode,
+  });
 
   const buildWaMsg = (orderId: string, payInfo: string) => {
     const lines = rows.map((r, i) => r.single
@@ -299,6 +328,7 @@ export function CartDrawer() {
       });
       setOrder({ id: orderId, paymentId: '', mode: 'pay-on-delivery', token: 0, total, deposit, lines: orderLines() });
       setStep('done');
+      snapOrder(orderId, 0, 'pay-on-delivery');
       clear();
       window.open(waLink(buildWaMsg(orderId, 'Cash/UPI on delivery')), '_blank');
     } finally {
@@ -343,6 +373,7 @@ export function CartDrawer() {
       });
       setOrder({ id: orderId, paymentId: r.paymentId, mode: 'razorpay', token, total, deposit, lines: orderLines() });
       setStep('done');
+      snapOrder(orderId, token, 'razorpay');
       clear();
       // Online payment par bhi store ko WhatsApp notice (block ho to done-step buttons se resend)
       try {
@@ -369,6 +400,12 @@ export function CartDrawer() {
               </div>
               <button onClick={resetAndClose} className="w-9 h-9 grid place-items-center rounded-full bg-black/5 hover:bg-[#641629] hover:text-white transition"><X size={16} /></button>
             </div>
+            {step === 'cart' && (
+              <div className="flex gap-1.5 px-4 pt-3">
+                <button onClick={() => setTab('list')} className={`flex-1 rounded-full py-2 text-[12.5px] font-bold transition ${tab === 'list' ? 'bg-[#221114] text-white' : 'bg-black/5 text-black/60'}`}>Booking list ({cart.reduce((a, c) => a + c.qty, 0)})</button>
+                <button onClick={() => setTab('orders')} className={`flex-1 rounded-full py-2 text-[12.5px] font-bold transition ${tab === 'orders' ? 'bg-[#221114] text-white' : 'bg-black/5 text-black/60'}`}>My Orders ({orders.length})</button>
+              </div>
+            )}
 
             {step === 'done' && order ? (
               <div className="flex-1 overflow-y-auto p-5">
@@ -400,6 +437,7 @@ export function CartDrawer() {
                   ? <a href={`mailto:${email.trim()}?subject=${encodeURIComponent(`Order confirmed ${order.id} — TheKissa.co.in`)}&body=${encodeURIComponent(buildCustomerMsg(order))}`} className="mt-2 w-full bg-black text-white font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-1.5"><Mail size={15} /> Send me confirmation</a>
                   : <span className="mt-2 w-full bg-black/[.06] text-black/40 font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-1.5"><Mail size={15} /> Enter email above</span>}
                 <button onClick={resetAndClose} className="w-full mt-3 bg-[#641629] text-white font-semibold rounded-full py-3 text-sm">Continue shopping</button>
+                <button onClick={() => { setStep('cart'); setTab('orders'); }} className="w-full mt-2 border border-black/15 font-semibold rounded-full py-3 text-sm hover:bg-black hover:text-white transition">View in My Orders</button>
                 <a href="/track" className="w-full mt-2 border border-black/15 font-semibold rounded-full py-3 text-sm hover:bg-[#641629] hover:border-[#641629] hover:text-white transition flex items-center justify-center gap-2">📍 Track delivery boy</a>
                 <p className="text-[11px] text-black/45 text-center mt-2">You will get the tracking link on SMS/WhatsApp after dispatch</p>
               </div>
@@ -429,6 +467,35 @@ export function CartDrawer() {
                 <p className="text-[11px] text-black/45 text-center">By confirming you agree to our <a href="/terms" target="_blank" className="underline">Terms</a> &amp; <a href="/refunds" target="_blank" className="underline">Refund Policy</a></p>
                 <p className="text-[11px] text-black/45 text-center flex items-center justify-center gap-1"><ShieldCheck size={12} /> Your details stay private · No spam calls</p>
               </div>
+            ) : tab === 'orders' ? (
+              <>
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#fafafa]">
+                  {orders.length === 0 && <p className="text-center text-black/50 py-16">No orders yet on this device.<br />Your confirmed orders will appear here.</p>}
+                  {orders.map((o) => (
+                    <div key={o.id} className="bg-white rounded-2xl p-3.5 border border-black/10">
+                      <div className="flex items-center gap-2">
+                        <b className="text-[13.5px]">{o.id}</b>
+                        <span className="ml-auto text-[11px] text-black/50">{new Date(o.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        {o.items.map((it, i) => (
+                          <div key={i} className="flex justify-between gap-2 text-[12px]">
+                            <span className="text-black/70 min-w-0">{it.name} x{it.qty}<span className="block text-[10.5px] text-black/45">{it.detail}</span></span>
+                            <b className="shrink-0">{formatINR(it.price)}</b>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="border-t border-black/10 mt-2 pt-2 flex justify-between text-[13px]"><span>Total rent</span><b>{formatINR(o.total)}</b></div>
+                      <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'razorpay' ? `Token ${formatINR(o.token)} paid online` : 'Pay on delivery'} · Deposit {formatINR(o.deposit)} (refundable)</p>
+                      <a href={waLink(`Hi TheKissa.co.in! Reorder ${o.id} — same items please. Name: ${o.name}, Mobile: ${o.phone}`)} target="_blank" className="mt-2.5 w-full inline-flex items-center justify-center gap-1.5 bg-[#25d366] text-white text-[12.5px] font-bold rounded-full py-2.5"><MessageCircle size={14} /> Reorder on WhatsApp</a>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-4 border-t border-black/10 bg-white">
+                  <p className="text-[11px] text-black/50 text-center">Orders stay saved on this device.</p>
+                  {orders.length > 0 && <button onClick={() => { clearMyOrders(); setOrders([]); }} className="w-full text-xs text-black/50 underline mt-1">Clear history</button>}
+                </div>
+              </>
             ) : (
               <>
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#fafafa]">
