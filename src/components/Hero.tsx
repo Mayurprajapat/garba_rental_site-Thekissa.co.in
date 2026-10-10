@@ -1,31 +1,9 @@
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useStore } from '../store/useStore';
 
-function useCountdown() {
-  const [t, setT] = useState({ d: '00', h: '00', m: '00', s: '00' });
-  useEffect(() => {
-    const target = new Date('2026-10-12T00:00:00').getTime();
-    const f = () => {
-      const diff = Math.max(0, target - Date.now());
-      const p = (n: number) => String(n).padStart(2, '0');
-      setT({
-        d: p(Math.floor(diff / 86400000)),
-        h: p(Math.floor((diff / 3600000) % 24)),
-        m: p(Math.floor((diff / 60000) % 60)),
-        s: p(Math.floor((diff / 1000) % 60)),
-      });
-    };
-    f();
-    const id = setInterval(f, 1000);
-    return () => clearInterval(id);
-  }, []);
-  return t;
-}
-
 export default function Hero() {
-  const t = useCountdown();
   const setSearch = useStore((s) => s.setSearch);
   const setCategory = useStore((s) => s.setCategory);
   const [q, setQ] = useState('');
@@ -44,7 +22,6 @@ export default function Hero() {
     <section id="top" className="hero-vignette bg-gradient-to-b from-[#641629] via-[#4d0f1f] to-[#2b070e] text-white relative overflow-hidden scroll-mt-28">
       <div className="max-w-6xl mx-auto px-4 py-5 sm:py-6 md:py-8 relative grid md:grid-cols-[1.15fr_.85fr] gap-5 items-center [&>*]:min-w-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="min-w-0">
-          <span className="inline-block border border-white/20 text-white/75 text-[10px] sm:text-[10.5px] font-bold tracking-[0.12em] sm:tracking-[0.14em] rounded-full px-3 py-1.5 tabular-nums bg-white/[.04] backdrop-blur max-w-full">NAVRATRI IN {t.d}d : {t.h}h : {t.m}m</span>
           <h1 className="premium-heading font-semibold tracking-tight text-balance text-[24px] min-[400px]:text-[27px] sm:text-[42px] leading-[1.1] mt-2.5">
             Rent designer Garba looks.
             <br />

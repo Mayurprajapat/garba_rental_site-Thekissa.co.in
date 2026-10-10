@@ -12,8 +12,8 @@ export const STORE = {
   email: 'hello@thekissa.in',
   addressShort: 'Online only · Doorstep delivery in Indore',
   addressLong: 'Online-only rental studio · Indore, Madhya Pradesh, India (no walk-in store — doorstep delivery & pickup)',
-  hours: '10 AM – 9 PM daily (Navratri: till 10 PM)',
-  hoursShort: '10 AM – 9 PM',
+  hours: 'Delivery 9 AM – 10 PM daily (Navratri day 3–6: 4 PM – 10 PM)',
+  hoursShort: '9 AM – 10 PM',
   city: 'Indore',
 } as const;
 

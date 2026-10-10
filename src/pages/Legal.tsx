@@ -130,7 +130,7 @@ export function TermsPage() {
       <H>3. Security deposit</H>
       <P>
         A refundable deposit (shown per product, typically ₹1,000–₹4,000) is collected on delivery. It is refunded via
-        UPI within 24 hours of return and quality check. Normal wear and light dry-cleanable stains are never charged.
+        UPI/cash within 24 hours of return and quality check. Normal wear and light dry-cleanable stains are never charged.
       </P>
       <H>4. Damage &amp; loss</H>
       <P>
@@ -218,7 +218,7 @@ export function RefundsPage() {
       </P>
       <H>1. Security deposit — 100% refundable</H>
       <P>
-        The refundable deposit collected on delivery is returned via UPI within 24 hours of outfit return and quality
+        The refundable deposit collected on delivery is returned via UPI/cash within 24 hours of outfit return and quality
         check. Normal wear and light dry-cleanable stains are never deducted.
       </P>
       <H>2. Cancellation by you</H>
@@ -239,7 +239,7 @@ export function RefundsPage() {
         items={[
           'Online payments: refunded to the original source (UPI/bank/card) within 5–7 working days via Razorpay.',
           'Pay-on-delivery bookings: refunded via UPI within 48 hours of approval.',
-          'Deposit refunds: via UPI within 24 hours of return and quality check.',
+          'Deposit refunds: via UPI/cash within 24 hours of return and quality check.',
         ]}
       />
       <H>5. Non-refundable items</H>

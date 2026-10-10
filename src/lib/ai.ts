@@ -61,13 +61,13 @@ function localReply(query: string): { text: string; products: ChatProduct[] } {
     return { text: 'Every dress page has a "The model wore this" list. Tick items to add them with the dress — and if you like a single item (e.g. only the jhumkas), press "Only this" to rent it alone without the dress. Which dress are you looking at?', products: pickProducts(query, 3) };
   }
   if (/deposit/.test(q)) {
-    return { text: 'The deposit is 100% refundable — returned via UPI within 24 hours of return and quality check. Normal wear is never charged.', products: [] };
+    return { text: 'The deposit is 100% refundable — returned via UPI/cash within 24 hours of return and quality check. Normal wear is never charged.', products: [] };
   }
   if (/deliver|delivery|shipping|kitne din|kab aayega/.test(q)) {
-    return { text: 'We deliver same-day in Indore, 1–2 days across MP, and 3–5 days pan-India. Delivery is free on bulk orders.', products: [] };
+    return { text: 'We deliver in 1-2 hours in Indore. Delivery is free on bulk orders.', products: [] };
   }
   if (/size/.test(q)) {
-    return { text: 'We stock sizes XS to XXL. Tell me your size and I will suggest the best option. For kids, share the age — e.g. 4-6Y.', products: pickProducts(query, 3) };
+    return { text: 'Presize available — tell me your size and I will suggest the best option.', products: pickProducts(query, 3) };
   }
   if (/price|rate|rent|cost|charge|paisa/.test(q) && !/\d/.test(q)) {
     return { text: 'Rent starts at ₹799 — Kids ₹799+, Men ₹999+, Women ₹1299+, Premium ₹2499+. What is your budget?', products: pickProducts('', 3) };

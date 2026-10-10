@@ -53,45 +53,6 @@ export function Process() {
   );
 }
 
-export function Rates() {
-  const rows: [string, string, string, string][] = [
-    ['Kids Garba (2–14 yrs)', '₹799 – ₹1,299', '₹1,000', 'Dress + dupatta + hair accessory'],
-    ['Men Kediyu-Dhoti + Pagdi', '₹999 – ₹1,499', '₹1,500', 'Kediyu + dhoti + pagdi + dupatta'],
-    ['Women Chaniya Choli', '₹1,299 – ₹1,999', '₹2,000', 'Chaniya + choli + dupatta + latkans'],
-    ['Couple / Family Combo', '₹2,499 – ₹3,499', '₹3,000', 'Two outfits, coordinated'],
-    ['Premium Bridal / Designer', '₹2,499 – ₹3,999', '₹4,000', 'Designer piece + jewellery set'],
-  ];
-  return (
-    <section id="rates" className="bg-[#fafafa] border-y border-black/[.07] text-[#111]">
-      <div className="container-x py-7">
-        <h2 className="premium-heading font-semibold tracking-tight text-xl sm:text-2xl text-center">Rental rates at a glance</h2>
-        <p className="text-center text-black/45 text-[12.5px] mt-1 max-w-xl mx-auto">No hidden charges. Deposit is fully refundable within 24 hours of return.</p>
-        <div className="overflow-x-auto mt-4 rounded-2xl border border-black/[.07] bg-white shadow-[0_20px_50px_-32px_rgba(0,0,0,.3)]">
-          <table className="w-full text-sm min-w-[680px]">
-            <thead><tr className="text-left text-[11px] uppercase tracking-[0.12em] text-black/40 bg-black/[.02]">
-              {['Category', 'Rent · 3 days', 'Deposit', 'Includes'].map((h) => <th key={h} className="px-4 py-3 font-bold">{h}</th>)}
-            </tr></thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r[0]} className="border-t border-black/[.06] hover:bg-black/[.015] transition-colors">
-                  <td className="px-4 py-3 font-semibold">{r[0]}</td>
-                  <td className="px-4 py-3 font-semibold">{r[1]}</td>
-                  <td className="px-4 py-3 text-black/55">{r[2]}</td>
-                  <td className="px-4 py-3 text-black/50 text-[13px]">{r[3]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3 bg-gradient-to-r from-[#641629] to-[#2b070e] text-white rounded-2xl px-6 py-3.5 ring-1 ring-[#641629]/20 shadow-[0_24px_48px_-28px_rgba(100,22,41,.6)]">
-          <p className="text-[13.5px]"><b>Full Navratri · 9 days:</b> three looks for the price of two · <b>Easy fit promise:</b> wrong size replaced at your doorstep</p>
-          <a href="#book" className="shrink-0 bg-white text-black text-[13px] font-semibold rounded-full px-5 py-2.5 hover:shadow-lg transition">Reserve your plan</a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export function Looks() {
   const imgs = [
     '/images/g-hero.webp', '/images/g-combo2.jpg',
@@ -150,10 +111,10 @@ export function Faq() {
   const [open, setOpen] = useState(0);
   const faqs: [string, string][] = [
     ['How long is the rental period?', 'Standard rental is 3 days — event day plus pickup and return. The full-Navratri plan covers 9 days with three outfits.'],
-    ['What if the size doesn’t fit?', 'Share your size on email or WhatsApp and we confirm fit before dispatch — a wrong size gets exchanged at your doorstep.'],
-    ['Is the deposit refundable?', 'Yes, 100%. Refunded via UPI within 24 hours of return and quality check. Normal wear is never charged.'],
+    ['What if the size doesn’t fit?', 'We keep large sizes in stock — get the fitting done from us, and we also provide pins for minor adjustments. Share your size on email or WhatsApp and we confirm fit before dispatch — a wrong size gets exchanged at your doorstep.'],
+    ['Is the deposit refundable?', 'Yes, 100%. Refunded via UPI/cash within 24 hours of return and quality check. Normal wear is never charged.'],
     ['What about stains or minor damage?', 'Light dry-cleanable stains are on us. Major damage is charged at repair cost only — optional ₹199 damage cover removes the worry.'],
-    ['Where do you deliver?', 'Same-day in Indore. 1–2 days across MP, 3–5 days pan-India. Free delivery on bulk orders.'],
+    ['Where do you deliver?', '1-2 hours delivery in Indore. Free delivery on bulk orders.'],
     ['Can I buy instead of renting?', 'Yes — every design is available for purchase at roughly 2.5× the rental price. Message “BUY” with the product ID on WhatsApp.'],
   ];
   return (
@@ -205,7 +166,7 @@ export function Booking() {
             <h2 className="premium-heading font-display font-black text-2xl sm:text-[30px] mt-2 leading-tight">Reserve your outfit in two minutes</h2>
             <p className="text-white/60 text-[13px] mt-2 leading-relaxed">Fill the form — it opens your email app with everything pre-written. Send it and your outfit enquiry is locked.</p>
             <ul className="text-[13px] mt-4 space-y-2">
-              {[['Ruler', 'All sizes XS–XXL available'], ['Clock', 'Same-day slots in Indore'], ['ShieldCheck', 'Refundable deposit, no hidden fees']].map(([icon, t]) => (
+              {[['Ruler', 'Presize available'], ['Clock', 'Same-day slots in Indore'], ['ShieldCheck', 'Refundable deposit, no hidden fees']].map(([icon, t]) => (
                 <li key={t} className="flex items-center gap-2.5 text-white/75">
                   {icon === 'Ruler' ? <Ruler size={15} className="text-[#e8c66a]" /> : icon === 'Clock' ? <Clock size={15} className="text-[#e8c66a]" /> : <ShieldCheck size={15} className="text-[#e8c66a]" />}{t}
                 </li>
@@ -264,7 +225,7 @@ export function Footer() {  return (
           <p className="mt-4 text-[13px]">📞 <a href={STORE.phoneHref} className="text-white font-semibold">{STORE.phoneDisplay}</a><br />
             💬 <a href={waLink('Hi The Kissa!')} target="_blank" className="text-white font-semibold">WhatsApp us</a><br />✉️ {STORE.email}</p>
         </div>
-        <div><h4 className="text-white font-semibold mb-4 text-[13px] tracking-wide">SHOP</h4><div className="space-y-2.5 flex flex-col text-[13.5px]">{[['Women Chaniya Choli', '/#shop'], ['Men Kediyu', '/#shop'], ['Kids Garba', '/#shop'], ['Couple Combo', '/#shop'], ['Pricing', '/#rates']].map(([l, h]) => <a key={l as string} href={h as string} className="hover:text-white w-fit">{l as string}</a>)}</div></div>
+        <div><h4 className="text-white font-semibold mb-4 text-[13px] tracking-wide">SHOP</h4><div className="space-y-2.5 flex flex-col text-[13.5px]">{[['Women Chaniya Choli', '/#shop'], ['Men Kediyu', '/#shop'], ['Kids Garba', '/#shop'], ['Couple Combo', '/#shop']].map(([l, h]) => <a key={l as string} href={h as string} className="hover:text-white w-fit">{l as string}</a>)}</div></div>
         <div><h4 className="text-white font-semibold mb-4 text-[13px] tracking-wide">SUPPORT</h4><div className="space-y-2.5 flex flex-col text-[13.5px]">{[['How it works', '/#process'], ['FAQs', '/#faq'], ['Track delivery', '/track'], ['Book now', '/#book'], ['About us', '/about'], ['Contact us', '/contact']].map(([l, h]) => <a key={l as string} href={h as string} className="hover:text-white w-fit">{l as string}</a>)}</div></div>
         <div><h4 className="text-white font-semibold mb-4 text-[13px] tracking-wide flex items-center gap-1.5"><MapPin size={14} /> DELIVERY</h4><p className="text-[13px] leading-relaxed">Online only — no walk-in store<br />Doorstep delivery & pickup<br /><br />{STORE.hours}</p>
           <a href="/track" className="inline-flex items-center gap-1.5 mt-4 bg-white text-[#641629] font-semibold rounded-full px-4 py-2.5 text-xs hover:bg-[#e8c66a] hover:text-[#3d0a1a] transition">Track your delivery →</a>

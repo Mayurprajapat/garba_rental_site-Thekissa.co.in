@@ -209,7 +209,7 @@ export default function Shop() {
             </h2>
           </div>
           <p className="text-[12.5px] text-neutral-400 sm:ml-auto">
-            Steam-pressed finishing & deposit included · {loading ? 'Updating…' : live ? 'Live availability' : 'Ready to book'}
+            Finishing & deposit included · {loading ? 'Updating…' : live ? 'Live availability' : 'Ready to book'}
           </p>
         </div>
       </div>
@@ -328,7 +328,7 @@ export default function Shop() {
             )}
           </>
         )}
-        <p className="text-center text-xs text-[#8a7584] mt-6">3 or 9-day rentals · 100% refundable deposit · Codes: NAVRATRI20, GROUP25, FIRST10</p>
+        <p className="text-center text-xs text-[#8a7584] mt-6">1-day, 3-day or 9-day rentals · 100% refundable deposit · Codes: NAVRATRI20, GROUP25, FIRST10</p>
       </div>
     </section>
   );

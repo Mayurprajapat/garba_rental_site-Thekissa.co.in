@@ -14,14 +14,12 @@ export interface ShopCategory {
 
 export const DEFAULT_CATEGORIES: ShopCategory[] = [
   { id: 'chaniya', label: 'Chaniya Choli', query: 'chaniya', img: '/images/g-hero.webp', kind: 'dress' },
-  { id: 'kediyu', label: 'Kediyu-Dhoti', query: 'kediyu', img: '/images/g-boys1.jpg', kind: 'dress' },
-  { id: 'kids', label: 'Kids Wear', query: 'kids', img: '/images/g-kids1.webp', kind: 'dress' },
   { id: 'choli', label: 'Choli & Blouse', query: 'choli', img: '/images/g-chaniya1.jpg', kind: 'dress' },
   { id: 'jewellery', label: 'Jewellery', query: 'jhumka, jewellery, kamarbandh, tagdi', img: '/images/g-multi2.webp', kind: 'item' },
-  { id: 'dupatta', label: 'Dupatta', query: 'dupatta', img: '/images/g-girls2.jpg', kind: 'dress' },
-  { id: 'bridal', label: 'Bridal Premium', query: 'premium', img: '/images/g-koti.webp', kind: 'dress' },
-  { id: 'combo', label: 'Combo Sets', query: 'combo', img: '/images/g-combo1.jpg', kind: 'dress' },
 ];
+
+// Admin panel me pehle se saved list ho to usme se bhi ye hataye jayenge
+const REMOVED_IDS = ['kediyu', 'kids', 'dupatta', 'bridal', 'combo'];
 
 const KEY = 'raasleela-admin-categories';
 const EVT = 'raasleela-categories-updated';
@@ -43,7 +41,7 @@ export function getCategories(): ShopCategory[] {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const arr = JSON.parse(raw);
-      if (valid(arr) && arr.length) return normalize(arr);
+      if (valid(arr) && arr.length) return normalize(arr).filter((c) => !REMOVED_IDS.includes(c.id));
     }
   } catch { /* ignore */ }
   return [...DEFAULT_CATEGORIES];

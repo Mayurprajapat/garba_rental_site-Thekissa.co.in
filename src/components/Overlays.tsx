@@ -352,7 +352,7 @@ export function CartDrawer() {
                     {order.paymentId && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Txn ID</span><b className="text-[12px] text-right break-all">{order.paymentId}</b></div>}
                     <div className="border-t border-black/10 my-2 pt-2 flex justify-between"><span>Total rent</span><b>{formatINR(order.total)}</b></div>
                     <div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Security deposit (delivery par)</span><b>{formatINR(order.deposit)}</b></div>
-                    <p className="text-[11px] text-black/50 pt-1">Deposit is 100% refundable — returned via UPI within 24h of return.</p>
+                    <p className="text-[11px] text-black/50 pt-1">Deposit is 100% refundable — returned via UPI/cash within 24h of return.</p>
                   </div>
                 </div>
                 <button onClick={resetAndClose} className="w-full mt-4 bg-[#641629] text-white font-semibold rounded-full py-3 text-sm">Continue shopping</button>
@@ -374,7 +374,7 @@ export function CartDrawer() {
                   <div className="border-t border-black/10 pt-2 mt-1 flex justify-between"><span>Pay now (token 20%)</span><b>{formatINR(token)}</b></div>
                   <div className="flex justify-between text-[13px] text-black/55"><span>Balance on delivery</span><b>{formatINR(balance)}</b></div>
                   <div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Security deposit (delivery par, refundable)</span><b>{formatINR(deposit)}</b></div>
-                  <p className="text-[11px] text-black/50">Deposit is 100% refunded via UPI within 24h of return · Secure UPI/Card via Razorpay</p>
+                  <p className="text-[11px] text-black/50">Deposit is 100% refunded via UPI/cash within 24h of return · Secure UPI/Card via Razorpay</p>
                 </div>
                 {err && <p className="text-[12.5px] text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{err}</p>}
                 <button disabled={paying} onClick={payOnline} className="w-full bg-[#641629] text-white font-semibold rounded-full py-3.5 text-sm disabled:opacity-50 flex items-center justify-center gap-2"><CreditCard size={15} /> {paying ? 'Processing…' : `Pay ${formatINR(token)} Token Online`}</button>
@@ -421,7 +421,7 @@ export function CartDrawer() {
                     <div className="flex justify-between text-emerald-700"><span>Discount</span><b>-{formatINR(disc)}</b></div>
                     <div className="flex justify-between text-[17px]"><span>Total rent</span><b>{formatINR(total)}</b></div>
                     <div className="flex justify-between text-emerald-700"><span>Security deposit</span><b>{formatINR(deposit)}</b></div>
-                    <p className="text-[11px] text-black/50">Deposit is 100% refundable — returned via UPI within 24h of return. It is paid separately on delivery, over and above the rent.</p>
+                    <p className="text-[11px] text-black/50">Deposit is 100% refundable — returned via UPI/cash within 24h of return. It is paid separately on delivery, over and above the rent.</p>
                   </div>
                   <button disabled={rows.length === 0} onClick={() => setStep('details')} className="w-full bg-[#641629] text-white font-semibold rounded-full py-3.5 text-sm disabled:opacity-40 flex items-center justify-center gap-2"><ShoppingBasket size={15} /> Proceed to Checkout →</button>
                   <button onClick={clear} className="w-full text-xs text-black/50 underline">Clear list</button>
