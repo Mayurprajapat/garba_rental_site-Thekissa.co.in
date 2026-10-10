@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { BadgeCheck, Check, CheckCircle2, CreditCard, Heart, Mail, MapPin, MessageCircle, Plus, ReceiptText, ShieldCheck, ShoppingBasket, Sparkles, Star, Trash2, Truck, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { addonTotal, hotspotsFor, lookFor, photosFor, waLink, type Accessory, type Category, type Hotspot } from '../data/products';
+import { addonTotal, hotspotsFor, lookFor, photosFor, STORE, waLink, type Accessory, type Category, type Hotspot } from '../data/products';
 import { itemImgFor } from '../lib/items';
 import { saveBooking } from '../lib/db';
 import { formatINR, isValidIndianPhone, makeOrderId, tokenAdvance } from '../lib/order';
@@ -212,7 +212,7 @@ export function CartDrawer() {
   const [email, setEmail] = useState('');
   const [paying, setPaying] = useState(false);
   const [err, setErr] = useState('');
-  const [order, setOrder] = useState<{ id: string; paymentId: string; mode: string; token: number; total: number; deposit: number } | null>(null);
+  const [order, setOrder] = useState<{ id: string; paymentId: string; mode: string; token: number; total: number; deposit: number; lines: string[] } | null>(null);
 
   const rowPrice = (r: { p: { rent3: number; rent9: number; category: Category; desc: string; accessories?: Accessory[] }; plan: '3day' | '9day'; addons?: string[]; single?: { price: number } }) =>
     r.single ? r.single.price : ((r.plan === '3day' ? r.p.rent3 : r.p.rent9) + addonTotal(r.p, r.addons));
@@ -254,6 +254,14 @@ export function CartDrawer() {
   const buildCustomerMsg = (o: { id: string; total: number; deposit: number }) =>
     `Your order has been confirmed successfully!\n\nOrder ID: ${o.id}\nName: ${name}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\nDeposit (refundable): ${formatINR(o.deposit)}\n\nThank you for renting with TheKissa.co.in! We will call/WhatsApp you within 30 minutes (9 AM – 10 PM).`;
 
+  const orderLines = () => rows.map((r, i) => r.single
+    ? `${i + 1}. ${r.single.name} (accessory only — ${r.p.id} look) x${r.qty} = ${formatINR(r.single.price * r.qty)}`
+    : `${i + 1}. ${r.p.name} (${r.p.id}) — ${rowLabel(r)} = ${formatINR(rowPrice(r) * r.qty)}`);
+
+  // Store notification — ALWAYS goes to the client's number/email
+  const buildStoreMsg = (o: { id: string; mode: string; token: number; total: number; deposit: number; lines: string[] }) =>
+    `New order ${o.id} — TheKissa.co.in\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\nToken: ${o.mode === 'razorpay' ? `${formatINR(o.token)} paid online` : 'Pay on delivery'}\nDeposit (refundable): ${formatINR(o.deposit)}`;
+
   const confirmWithoutPayment = async () => {
     const v = validateDetails();
     if (v) { setErr(v); return; }
@@ -280,7 +288,7 @@ export function CartDrawer() {
         payment_id: '',
         payment_status: 'pending',
       });
-      setOrder({ id: orderId, paymentId: '', mode: 'pay-on-delivery', token: 0, total, deposit });
+      setOrder({ id: orderId, paymentId: '', mode: 'pay-on-delivery', token: 0, total, deposit, lines: orderLines() });
       setStep('done');
       clear();
       window.open(waLink(buildWaMsg(orderId, 'Cash/UPI on delivery')), '_blank');
@@ -324,9 +332,13 @@ export function CartDrawer() {
         payment_id: r.paymentId,
         payment_status: 'paid-token',
       });
-      setOrder({ id: orderId, paymentId: r.paymentId, mode: 'razorpay', token, total, deposit });
+      setOrder({ id: orderId, paymentId: r.paymentId, mode: 'razorpay', token, total, deposit, lines: orderLines() });
       setStep('done');
       clear();
+      // Online payment par bhi store ko WhatsApp notice (block ho to done-step buttons se resend)
+      try {
+        window.open(waLink(`New order ${orderId} — TheKissa.co.in\n\nName: ${name.trim()}\nMobile: ${phone.trim()}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(total)}\nToken: ${formatINR(token)} paid online\nDeposit (refundable): ${formatINR(deposit)}`), '_blank');
+      } catch { /* popup blocked — resend buttons below */ }
     } catch (e: any) {
       setErr(e?.message || 'Payment failed');
     } finally {
@@ -368,14 +380,16 @@ export function CartDrawer() {
                     <p className="text-[11px] text-black/50 pt-1">Deposit is 100% refundable — returned via UPI/cash within 24h of return.</p>
                   </div>
                 </div>
-                <p className="text-[12px] font-bold mt-4 text-center">Get your confirmation with Order ID:</p>
+                <p className="text-[12px] font-bold mt-4 text-center">Send this order to the store:</p>
                 <div className="grid grid-cols-2 gap-2 mt-2">
-                  <a href={`https://wa.me/91${phone.replace(/\D/g, '')}?text=${encodeURIComponent(buildCustomerMsg(order))}`} target="_blank" className="bg-[#25d366] text-white font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-1.5"><MessageCircle size={15} /> WhatsApp</a>
-                  {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-                    ? <a href={`mailto:${email.trim()}?subject=${encodeURIComponent(`Order confirmed ${order.id} — TheKissa.co.in`)}&body=${encodeURIComponent(buildCustomerMsg(order))}`} className="bg-[#641629] text-white font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-1.5"><Mail size={15} /> Email</a>
-                    : <span className="bg-black/[.06] text-black/40 font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-1.5"><Mail size={15} /> Email</span>}
+                  <a href={waLink(buildStoreMsg(order))} target="_blank" className="bg-[#25d366] text-white font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-1.5"><MessageCircle size={15} /> WhatsApp</a>
+                  <a href={`mailto:${STORE.email}?subject=${encodeURIComponent(`New order ${order.id} — TheKissa.co.in`)}&body=${encodeURIComponent(buildStoreMsg(order))}`} className="bg-[#641629] text-white font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-1.5"><Mail size={15} /> Email</a>
                 </div>
-                <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email for confirmation (optional)" inputMode="email" className="mt-2 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-black" />
+                <p className="text-[12px] font-bold mt-4 text-center">Get confirmation on your email:</p>
+                <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Your email address" inputMode="email" className="mt-2 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-black" />
+                {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+                  ? <a href={`mailto:${email.trim()}?subject=${encodeURIComponent(`Order confirmed ${order.id} — TheKissa.co.in`)}&body=${encodeURIComponent(buildCustomerMsg(order))}`} className="mt-2 w-full bg-black text-white font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-1.5"><Mail size={15} /> Send me confirmation</a>
+                  : <span className="mt-2 w-full bg-black/[.06] text-black/40 font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-1.5"><Mail size={15} /> Enter email above</span>}
                 <button onClick={resetAndClose} className="w-full mt-3 bg-[#641629] text-white font-semibold rounded-full py-3 text-sm">Continue shopping</button>
                 <a href="/track" className="w-full mt-2 border border-black/15 font-semibold rounded-full py-3 text-sm hover:bg-[#641629] hover:border-[#641629] hover:text-white transition flex items-center justify-center gap-2">📍 Track delivery boy</a>
                 <p className="text-[11px] text-black/45 text-center mt-2">You will get the tracking link on SMS/WhatsApp after dispatch</p>
