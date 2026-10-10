@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { Copy, ExternalLink, Navigation, Plus, Trash2, Truck } from 'lucide-react';
 import DeliveryMap, { ICON_HOME } from '../../components/DeliveryMap';
 import { STORE_POS, getLocalDeliveries, listDeliveries, makeCode, saveLocalDeliveries, upsertDelivery, type Delivery } from '../../lib/delivery';
+import { encodeSnapshot, publishPing } from '../../lib/liveTrack';
 
 function PickMap({ lat, lng, onPick }: { lat: number; lng: number; onPick: (a: number, b: number) => void }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -77,7 +78,10 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
   };
 
   const setStatus = async (d: Delivery, status: Delivery['status']) => {
-    await upsertDelivery({ ...d, status, updatedAt: new Date().toISOString() });
+    const next = { ...d, status, updatedAt: new Date().toISOString() };
+    await upsertDelivery(next);
+    // Customer ka map live update (status bhi)
+    void publishPing(d.code, { lat: d.agentLat ?? STORE_POS.lat, lng: d.agentLng ?? STORE_POS.lng, status, ts: next.updatedAt });
     refresh();
   };
 
@@ -100,6 +104,16 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
   const copy = (t: string) => navigator.clipboard?.writeText(t);
 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
+
+  // Snapshot hash — alag phone par bhi link khulte hi map + details (phir live GPS)
+  const snapOf = (x: Delivery) => `#s=${encodeSnapshot({
+    code: x.code, customer: x.customer, phone: x.phone, address: x.address,
+    destLat: x.destLat, destLng: x.destLng, agent: x.agent, agentPhone: x.agentPhone,
+    status: x.status, agentLat: x.agentLat, agentLng: x.agentLng,
+    updatedAt: x.updatedAt, createdAt: x.createdAt,
+  })}`;
+  const agentUrl = (x: Delivery) => `${origin}/d/${x.code}${snapOf(x)}`;
+  const customerUrl = (x: Delivery) => `${origin}/t/${x.code}${snapOf(x)}`;
 
   return (
     <div className="space-y-4">
@@ -165,18 +179,18 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
               <b className="flex items-center gap-1.5"><Navigation size={13} /> Agent link (open on the delivery partner's phone)</b>
               <p className="truncate mt-1 text-blue-700">{origin}/d/{current.code}</p>
               <div className="flex gap-1.5 mt-2">
-                <button onClick={() => copy(`${origin}/d/${current.code}`)} className="text-[11px] font-bold border rounded-full px-3 py-1.5 flex items-center gap-1"><Copy size={11} /> Copy</button>
-                <a href={`${origin}/d/${current.code}`} target="_blank" className="text-[11px] font-bold border rounded-full px-3 py-1.5 flex items-center gap-1">Open <ExternalLink size={11} /></a>
-                <a href={`https://wa.me/91${current.agentPhone}?text=${encodeURIComponent(`Delivery ${current.code}: ${origin}/d/${current.code} — open it and press Start live location`)}`} target="_blank" className="text-[11px] font-bold rounded-full px-3 py-1.5 bg-[#25d366] text-white">WhatsApp agent</a>
+                <button onClick={() => copy(agentUrl(current))} className="text-[11px] font-bold border rounded-full px-3 py-1.5 flex items-center gap-1"><Copy size={11} /> Copy</button>
+                <a href={agentUrl(current)} target="_blank" className="text-[11px] font-bold border rounded-full px-3 py-1.5 flex items-center gap-1">Open <ExternalLink size={11} /></a>
+                <a href={`https://wa.me/91${current.agentPhone}?text=${encodeURIComponent(`Delivery ${current.code}: ${agentUrl(current)} — open it and press Start live location`)}`} target="_blank" className="text-[11px] font-bold rounded-full px-3 py-1.5 bg-[#25d366] text-white">WhatsApp agent</a>
               </div>
             </div>
             <div className="bg-black/[.04] rounded-xl p-3">
               <b>Customer link (send via SMS/WhatsApp)</b>
               <p className="truncate mt-1 text-blue-700">{origin}/t/{current.code}</p>
               <div className="flex gap-1.5 mt-2">
-                <button onClick={() => copy(`${origin}/t/${current.code}`)} className="text-[11px] font-bold border rounded-full px-3 py-1.5 flex items-center gap-1"><Copy size={11} /> Copy</button>
-                <a href={`${origin}/t/${current.code}`} target="_blank" className="text-[11px] font-bold border rounded-full px-3 py-1.5 flex items-center gap-1">Open <ExternalLink size={11} /></a>
-                <a href={`https://wa.me/91${current.phone}?text=${encodeURIComponent(`TheKissa.co.in delivery live: ${origin}/t/${current.code} — track your outfit here`)}`} target="_blank" className="text-[11px] font-bold rounded-full px-3 py-1.5 bg-[#25d366] text-white">WhatsApp customer</a>
+                <button onClick={() => copy(customerUrl(current))} className="text-[11px] font-bold border rounded-full px-3 py-1.5 flex items-center gap-1"><Copy size={11} /> Copy</button>
+                <a href={customerUrl(current)} target="_blank" className="text-[11px] font-bold border rounded-full px-3 py-1.5 flex items-center gap-1">Open <ExternalLink size={11} /></a>
+                <a href={`https://wa.me/91${current.phone}?text=${encodeURIComponent(`TheKissa.co.in delivery live: ${customerUrl(current)} — track your outfit here`)}`} target="_blank" className="text-[11px] font-bold rounded-full px-3 py-1.5 bg-[#25d366] text-white">WhatsApp customer</a>
               </div>
             </div>
           </div>

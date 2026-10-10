@@ -1,27 +1,33 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import DeliveryMap from '../components/DeliveryMap';
-import { STORE_POS, getDelivery, upsertDelivery } from '../lib/delivery';
+import { STORE_POS, getDelivery, upsertDelivery, type Delivery } from '../lib/delivery';
+import { publishPing, snapshotFromHash } from '../lib/liveTrack';
 
 export default function AgentDeliver() {
   const { code = '' } = useParams();
-  const [d, setD] = useState<any>(null);
+  const [d, setD] = useState<Delivery | null>(null);
   const [msg, setMsg] = useState('Loading…');
   const [sharing, setSharing] = useState(false);
   const watchId = useRef<number | null>(null);
 
   const load = async () => {
     const row = await getDelivery(code);
-    setD(row);
-    setMsg(row ? '' : 'Invalid delivery code.');
+    if (row) { setD(row); setMsg(''); return; }
+    // Alag phone: link ke snapshot se delivery kholo
+    const snap = snapshotFromHash<Delivery>();
+    setD(snap && snap.destLat ? snap : null);
+    setMsg(snap && snap.destLat ? '' : 'Invalid delivery code.');
   };
   useEffect(() => { load(); const i = setInterval(load, 8000); return () => clearInterval(i); }, [code]);
 
   const push = async (lat: number, lng: number, status?: string) => {
     if (!d) return;
-    const next = { ...d, agentLat: lat, agentLng: lng, status: (status || d.status || 'onway') as any, updatedAt: new Date().toISOString() };
+    const next = { ...d, agentLat: lat, agentLng: lng, status: (status || d.status || 'onway') as Delivery['status'], updatedAt: new Date().toISOString() };
     setD(next);
     await upsertDelivery(next);
+    // Live: customer ka map turant update (bina account ke)
+    void publishPing(code, { lat, lng, status: next.status, ts: next.updatedAt });
   };
 
   const startShare = () => {
@@ -84,7 +90,7 @@ export default function AgentDeliver() {
           </div>
           {msg && <p className="text-[12.5px] mt-3 bg-black/5 rounded-xl px-3 py-2">{msg}</p>}
         </div>
-        <DeliveryMap agent={d.agentLat ? { lat: d.agentLat, lng: d.agentLng } : null} dest={{ lat: d.destLat, lng: d.destLng }} />
+        <DeliveryMap agent={d.agentLat != null && d.agentLng != null ? { lat: d.agentLat, lng: d.agentLng } : null} dest={{ lat: d.destLat, lng: d.destLng }} />
         <p className="text-center text-[11.5px] text-[#8a7584]">Keep GPS + internet ON. The owner and customer watch this location live.</p>
       </div>
     </div>

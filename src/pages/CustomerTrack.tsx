@@ -3,19 +3,33 @@ import { Link, useParams } from 'react-router-dom';
 import DeliveryMap from '../components/DeliveryMap';
 import Logo from '../components/Logo';
 import { STORE } from '../data/store';
-import { STORE_POS, etaMin, getDelivery, haversineKm } from '../lib/delivery';
+import { STORE_POS, etaMin, getDelivery, haversineKm, type Delivery } from '../lib/delivery';
+import { snapshotFromHash, subscribeTrack } from '../lib/liveTrack';
 
 const STEPS = ['assigned', 'picked', 'onway', 'delivered'];
 
 export default function CustomerTrack() {
   const { code = '' } = useParams();
-  const [d, setD] = useState<any>(null);
+  const [d, setD] = useState<Delivery | null>(null);
+  const [live, setLive] = useState(false);
 
   useEffect(() => {
-    const load = async () => setD(await getDelivery(code));
+    const load = async () => {
+      const row = await getDelivery(code);
+      if (row) { setD(row); return; }
+      // Alag phone/browser: link ke snapshot se first paint
+      const snap = snapshotFromHash<Delivery>();
+      if (snap && snap.destLat) setD(snap);
+      else setD(null);
+    };
     load();
     const i = setInterval(load, 6000);
-    return () => clearInterval(i);
+    // Live GPS stream (bina account ke) — agent hilte hi map update
+    const unsub = subscribeTrack(code, (p) => {
+      setLive(true);
+      setD((prev) => (prev ? { ...prev, agentLat: p.lat, agentLng: p.lng, status: p.status as Delivery['status'], updatedAt: p.ts } : prev));
+    });
+    return () => { clearInterval(i); unsub(); };
   }, [code]);
 
   if (!d) {
@@ -31,7 +45,7 @@ export default function CustomerTrack() {
     );
   }
 
-  const agent = d.agentLat ? { lat: d.agentLat, lng: d.agentLng } : null;
+  const agent = d.agentLat != null && d.agentLng != null ? { lat: d.agentLat, lng: d.agentLng } : null;
   const km = agent ? haversineKm(agent.lat, agent.lng, d.destLat, d.destLng) : null;
   const storeKm = haversineKm(STORE_POS.lat, STORE_POS.lng, d.destLat, d.destLng);
   const stepIdx = STEPS.indexOf(d.status);
@@ -43,7 +57,7 @@ export default function CustomerTrack() {
           <Logo className="w-9 h-9" />
           <b className="font-display text-lg whitespace-nowrap">{STORE.brand} Atelier</b>
         </Link>
-        <p className="eyebrow mt-5">Live delivery · {d.code}</p>
+        <p className="eyebrow mt-5">Live delivery · {d.code} {live && <span className="text-emerald-600 font-bold">· LIVE ●</span>}</p>
         <h1 className="font-display font-black text-[26px] sm:text-4xl mt-2 leading-tight">Your outfit is {d.status === 'delivered' ? 'delivered' : 'on its way'}.</h1>
         <p className="text-[13px] text-[#6f5b6a] mt-2">{d.customer} · {d.address} · Agent: {d.agent} ({d.agentPhone})</p>
 
