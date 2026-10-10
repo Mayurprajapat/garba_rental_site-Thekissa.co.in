@@ -1,0 +1,11 @@
+{
+  "name": "The Kissa — Designer Garba Rentals",
+  "short_name": "The Kissa",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#14101a",
+  "theme_color": "#14101a",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
