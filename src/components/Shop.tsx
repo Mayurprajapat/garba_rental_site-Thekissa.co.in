@@ -62,7 +62,7 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
         <button
           onClick={(e) => { e.stopPropagation(); toggleWish(p.id); }}
           aria-label="Wishlist"
-          className={`absolute top-3 right-3 w-9 h-9 grid place-items-center rounded-full bg-white/95 backdrop-blur shadow-[0_6px_16px_-8px_rgba(0,0,0,.4)] hover:scale-110 transition z-[2] ${wished ? 'heart-pop' : ''}`}
+          className={`absolute top-3 right-3 w-10 h-10 grid place-items-center rounded-full bg-white/95 backdrop-blur shadow-[0_6px_16px_-8px_rgba(0,0,0,.4)] hover:scale-110 transition z-[2] ${wished ? 'heart-pop' : ''}`}
         >
           <Heart size={15} className={wished ? 'fill-[#641629] text-[#641629]' : 'text-black'} />
         </button>
@@ -218,7 +218,7 @@ export default function Shop() {
   const activeFilters = (maxPrice < 4000 ? 1 : 0) + (sort !== 'pop' ? 1 : 0) + (wishOnly ? 1 : 0);
 
   return (
-    <section id="shop" className="bg-[#faf8f6] border-b border-[#641629]/10 scroll-mt-[100px]">
+    <section id="shop" className="bg-[#faf8f6] border-b border-[#641629]/10 scroll-mt-[112px]">
       <div className="container-x pt-4 pb-2">
         <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
           <div>
@@ -256,7 +256,7 @@ export default function Shop() {
       )}
 
       {/* Sticky filter bar — collection scroll ho, filters haath me rahen */}
-      <div className="sticky top-[100px] z-30 glass border-y border-black/[.07] shadow-[0_12px_28px_-22px_rgba(0,0,0,.45)]">
+      <div className="sticky top-[116px] sm:top-[100px] z-30 glass border-y border-black/[.07] shadow-[0_12px_28px_-22px_rgba(0,0,0,.45)]">
         <div className="container-x py-2 flex flex-col gap-2">
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
             <button onClick={() => pickCat(null)}
@@ -283,7 +283,7 @@ export default function Shop() {
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 bg-black text-white text-[12px] font-semibold rounded-full pl-3.5 pr-1.5 py-1">
                 “{search.trim()}”
-                <button onClick={() => setSearch('')} aria-label="Clear search" className="w-5 h-5 grid place-items-center rounded-full bg-white/20 hover:bg-white hover:text-black transition"><X size={12} /></button>
+                <button onClick={() => setSearch('')} aria-label="Clear search" className="w-7 h-7 grid place-items-center rounded-full bg-white/20 hover:bg-white hover:text-black transition"><X size={12} /></button>
               </span>
             </div>
           )}
@@ -291,7 +291,7 @@ export default function Shop() {
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 bg-[#641629] text-white text-[12px] font-semibold rounded-full pl-3.5 pr-1.5 py-1">
                 {activeCat.label} · {isItemMode ? 'items only' : 'dresses'}
-                <button onClick={clearCat} aria-label="Clear category" className="w-5 h-5 grid place-items-center rounded-full bg-white/20 hover:bg-white hover:text-black transition"><X size={12} /></button>
+                <button onClick={clearCat} aria-label="Clear category" className="w-7 h-7 grid place-items-center rounded-full bg-white/20 hover:bg-white hover:text-black transition"><X size={12} /></button>
               </span>
             </div>
           )}
@@ -299,7 +299,7 @@ export default function Shop() {
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 bg-black text-white text-[12px] font-semibold rounded-full pl-3.5 pr-1.5 py-1">
                 ♥ Wishlist only
-                <button onClick={() => setWishOnly(false)} aria-label="Show all" className="w-5 h-5 grid place-items-center rounded-full bg-white/20 hover:bg-white hover:text-black transition"><X size={12} /></button>
+                <button onClick={() => setWishOnly(false)} aria-label="Show all" className="w-7 h-7 grid place-items-center rounded-full bg-white/20 hover:bg-white hover:text-black transition"><X size={12} /></button>
               </span>
             </div>
           )}
@@ -314,7 +314,7 @@ export default function Shop() {
               </select>
               <label className="flex items-center gap-2 text-[12.5px] text-neutral-500 font-semibold">
                 Max <b className="text-black">₹{maxPrice.toLocaleString('en-IN')}</b>
-                <input type="range" min={299} max={4000} step={100} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-32 accent-black" aria-label="Maximum price" />
+                <input type="range" min={299} max={Math.max(4000, ...PRODUCTS.map((p) => p.rent1))} step={100} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-32 accent-black" aria-label="Maximum price" />
               </label>
               {activeFilters > 0 && (
                 <button onClick={() => { setMaxPrice(4000); setSort('pop'); setSearch(''); clearCat(); setWishOnly(false); }} className="text-[12px] font-semibold text-black underline underline-offset-2">Clear all</button>

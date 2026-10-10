@@ -311,7 +311,7 @@ export function TrackPage() {
               <span className="w-10 h-10 rounded-xl grid place-items-center bg-[#641629] text-[#e8c66a] shrink-0"><MapPin size={17} /></span>
               <span className="min-w-0">
                 <b className="block text-[14px]">Live delivery · {d.code}</b>
-                <span className="text-[12.5px] text-[#6f5b6a] capitalize">{d.status} · {d.agent} · tap to see the map →</span>
+                <span className="text-[12.5px] text-[#6f5b6a] capitalize">{d.status} · {d.customer} · {d.agent}{d.createdAt ? ` · ${new Date(d.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''} · tap to see the map →</span>
               </span>
             </Link>
           ))}

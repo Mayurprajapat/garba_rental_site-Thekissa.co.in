@@ -20,7 +20,6 @@ import {
   Users,
 } from 'lucide-react';
 import {
-  addLocalBooking,
   adminLockRemaining,
   clearAdminFails,
   getLocalBookings,
@@ -66,14 +65,14 @@ const statusStyle: Record<string, string> = {
 
 function toCSV(rows: Record<string, any>[]): string {
   if (!rows.length) return '';
-  const heads = Object.keys(rows[0]);
+  const heads = [...new Set(rows.flatMap((r) => Object.keys(r)))];
   // Excel formula-injection guard — prefix cells starting with = + - @ as text
   const esc = (v: any) => {
-    let s = String(v ?? '');
+    let s = typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v ?? '');
     if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return `"${s.replace(/"/g, '""')}"`;
   };
-  return [heads.join(','), ...rows.map((r) => heads.map((h) => esc(typeof r[h] === 'object' ? JSON.stringify(r[h]) : r[h])).join(','))].join('\n');
+  return '﻿' + [heads.join(','), ...rows.map((r) => heads.map((h) => esc(r[h])).join(','))].join('\n');
 }
 function downloadCSV(name: string, rows: Record<string, any>[]) {
   const blob = new Blob([toCSV(rows)], { type: 'text/csv' });
@@ -170,7 +169,7 @@ function ReplyCell({ b, reload, notify }: { b: BookingRow; reload: () => void; n
   const wa = waCustomerLink(b);
   const [kind, setKind] = useState<NotifyKind>('update');
   const [msg, setMsgText] = useState(() => buildNotifyMsg('update', b));
-  useEffect(() => { setMsgText(buildNotifyMsg(kind, b)); }, [kind, b.id]);
+  useEffect(() => { setMsgText(buildNotifyMsg(kind, b)); }, [kind, b]);
   return (
     <div className="min-w-[168px] max-w-[200px] space-y-1">
       <div className="flex gap-1">
@@ -258,13 +257,7 @@ export default function Admin() {
       const { data } = await supabase.from('bookings').select('*').order('created_at', { ascending: false }).limit(200);
       if (data) setBookings(data as any);
     } else {
-      let all = getLocalBookings();
-      if (all.length === 0 && !localStorage.getItem('raasleela-seeded')) {
-        localStorage.setItem('raasleela-seeded', '1');
-        addLocalBooking({ name: 'Priya Sharma', phone: '9876543210', category: 'Women Chaniya Choli', size: 'M (36)', event_date: '2026-10-15', plan: '1 day', note: 'RL-01 red', items: [{ id: 'RL-01', qty: 1 }], subtotal: 1499, total: 1499 });
-        all = getLocalBookings();
-      }
-      setBookings(all as BookingRow[]);
+      setBookings(getLocalBookings() as BookingRow[]);
     }
   };
 
@@ -304,7 +297,8 @@ export default function Admin() {
     if (statusFilter !== 'all' && b.status !== statusFilter) return false;
     const s = bq.trim().toLowerCase();
     if (!s) return true;
-    return `${b.order_id || ''} ${b.id || ''} ${b.name || ''} ${b.phone || ''}`.toLowerCase().includes(s);
+    const items = Array.isArray(b.items) ? b.items.map((it: any) => `${it?.name || ''} ${it?.id || ''}`).join(' ') : '';
+    return `${b.order_id || ''} ${b.id || ''} ${b.name || ''} ${b.phone || ''} ${b.address || ''} ${b.admin_note || ''} ${b.note || ''} ${b.payment_id || ''} ${items}`.toLowerCase().includes(s);
   });
 
   const login = async (e: React.FormEvent) => {
@@ -674,7 +668,7 @@ export default function Admin() {
                 <div className="flex flex-col sm:flex-row gap-2">
                   <label className="flex-1 flex items-center gap-2 bg-white border rounded-xl px-3.5">
                     <Search size={15} className="text-[#8a7584] shrink-0" />
-                    <input value={bq} onChange={(e) => setBq(e.target.value)} placeholder="Search by name, order ID or mobile…" className="py-2.5 outline-none w-full text-sm bg-transparent" />
+                    <input value={bq} onChange={(e) => setBq(e.target.value)} placeholder="Search name, order ID, mobile, address…" className="py-2.5 outline-none w-full text-sm bg-transparent" />
                     {bq && <button onClick={() => setBq('')} title="Clear search" className="text-[#8a7584] hover:text-black text-lg leading-none">×</button>}
                   </label>
                   <button onClick={() => downloadCSV('bookings.csv', filteredBookings)} className="text-xs font-bold border rounded-xl px-3.5 py-2.5 bg-white shrink-0">Export CSV</button>
@@ -725,7 +719,14 @@ export default function Admin() {
                               onClick={async () => {
                                 const next = b.deposit_status === 'collected' ? 'refunded' : b.deposit_status === 'refunded' ? 'pending' : 'collected';
                                 if (useCloud && supabase) {
-                                  try { await supabase.from('bookings').update({ deposit_status: next }).eq('id', b.id); } catch { /* purana schema */ }
+                                  try {
+                                    const { error } = await supabase.from('bookings').update({ deposit_status: next }).eq('id', b.id);
+                                    if (error) throw error;
+                                  } catch (e: any) {
+                                    setMsg('Could not save deposit status: ' + (e?.message || 'unknown error'));
+                                    setTimeout(() => setMsg(''), 4000);
+                                    return;
+                                  }
                                 } else {
                                   updateLocalBooking(b.id, { deposit_status: next });
                                 }
@@ -743,7 +744,14 @@ export default function Admin() {
                                 onClick={async () => {
                                   const next = b.payment_status === 'verified' ? 'unverified' : 'verified';
                                   if (useCloud && supabase) {
-                                    try { await supabase.from('bookings').update({ payment_status: next }).eq('id', b.id); } catch { /* purana schema */ }
+                                    try {
+                                      const { error } = await supabase.from('bookings').update({ payment_status: next }).eq('id', b.id);
+                                      if (error) throw error;
+                                    } catch (e: any) {
+                                      setMsg('Could not save payment status: ' + (e?.message || 'unknown error'));
+                                      setTimeout(() => setMsg(''), 4000);
+                                      return;
+                                    }
                                   } else {
                                     updateLocalBooking(b.id, { payment_status: next });
                                   }
@@ -761,7 +769,17 @@ export default function Admin() {
                             <div className="flex justify-end gap-1 flex-wrap">
                               {STATUSES.map((s) => (
                                 <button key={s} onClick={async () => {
-                                  if (useCloud && supabase) { await supabase.from('bookings').update({ status: s }).eq('id', b.id); loadBookings(); }
+                                  if (useCloud && supabase) {
+                                    try {
+                                      const { error } = await supabase.from('bookings').update({ status: s }).eq('id', b.id);
+                                      if (error) throw error;
+                                    } catch (e: any) {
+                                      setMsg('Could not save status: ' + (e?.message || 'unknown error'));
+                                      setTimeout(() => setMsg(''), 4000);
+                                      return;
+                                    }
+                                    loadBookings();
+                                  }
                                   else { updateLocalBooking(b.id, { status: s }); loadBookings(); }
                                 }} className={`text-[10.5px] font-bold rounded-full px-2 py-1 border capitalize ${b.status === s ? 'bg-[#1a0f1e] text-white' : 'hover:border-black'}`}>{s}</button>
                               ))}

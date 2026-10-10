@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { Copy, ExternalLink, Navigation, Plus, Trash2, Truck } from 'lucide-react';
 import DeliveryMap, { ICON_HOME } from '../../components/DeliveryMap';
 import { STORE_POS, getLocalDeliveries, listDeliveries, makeCode, saveLocalDeliveries, upsertDelivery, type Delivery } from '../../lib/delivery';
+import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import { encodeSnapshot, publishPing } from '../../lib/liveTrack';
 
 function PickMap({ lat, lng, onPick }: { lat: number; lng: number; onPick: (a: number, b: number) => void }) {
@@ -54,11 +55,19 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
   const active = list.filter((d) => d.status !== 'delivered');
   const current = list.find((d) => d.code === focus) ?? active[0] ?? list[0] ?? null;
 
+  const uniqueCode = () => {
+    const taken = new Set(list.map((x) => x.code));
+    let c = makeCode();
+    let guard = 0;
+    while (taken.has(c) && guard++ < 8) c = makeCode();
+    return c;
+  };
+
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!f.customer.trim() || !f.agent.trim()) { alert('Customer + agent name required'); return; }
     const d: Delivery = {
-      code: makeCode(), bookingId: f.bookingId || Date.now(),
+      code: uniqueCode(), bookingId: f.bookingId || Date.now(),
       customer: f.customer, phone: f.phone, address: f.address || 'Indore',
       destLat: Number(f.lat), destLng: Number(f.lng),
       agent: f.agent, agentPhone: f.agentPhone,
@@ -73,6 +82,9 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
 
   const remove = async (code: string) => {
     if (!confirm(`Delete delivery ${code}?`)) return;
+    if (isSupabaseConfigured && supabase) {
+      try { await supabase.from('deliveries').delete().eq('code', code); } catch { /* ignore — local copy still removed */ }
+    }
     saveLocalDeliveries(getLocalDeliveries().filter((x) => x.code !== code));
     refresh();
   };
@@ -139,7 +151,7 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
   // One-click demo — client turant /track par test kar sake (delete bhi ho jayega)
   const loadDemo = async () => {
     const d: Delivery = {
-      code: makeCode(), bookingId: 'demo',
+      code: uniqueCode(), bookingId: 'demo',
       customer: 'Demo Customer', phone: '9876543210', address: 'Vijay Nagar, Indore',
       destLat: 22.748, destLng: 75.893,
       agent: 'Demo Rider', agentPhone: '',
@@ -152,7 +164,17 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
     refresh();
   };
 
-  const copy = (t: string) => navigator.clipboard?.writeText(t);
+  const copy = async (t: string) => {
+    try { await navigator.clipboard?.writeText(t); }
+    catch {
+      const ta = document.createElement('textarea');
+      ta.value = t;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch { /* ignore */ }
+      ta.remove();
+    }
+  };
 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
 

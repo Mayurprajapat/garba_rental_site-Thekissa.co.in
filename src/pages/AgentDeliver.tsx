@@ -10,6 +10,9 @@ export default function AgentDeliver() {
   const [msg, setMsg] = useState('Loading…');
   const [sharing, setSharing] = useState(false);
   const watchId = useRef<number | null>(null);
+  // Latest delivery ka ref — GPS callback purana status na bheje
+  const dRef = useRef(d);
+  dRef.current = d;
 
   const load = async () => {
     const row = await getDelivery(code);
@@ -22,8 +25,9 @@ export default function AgentDeliver() {
   useEffect(() => { load(); const i = setInterval(load, 8000); return () => clearInterval(i); }, [code]);
 
   const push = async (lat: number, lng: number, status?: string) => {
-    if (!d) return;
-    const next = { ...d, agentLat: lat, agentLng: lng, status: (status || d.status || 'onway') as Delivery['status'], updatedAt: new Date().toISOString() };
+    const cur = dRef.current;
+    if (!cur) return;
+    const next = { ...cur, agentLat: lat, agentLng: lng, status: (status || cur.status || 'onway') as Delivery['status'], updatedAt: new Date().toISOString() };
     setD(next);
     await upsertDelivery(next);
     // Live: customer ka map turant update (bina account ke)

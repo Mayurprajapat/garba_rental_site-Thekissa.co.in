@@ -10,6 +10,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { getSiteContent, useSiteVersion } from '../lib/siteContent';
 import { isValidVpa, merchantUpi, upiUrl } from '../lib/upi';
 import { clearMyOrders, getMyOrders, saveMyOrder, type MyOrder } from '../lib/myOrders';
+import { promoDiscount } from '../store/useStore';
 import { getLocalBookings } from '../lib/localAdmin';
 import { useStore } from '../store/useStore';
 import SpinViewer from './SpinViewer';
@@ -32,7 +33,9 @@ export function QuickView() {
     if (!p) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setQuickView(null); };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
   }, [p]);
   const look = useMemo(() => (p ? lookFor(p) : []), [p]);
   const photos = useMemo(() => (p ? photosFor(p) : []), [p]);
@@ -90,7 +93,7 @@ export function QuickView() {
             )}
             </div>
             <div className="p-4 sm:p-5 min-h-0 md:max-h-[88vh] md:overflow-y-auto md:overscroll-contain">
-              <button onClick={() => setQuickView(null)} aria-label="Close" className="absolute top-4 right-4 w-9 h-9 grid place-items-center rounded-full bg-black/[.06] backdrop-blur hover:bg-[#641629] hover:text-white transition z-[3]"><X size={16} /></button>
+              <button onClick={() => setQuickView(null)} aria-label="Close" className="absolute top-4 right-4 w-10 h-10 grid place-items-center rounded-full bg-black/[.06] backdrop-blur hover:bg-[#641629] hover:text-white transition z-[3]"><X size={16} /></button>
               <p className="text-[11px] font-bold tracking-[0.14em] text-neutral-400">{p.id} · {p.fabric.toUpperCase()}</p>
               <h3 className="premium-heading font-display font-black text-[22px] leading-tight mt-1.5 text-black">{p.name}</h3>
               <p className="text-[13px] text-neutral-500 mt-0.5">{p.hindi}</p>
@@ -146,12 +149,12 @@ export function QuickView() {
               <div className="flex items-center justify-between mt-4 border border-black/10 rounded-2xl px-3.5 py-2.5">
                 <span className="text-[12.5px] font-bold">Quantity <span className="block text-[11px] font-normal text-black/50">How many dresses do you need?</span></span>
                 <span className="flex items-center gap-2">
-                  <button onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={qty <= 1} aria-label="Decrease quantity" className="w-8 h-8 grid place-items-center rounded-full border border-black/15 hover:bg-black hover:text-white transition disabled:opacity-30"><Minus size={15} /></button>
+                  <button onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={qty <= 1} aria-label="Decrease quantity" className="w-9 h-9 grid place-items-center rounded-full border border-black/15 hover:bg-black hover:text-white transition disabled:opacity-30"><Minus size={15} /></button>
                   <b className="w-6 text-center text-[15px] tabular-nums">{qty}</b>
-                  <button onClick={() => setQty((q) => Math.min(10, q + 1))} disabled={qty >= 10} aria-label="Increase quantity" className="w-8 h-8 grid place-items-center rounded-full border border-black/15 hover:bg-black hover:text-white transition disabled:opacity-30"><Plus size={15} /></button>
+                  <button onClick={() => setQty((q) => Math.min(10, q + 1))} disabled={qty >= 10} aria-label="Increase quantity" className="w-9 h-9 grid place-items-center rounded-full border border-black/15 hover:bg-black hover:text-white transition disabled:opacity-30"><Plus size={15} /></button>
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-2 mt-3">
+              <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-2 mt-3">
                 <button onClick={addDress} disabled={soldOut} className="btn-primary !py-3 !text-[13px] disabled:opacity-40"><ShoppingBasket size={15} /> {soldOut ? 'Out of stock' : <>Add {qty > 1 ? `${qty} ` : ''}to list{pickedTotal ? ` +₹${pickedTotal.toLocaleString('en-IN')}` : ''}</>}</button>
                 <button onClick={() => toggleWish(p.id)} className="btn-outline-dark !py-3 !text-[13px]"><Heart size={15} className={wishlist.includes(p.id) ? 'fill-[#641629] text-[#641629]' : ''} /> Wishlist</button>
               </div>
@@ -207,9 +210,20 @@ export function CartDrawer() {
   }, [open, cart.length]);
   const [order, setOrder] = useState<{ id: string; paymentId: string; mode: string; token: number; total: number; deposit: number; lines: string[] } | null>(null);
   const [payChoice, setPayChoice] = useState<'half' | 'full'>('full');
+  const [promo, setPromo] = useState('');
 
   const rowPrice = (r: { p: { rent1: number; category: Category; desc: string; accessories?: Accessory[] }; plan: '1day'; addons?: string[]; single?: { price: number } }) =>
     r.single ? r.single.price : (r.p.rent1 + addonTotal(r.p, r.addons));
+
+  // Drawer khula ho to background page lock + Escape se band
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') resetAndClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+  }, [open]);
 
   useEffect(() => {
     const refreshOrders = () => {
@@ -235,7 +249,7 @@ export function CartDrawer() {
   const rows = useMemo(() => cart.map((c) => ({ ...c, p: products.find((x) => x.id === c.id)! })).filter((r) => r.p), [cart, products]);
   const subtotal = rows.reduce((a, r) => a + rowPrice(r) * r.qty, 0);
   const deposit = rows.reduce((a, r) => a + (r.single ? 0 : r.p.deposit * r.qty), 0);
-  const disc = 0;
+  const disc = promo.trim() ? promoDiscount(subtotal, promo) : 0;
   const total = subtotal - disc;
   const half = halfAdvance(total);
   const payAmount = payChoice === 'full' ? total : half;
@@ -243,7 +257,7 @@ export function CartDrawer() {
 
   const resetAndClose = () => {
     setOpen(false);
-    setTimeout(() => { setStep('cart'); setOrder(null); setErr(''); setUtr(''); setPayChoice('full'); }, 400);
+    setTimeout(() => { setStep('cart'); setOrder(null); setErr(''); setUtr(''); setPayChoice('full'); setPromo(''); setName(''); setPhone(''); setEmail(''); setAddress(''); }, 400);
   };
 
   const validateDetails = () => {
@@ -251,6 +265,7 @@ export function CartDrawer() {
     if (!isValidIndianPhone(phone)) return 'Please enter a valid 10-digit mobile number';
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Please enter a valid email address';
     if (!eventDate) return 'Please select the event date';
+    if (eventDate < new Date().toISOString().slice(0, 10)) return 'Please choose today or a future event date';
     if (!rows.length) return 'Your list is empty';
     return '';
   };
@@ -381,7 +396,7 @@ export function CartDrawer() {
                 <h3 className="font-semibold text-[17px] tracking-tight">Booking {step === 'cart' ? `(${cart.reduce((a, c) => a + c.qty, 0)})` : step === 'details' ? '— Details' : step === 'qr' ? '— QR Payment' : '— Confirmed'}</h3>
                 <p className="text-[11px] text-black/50 mt-0.5">Step {step === 'cart' ? '1/3 List' : step === 'details' ? '2/3 Details' : step === 'qr' ? '3/3 QR Payment' : '3/3 Invoice'} · 100% Secure checkout</p>
               </div>
-              <button onClick={resetAndClose} className="w-9 h-9 grid place-items-center rounded-full bg-black/5 hover:bg-[#641629] hover:text-white transition"><X size={16} /></button>
+              <button onClick={resetAndClose} aria-label="Close" className="w-10 h-10 grid place-items-center rounded-full bg-black/5 hover:bg-[#641629] hover:text-white transition"><X size={16} /></button>
             </div>
             {step === 'cart' && (
               <div className="flex gap-1.5 px-4 pt-3">
@@ -439,6 +454,11 @@ export function CartDrawer() {
                 </div>
                 <div className="bg-[#fafafa] border border-black/10 rounded-2xl p-4 text-sm space-y-1">
                   <div className="flex justify-between"><span>Subtotal</span><b>{formatINR(subtotal)}</b></div>
+                  {disc > 0 && <div className="flex justify-between text-emerald-700 font-semibold"><span>Promo {promo.trim().toUpperCase()}</span><b>−{formatINR(disc)}</b></div>}
+                  <div className="flex gap-2 pt-1">
+                    <input value={promo} onChange={(e) => setPromo(e.target.value.toUpperCase())} placeholder="Promo code (e.g. NAVRATRI20)" className="flex-1 min-w-0 border border-black/15 rounded-xl px-3 py-2 text-[13px] font-semibold tracking-wide outline-none focus:border-black uppercase placeholder:normal-case placeholder:font-normal placeholder:tracking-normal" maxLength={20} />
+                  </div>
+                  {promo.trim() && disc <= 0 && <p className="text-[11.5px] text-rose-700 font-medium">This code is not valid for this order.</p>}
                   <div className="flex justify-between text-[15px]"><span>Total rent</span><b>{formatINR(total)}</b></div>
                   <div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Security deposit (on delivery, refundable)</span><b>{formatINR(deposit)}</b></div>
                   <p className="text-[11px] text-black/50">Deposit is 100% refunded via UPI/cash within 24h of return · QR scan & pay via any UPI app</p>
@@ -480,7 +500,7 @@ export function CartDrawer() {
                         <QRCodeSVG value={upiLink} size={200} />
                       </div>
                       <p className="text-[11.5px] text-black/55 mt-2">GPay · PhonePe · Paytm · BHIM — scan with any UPI app</p>
-                      <button onClick={copyUpi} className="mt-2 text-[12.5px] font-bold border border-black/15 rounded-full px-4 py-2 hover:bg-black hover:text-white transition">
+                      <button onClick={copyUpi} className="mt-2 max-w-full text-[12.5px] font-bold border border-black/15 rounded-full px-4 py-2 hover:bg-black hover:text-white transition break-all">
                         {copied ? 'Copied ✓' : `Copy UPI ID: ${upiId}`}
                       </button>
                       <a href={upiLink} className="block mt-2 text-[12.5px] font-bold text-[#641629] underline">Open in UPI app →</a>
@@ -523,7 +543,7 @@ export function CartDrawer() {
                     </div>
                   ))}
                 </div>
-                <div className="p-4 border-t border-black/10 bg-white">
+                <div className="p-4 border-t border-black/10 bg-white" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
                   <p className="text-[11px] text-black/50 text-center">Orders stay saved on this device.</p>
                   {orders.length > 0 && <button onClick={() => { clearMyOrders(); setOrders([]); }} className="w-full text-xs text-black/50 underline mt-1">Clear history</button>}
                 </div>
@@ -565,17 +585,17 @@ export function CartDrawer() {
                         <div className="flex items-center gap-2 mt-1.5">
                           <span className="text-[11px] font-bold text-black/55">Qty:</span>
                           <span className="flex items-center gap-1.5 border border-black/10 rounded-full px-1 py-0.5">
-                            <button onClick={() => setQty(r.id, r.size, r.plan, r.addons, r.single?.name, r.qty - 1)} disabled={r.qty <= 1} aria-label="Decrease quantity" className="w-6 h-6 grid place-items-center rounded-full hover:bg-black hover:text-white transition disabled:opacity-30"><Minus size={13} /></button>
+                            <button onClick={() => setQty(r.id, r.size, r.plan, r.addons, r.single?.name, r.qty - 1)} disabled={r.qty <= 1} aria-label="Decrease quantity" className="w-8 h-8 grid place-items-center rounded-full hover:bg-black hover:text-white transition disabled:opacity-30"><Minus size={13} /></button>
                             <b className="w-5 text-center text-[13px] tabular-nums">{r.qty}</b>
-                            <button onClick={() => setQty(r.id, r.size, r.plan, r.addons, r.single?.name, r.qty + 1)} disabled={r.qty >= 10} aria-label="Increase quantity" className="w-6 h-6 grid place-items-center rounded-full hover:bg-black hover:text-white transition disabled:opacity-30"><Plus size={13} /></button>
+                            <button onClick={() => setQty(r.id, r.size, r.plan, r.addons, r.single?.name, r.qty + 1)} disabled={r.qty >= 10} aria-label="Increase quantity" className="w-8 h-8 grid place-items-center rounded-full hover:bg-black hover:text-white transition disabled:opacity-30"><Plus size={13} /></button>
                           </span>
                         </div>
                       </div>
-                      <button onClick={() => remove(r.id, r.size, r.plan, r.addons, r.single?.name)} className="text-red-600 p-1"><Trash2 size={16} /></button>
+                      <button onClick={() => remove(r.id, r.size, r.plan, r.addons, r.single?.name)} aria-label="Remove item" className="text-red-600 w-10 h-10 grid place-items-center rounded-full hover:bg-red-50 transition shrink-0"><Trash2 size={16} /></button>
                     </div>
                   ))}
                 </div>
-                <div className="p-4 border-t border-black/10 bg-white space-y-2.5">
+                <div className="p-4 border-t border-black/10 bg-white space-y-2.5" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
                   <div className="text-sm space-y-1">
                     <div className="flex justify-between"><span>Subtotal</span><b>{formatINR(subtotal)}</b></div>
                     <div className="flex justify-between text-[17px]"><span>Total rent</span><b>{formatINR(total)}</b></div>
@@ -597,11 +617,11 @@ export function CartDrawer() {
 export function Toasts() {
   const toasts = useStore((s) => s.toasts);
   return (
-    <div className="fixed bottom-24 sm:bottom-5 left-1/2 -translate-x-1/2 z-[60] space-y-2 w-max max-w-[90vw]">
+    <div className="fixed bottom-28 sm:bottom-5 left-1/2 -translate-x-1/2 z-[60] space-y-2 w-max max-w-[90vw]">
       <AnimatePresence>
         {toasts.map((t) => (
           <motion.div key={t.id} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }}
-            className="bg-[#3d0a18] text-white text-sm font-semibold rounded-full px-5 py-2.5 shadow-2xl flex items-center gap-2">
+            className="bg-[#3d0a18] text-white text-sm font-semibold rounded-full px-5 py-2.5 shadow-2xl flex items-center gap-2 text-center break-words whitespace-normal max-w-[90vw]">
             <Plus size={14} className="text-[#ffc93c]" /> {t.msg}
           </motion.div>
         ))}
@@ -613,6 +633,6 @@ export function Toasts() {
 export function TrackFloat() {
   return (
     <a href="/track"
-      className="fixed bottom-20 right-4 sm:bottom-5 sm:right-5 z-40 w-14 h-14 grid place-items-center rounded-full bg-[#221114] text-white shadow-2xl hover:scale-110 transition ring-1 ring-white/20" aria-label="Track your delivery"><MapPin size={24} /></a>
+      className="fixed bottom-24 right-4 sm:bottom-5 sm:right-5 z-40 w-14 h-14 grid place-items-center rounded-full bg-[#221114] text-white shadow-2xl hover:scale-110 transition ring-1 ring-white/20" aria-label="Track your delivery"><MapPin size={24} /></a>
   );
 }

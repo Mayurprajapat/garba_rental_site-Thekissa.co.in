@@ -74,7 +74,7 @@ export default function Hero() {
           className="relative hidden md:block"
         >
           <div className="rounded-[2rem] overflow-hidden ring-1 ring-black/10 shadow-[0_40px_80px_-40px_rgba(34,17,20,.45)]">
-            <img src="/images/g-hero.webp" alt="Mirror-work Chaniya Choli" className="w-full h-72 object-cover" />
+            <img src="/images/g-hero.webp" alt="Mirror-work Chaniya Choli" fetchPriority="high" className="w-full h-72 object-cover" />
           </div>
           <div className="absolute -bottom-5 -left-5 w-40 rounded-2xl overflow-hidden ring-4 ring-[#FAF5EC] shadow-xl">
             <img src="/images/g-chaniya2.webp" alt="Golden diva choli" className="w-full h-48 object-cover" />

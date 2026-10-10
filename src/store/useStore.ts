@@ -119,9 +119,8 @@ export const useStore = create<Store>()(
       removeFromCart: (id, size, plan, addons, singleName) =>
         set({
           cart: get().cart.filter((c) => !(c.id === id && c.size === size && c.plan === plan
-            && (singleName !== undefined
-              ? (c.single?.name ?? '') === singleName
-              : (!c.single && (addons === undefined || (c.addons ?? []).join('|') === addons.join('|')))))),
+            && (c.addons ?? []).join('|') === (addons ?? []).join('|')
+            && (c.single?.name ?? '') === (singleName ?? ''))),
         }),
       clearCart: () => set({ cart: [] }),
       toggleWish: (id) => {

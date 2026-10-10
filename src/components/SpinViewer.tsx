@@ -60,16 +60,17 @@ export default function SpinViewer({ photos, name }: { photos: string[]; name: s
       </span>
 
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/60 backdrop-blur rounded-full px-2 py-1.5">
-        <button onClick={() => step(-1)} aria-label="Previous angle" className="w-7 h-7 grid place-items-center rounded-full text-white hover:bg-white/20 transition text-sm font-bold">‹</button>
-        <div className="flex gap-1">
+        <button onClick={() => step(-1)} aria-label="Previous angle" className="w-9 h-9 grid place-items-center rounded-full text-white hover:bg-white/20 transition text-sm font-bold">‹</button>
+        <div className="flex gap-1 items-center">
           {photos.map((src, i) => (
-            <button key={`${src}-${i}`} onClick={() => { setAuto(false); setIdx(i); }} aria-label={`Angle ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all ${i === idx ? 'w-5 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'}`} />
+            <button key={`${src}-${i}`} onClick={() => { setAuto(false); setIdx(i); }} aria-label={`Angle ${i + 1}`} className="p-1">
+              <span className={`block h-1.5 rounded-full transition-all ${i === idx ? 'w-5 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'}`} />
+            </button>
           ))}
         </div>
-        <button onClick={() => step(1)} aria-label="Next angle" className="w-7 h-7 grid place-items-center rounded-full text-white hover:bg-white/20 transition text-sm font-bold">›</button>
+        <button onClick={() => step(1)} aria-label="Next angle" className="w-9 h-9 grid place-items-center rounded-full text-white hover:bg-white/20 transition text-sm font-bold">›</button>
         <button onClick={() => setAuto((v) => !v)} aria-label="Auto rotate"
-          className={`h-7 px-2.5 rounded-full text-[11px] font-bold transition ${auto ? 'bg-white text-black' : 'text-white hover:bg-white/20'}`}>
+          className={`h-9 px-2.5 rounded-full text-[11px] font-bold transition ${auto ? 'bg-white text-black' : 'text-white hover:bg-white/20'}`}>
           {auto ? '❚❚' : '▶'}
         </button>
       </div>

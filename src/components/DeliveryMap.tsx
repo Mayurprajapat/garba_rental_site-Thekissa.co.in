@@ -30,6 +30,8 @@ export default function DeliveryMap({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  // Pehle fix par hi center — customer pan kare to map jump na kare
+  const centered = useRef(false);
 
   useEffect(() => {
     if (!ref.current || mapRef.current) return;
@@ -56,9 +58,13 @@ export default function DeliveryMap({
         [[STORE_POS.lat, STORE_POS.lng], [agent.lat, agent.lng], [dest.lat, dest.lng]],
         { color: '#c9273a', weight: 3, dashArray: '6 6' }
       ).addTo(map);
-      map.setView([agent.lat, agent.lng], Math.max(map.getZoom(), 12));
+      if (!centered.current) {
+        map.setView([agent.lat, agent.lng], Math.max(map.getZoom(), 12));
+        centered.current = true;
+      }
     } else {
       map.setView([dest.lat, dest.lng], 13);
+      centered.current = false;
     }
   }, [agent?.lat, agent?.lng, dest.lat, dest.lng]);
 

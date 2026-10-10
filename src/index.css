@@ -19,8 +19,8 @@
 }
 
 html { scroll-behavior: smooth; }
-/* Sticky navbar (~100px) ke liye anchor offset — heading clip na ho */
-section[id] { scroll-margin-top: 104px; }
+/* Sticky navbar (~112px mobile) ke liye anchor offset — heading clip na ho */
+section[id] { scroll-margin-top: 112px; }
 
 /* ── Har phone par no-overflow / no-overlap guard ─────── */
 html, body { max-width: 100%; }
@@ -218,6 +218,15 @@ body {
 @keyframes shineSweep { to { transform: translateX(130%); } }
 @keyframes heartPop { 0% { transform: scale(1); } 40% { transform: scale(1.3); } 100% { transform: scale(1); } }
 .heart-pop { animation: heartPop 0.3s ease; }
+
+/* keyboard users ke liye visible focus */
+:focus-visible { outline: 2px solid #641629; outline-offset: 2px; }
+
+/* reduced-motion: festive animations band */
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee, .animate-floaty, .animate-diya, .glow-green, .pulse-dot { animation: none !important; }
+  html { scroll-behavior: auto; }
+}
 
 /* admin */
 .admin-shell { background: #f7f3ea; }

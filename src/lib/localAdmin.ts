@@ -107,6 +107,9 @@ export function getLocalProducts(): LiveProduct[] {
   const fresh = () => PRODUCTS.map((p) => ({ ...p, stock: 5, active: true }));
   // Hataye hue demo products (ladies-only site) — saved list me hon to saaf kar do
   const REMOVED_IDS = ['RL-02', 'RL-03', 'RL-04', 'RL-07', 'RL-10', 'RL-11', 'RL-12', 'RL-14', 'RL-18', 'RL-19', 'RL-20', 'RL-21', 'RL-22'];
+  const MERGED_KEY = 'raasleela-products-merged-v1';
+  const alreadyMerged = (() => { try { return localStorage.getItem(MERGED_KEY) === '1'; } catch { return true; } })();
+  const markMerged = () => { try { localStorage.setItem(MERGED_KEY, '1'); } catch { /* ignore */ } };
   try {
     const raw = localStorage.getItem(P_KEY);
     if (raw) {
@@ -115,11 +118,14 @@ export function getLocalProducts(): LiveProduct[] {
         if (arr.some((p: any) => REMOVED_IDS.includes(p?.id))) {
           arr = arr.filter((p: any) => !REMOVED_IDS.includes(p?.id));
           try { localStorage.setItem(P_KEY, JSON.stringify(arr)); } catch { /* ignore */ }
-          if (!arr.length) return fresh();
+          if (!arr.length) { markMerged(); return fresh(); }
         }
+        // Pehli baar ke baad merge band — taki admin ka hataya product wapas na aaye
+        if (alreadyMerged) return arr;
         // Naye demo products jo saved list me nahi hain — upar merge kar do (admin edits safe)
         const ids = new Set(arr.map((p: any) => p.id));
         const missing = PRODUCTS.filter((p) => !ids.has(p.id)).map((p) => ({ ...p, stock: 5, active: true }));
+        markMerged();
         if (missing.length) {
           const merged = [...missing, ...arr];
           try { localStorage.setItem(P_KEY, JSON.stringify(merged)); } catch { /* ignore */ }
@@ -129,6 +135,7 @@ export function getLocalProducts(): LiveProduct[] {
       }
     }
   } catch { /* ignore */ }
+  markMerged();
   return fresh();
 }
 

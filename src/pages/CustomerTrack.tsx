@@ -48,7 +48,7 @@ export default function CustomerTrack() {
   const agent = d.agentLat != null && d.agentLng != null ? { lat: d.agentLat, lng: d.agentLng } : null;
   const km = agent ? haversineKm(agent.lat, agent.lng, d.destLat, d.destLng) : null;
   const storeKm = haversineKm(STORE_POS.lat, STORE_POS.lng, d.destLat, d.destLng);
-  const stepIdx = STEPS.indexOf(d.status);
+  const stepIdx = Math.max(0, STEPS.indexOf(d.status));
 
   return (
     <div className="min-h-screen bg-[#fdf9f0]">
@@ -59,7 +59,7 @@ export default function CustomerTrack() {
         </Link>
         <p className="eyebrow mt-5">Live delivery · {d.code} {live && <span className="text-emerald-600 font-bold">· LIVE ●</span>}</p>
         <h1 className="font-display font-black text-[26px] sm:text-4xl mt-2 leading-tight">Your outfit is {d.status === 'delivered' ? 'delivered' : 'on its way'}.</h1>
-        <p className="text-[13px] text-[#6f5b6a] mt-2">{d.customer} · {d.address} · Agent: {d.agent} ({d.agentPhone})</p>
+        <p className="text-[13px] text-[#6f5b6a] mt-2 break-words">{d.customer} · {d.address} · Agent: {d.agent} ({d.agentPhone})</p>
 
         <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-5">
           <div className="card p-3 sm:p-4 text-center"><p className="text-[10px] font-bold text-[#8a7584]">DISTANCE</p><b className="font-display text-base sm:text-xl">{km !== null ? `${km.toFixed(1)} km` : `${storeKm.toFixed(1)} km`}</b></div>

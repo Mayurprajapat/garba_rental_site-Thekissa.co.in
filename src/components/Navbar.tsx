@@ -44,7 +44,7 @@ export default function Navbar() {
   const links: [string, string][] = [
     ['Collection', '#shop'],
     ['How it works', '#process'],
-    ['Reviews', '#faq'],
+    ['Reviews', '#reviews'],
     ['Contact', '#contact'],
   ];
 
@@ -88,11 +88,11 @@ export default function Navbar() {
             <button onClick={() => {
                 document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="w-10 h-10 hidden min-[380px]:grid place-items-center rounded-full border border-black/10 bg-white hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)] transition" title="Browse collection" aria-label="Browse collection">
+              className="w-10 h-10 grid place-items-center rounded-full border border-black/10 bg-white hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)] transition" title="Browse collection" aria-label="Browse collection">
               <Search size={16} />
             </button>
             <button onClick={toggleWishlist} title={wishOnly ? 'Show all outfits' : 'Show wishlist only'} aria-label="Wishlist"
-              className={`relative w-10 h-10 hidden min-[380px]:grid place-items-center rounded-full border bg-white transition ${wishOnly ? 'border-black bg-black text-white shadow-[0_8px_20px_-10px_rgba(0,0,0,.5)]' : 'border-black/10 hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)]'}`}>
+              className={`relative w-10 h-10 grid place-items-center rounded-full border bg-white transition ${wishOnly ? 'border-black bg-black text-white shadow-[0_8px_20px_-10px_rgba(0,0,0,.5)]' : 'border-black/10 hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)]'}`}>
               <Heart size={16} className={wishOnly ? 'fill-white text-white' : wishlist.length ? 'fill-black text-black' : 'text-black'} />
               {wishlist.length > 0 && <span className={`absolute -top-1 -right-1 text-[10px] font-bold min-w-5 h-5 px-1 grid place-items-center rounded-full ${wishOnly ? 'bg-white text-black' : 'bg-black text-white'}`}>{wishlist.length}</span>}
             </button>
