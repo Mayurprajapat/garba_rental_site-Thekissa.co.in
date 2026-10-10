@@ -236,7 +236,7 @@ export function RefundsPage() {
       <H>4. How refunds are paid</H>
       <Ul
         items={[
-          'Online payments: refunded to the original source (UPI/bank/card) within 5–7 working days via Razorpay.',
+          'Online payments: refunded to the original source (UPI/bank/card) within 1 to 2 working days.',
           'Pay-on-delivery bookings: refunded via UPI within 48 hours of approval.',
           'Deposit refunds: via UPI/cash within 24 hours of return and quality check.',
         ]}
