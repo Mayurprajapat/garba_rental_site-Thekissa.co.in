@@ -67,7 +67,12 @@ const statusStyle: Record<string, string> = {
 function toCSV(rows: Record<string, any>[]): string {
   if (!rows.length) return '';
   const heads = Object.keys(rows[0]);
-  const esc = (v: any) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  // Excel formula-injection guard — prefix cells starting with = + - @ as text
+  const esc = (v: any) => {
+    let s = String(v ?? '');
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+    return `"${s.replace(/"/g, '""')}"`;
+  };
   return [heads.join(','), ...rows.map((r) => heads.map((h) => esc(typeof r[h] === 'object' ? JSON.stringify(r[h]) : r[h])).join(','))].join('\n');
 }
 function downloadCSV(name: string, rows: Record<string, any>[]) {

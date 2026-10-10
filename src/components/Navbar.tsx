@@ -67,7 +67,7 @@ export default function Navbar() {
             <span className="group-hover:scale-105 transition"><Logo /></span>
             <span className="leading-tight min-w-0 shrink-0">
               <b className="font-display font-black text-[15px] min-[400px]:text-[19px] sm:text-[22px] block text-[#641629] tracking-tight whitespace-nowrap">{STORE.brand}</b>
-              <small className="hidden min-[400px]:block text-[8.5px] sm:text-[9px] tracking-[0.2em] text-[#8a6d00] font-bold">GARBHA & FESTIVE RENTALS</small>
+              <small className="hidden min-[400px]:block text-[8.5px] sm:text-[9px] tracking-[0.2em] text-[#8a6d00] font-bold">GARBA & FESTIVE RENTALS</small>
             </span>
           </a>
 

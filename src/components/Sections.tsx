@@ -141,6 +141,7 @@ export function Booking() {
   const pointIcons = [Ruler, Clock, ShieldCheck];
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     setSaving(true);
     await saveBooking({
       name: f.name, phone: f.phone, category: f.cat, size: '',
@@ -190,7 +191,7 @@ export function Booking() {
           </div>
           <label className="label-pro block">Notes<input value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="Preferred colour, size and product ID e.g. RL-01" className="input-pro mt-1.5" /></label>
           <label aria-hidden className="hp-trap">Website<input value={f.web} onChange={(e) => setF({ ...f, web: e.target.value })} tabIndex={-1} autoComplete="off" className="input-pro mt-1.5" /></label>
-          <button className="btn-primary w-full !py-3"><Mail size={15} /> {saving ? 'Reserving…' : done ? 'Reserved — send the email' : 'Confirm on Email'} </button>
+          <button disabled={saving} className="btn-primary w-full !py-3 disabled:opacity-60"><Mail size={15} /> {saving ? 'Reserving…' : done ? 'Reserved — send the email' : 'Confirm on Email'} </button>
           <p className="text-[11px] text-[#8a7584] text-center flex items-center justify-center gap-1.5"><Sparkles size={12} /> No advance needed to enquire · Reply within 30 minutes, 10 AM–9 PM</p>
         </form>
       </div>

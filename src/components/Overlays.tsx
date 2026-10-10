@@ -319,13 +319,19 @@ export function CartDrawer() {
   };
 
   const confirmQrPaid = async () => {
+    if (paying) return;
     if (!/^\d{12}$/.test(utr.trim()) && utr.trim() !== '') { setErr('The UTR is 12 digits — copy it from your UPI app after payment (or leave it empty).'); return; }
     setErr('');
     setPaying(true);
     const amt = payChoice === 'full' ? total : half;
     const mode = payChoice === 'full' ? 'upi-qr-full' : 'upi-qr-half';
     try {
-      const orderId = makeOrderId();
+      let orderId = makeOrderId();
+      try {
+        const taken = new Set([...getMyOrders().map((o) => o.id), ...getLocalBookings().map((b) => b.order_id)]);
+        let guard = 0;
+        while (taken.has(orderId) && guard++ < 5) orderId = makeOrderId();
+      } catch { /* ignore */ }
       const ref = utr.trim();
       await saveBooking({
         order_id: orderId,
@@ -398,7 +404,7 @@ export function CartDrawer() {
                     <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Order ID</span><b className="text-right break-words min-w-0">{order.id}</b></div>
                     <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Name</span><b className="text-right break-words min-w-0">{name}</b></div>
                     {address.trim() && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Delivery</span><b className="text-[12.5px] text-right break-words min-w-0">{address.trim()}</b></div>}
-                    <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Payment</span><b className="text-right break-words min-w-0">{order.mode === 'upi-qr-full' ? `Full paid via QR ${formatINR(order.token)}` : order.mode === 'upi-qr-half' ? `Half paid via QR ${formatINR(order.token)} · Balance ${formatINR(order.total - order.token)} on delivery` : order.mode === 'upi-qr' ? `Token paid via QR ${formatINR(order.token)}` : 'Pay on delivery'}</b></div>
+                    <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Payment</span><b className="text-right break-words min-w-0">{order.mode === 'upi-qr-full' ? `Full claimed via QR ${formatINR(order.token)} · verification pending` : order.mode === 'upi-qr-half' ? `Half claimed via QR ${formatINR(order.token)} · Balance ${formatINR(order.total - order.token)} on delivery · verification pending` : order.mode === 'upi-qr' ? `Token claimed via QR ${formatINR(order.token)} · verification pending` : 'Pay on delivery'}</b></div>
                     {order.paymentId && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Txn ID</span><b className="text-[12px] text-right break-all">{order.paymentId}</b></div>}
                     <div className="border-t border-black/10 my-2 pt-2 flex justify-between"><span>Total rent</span><b>{formatINR(order.total)}</b></div>
                     <div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Security deposit (on delivery, refundable)</span><b>{formatINR(order.deposit)}</b></div>
@@ -507,7 +513,7 @@ export function CartDrawer() {
                         ))}
                       </div>
                       <div className="border-t border-black/10 mt-2 pt-2 flex justify-between text-[13px]"><span>Total rent</span><b>{formatINR(o.total)}</b></div>
-                      <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)} paid via QR` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} paid via QR · Balance ${formatINR(o.total - o.token)} on delivery` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} paid via QR` : 'Pay on delivery'} · Deposit {formatINR(o.deposit)} (refundable)</p>
+                      <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)} claimed via QR · verification pending` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} on delivery · verification pending` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR · verification pending` : 'Pay on delivery'} · Deposit {formatINR(o.deposit)} (refundable)</p>
                       <span className={`inline-block mt-1 text-[10.5px] font-bold rounded-full px-2 py-0.5 border ${o.status === 'cancelled' ? 'text-rose-800 bg-rose-50 border-rose-200' : o.status === 'delivered' || o.status === 'returned' ? 'text-violet-800 bg-violet-50 border-violet-200' : 'text-emerald-800 bg-emerald-50 border-emerald-200'}`}>
                         {o.status === 'cancelled' ? '✕ Not available' : o.status === 'delivered' ? '✓ Delivered' : o.status === 'returned' ? '✓ Returned' : o.status === 'confirmed' ? '✓ Confirmed — will be delivered' : '✓ Order confirmed'}
                       </span>
