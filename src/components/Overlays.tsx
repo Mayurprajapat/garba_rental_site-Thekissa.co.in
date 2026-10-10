@@ -19,7 +19,6 @@ export function QuickView() {
   const toggleWish = useStore((s) => s.toggleWish);
   const wishlist = useStore((s) => s.wishlist);
   const p = products.find((x) => x.id === id) ?? null;
-  const [size, setSize] = useState('M');
   const [plan, setPlan] = useState<'3day' | '9day'>('3day');
   const [picked, setPicked] = useState<string[]>([]);
   const [activeHot, setActiveHot] = useState<string | null>(null);
@@ -45,7 +44,7 @@ export function QuickView() {
     setPicked((prev) => (prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name]));
   const addDress = () => {
     if (!p) return;
-    addToCart(p.id, p.sizes.includes(size) ? size : p.sizes[0], plan, picked.length ? picked : undefined);
+    addToCart(p.id, 'Free size', plan, picked.length ? picked : undefined);
     setQuickView(null);
   };
   const tapSpot = (key: string) => setActiveHot((prev) => (prev === key ? null : key));
@@ -176,12 +175,6 @@ export function QuickView() {
                   )}
                 </div>
               )}
-              <div className="mt-5">
-                <p className="label-pro">Select size</p>
-                <div className="flex flex-wrap gap-1.5 mt-2">{p.sizes.map((s) => (
-                  <button key={s} onClick={() => setSize(s)} className={`text-xs font-semibold border rounded-full px-3.5 py-2 transition ${size === s ? 'bg-[#641629] text-white border-[#641629]' : 'border-[#641629]/15 hover:border-[#641629]/40'}`}>{s}</button>
-                ))}</div>
-              </div>
               <div className="mt-4">
                 <p className="label-pro">Rental plan</p>
                 <div className="grid grid-cols-2 gap-2 mt-2">
@@ -189,13 +182,13 @@ export function QuickView() {
                   <button onClick={() => setPlan('9day')} className={`border rounded-2xl p-3 text-left transition ${plan === '9day' ? 'border-[#641629] bg-[#faf7ef]' : 'border-[#641629]/12'}`}><b className="text-sm">9-day · ₹{p.rent9.toLocaleString('en-IN')}</b><p className="text-[11px] text-[#6f5b6a] mt-0.5">Full Navratri value</p></button>
                 </div>
               </div>
-              <div className="flex items-baseline gap-2 mt-3"><b className="font-display text-[22px]">₹{(plan === '3day' ? p.rent3 : p.rent9).toLocaleString('en-IN')}</b><s className="text-[#8a7584] text-sm">₹{p.buy.toLocaleString('en-IN')}</s></div>
+              <div className="flex items-baseline gap-2 mt-3"><b className="font-display text-[22px]">₹{(plan === '3day' ? p.rent3 : p.rent9).toLocaleString('en-IN')}</b><s className="text-[#8a7584] text-sm">₹{p.buy.toLocaleString('en-IN')}</s>{p.buy > (plan === '3day' ? p.rent3 : p.rent9) && <span className="text-[11px] font-black text-white bg-emerald-600 rounded-full px-2 py-0.5">SAVE {Math.round((1 - (plan === '3day' ? p.rent3 : p.rent9) / p.buy) * 100)}%</span>}</div>
               <p className="text-[11.5px] text-emerald-700 font-semibold mt-0.5">+ ₹{p.deposit.toLocaleString('en-IN')} fully refundable deposit</p>
               <div className="grid grid-cols-2 gap-2 mt-5">
                 <button onClick={addDress} className="btn-primary !py-3 !text-[13px]"><ShoppingBasket size={15} /> Add to list{pickedTotal ? ` +₹${pickedTotal.toLocaleString('en-IN')}` : ''}</button>
                 <button onClick={() => toggleWish(p.id)} className="btn-outline-dark !py-3 !text-[13px]"><Heart size={15} className={wishlist.includes(p.id) ? 'fill-[#641629] text-[#641629]' : ''} /> Wishlist</button>
               </div>
-              <a href={waLink(`Hi TheKissa.co.in! Is ${p.name} (${p.id}), size ${size}, ${plan === '3day' ? '3-day' : '9-day'} available?`)} target="_blank" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 border border-[#641629]/15 rounded-full py-3 text-[13px] font-semibold hover:border-[#641629] transition"><MessageCircle size={15} /> Ask on WhatsApp</a>
+              <a href={waLink(`Hi TheKissa.co.in! Is ${p.name} (${p.id}), free size, ${plan === '3day' ? '3-day' : '9-day'} available?`)} target="_blank" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 border border-[#641629]/15 rounded-full py-3 text-[13px] font-semibold hover:border-[#641629] transition"><MessageCircle size={15} /> Ask on WhatsApp</a>
               <div className="grid grid-cols-3 gap-2 mt-5 text-[11px] font-medium text-[#6f5b6a] border-t border-[#641629]/8 pt-4">
                 <span className="flex items-center gap-1.5"><ShieldCheck size={13} className="text-emerald-600" /> Sanitised</span>
                 <span className="flex items-center gap-1.5"><Truck size={13} className="text-emerald-600" /> Same-day</span>
@@ -256,7 +249,7 @@ export function CartDrawer() {
   };
 
   const rowLabel = (r: { plan: '3day' | '9day'; size: string; qty: number; addons?: string[] }) => {
-    const base = `Size ${r.size}, ${r.plan === '3day' ? '3-day' : '9-day'} x${r.qty}`;
+    const base = `${r.plan === '3day' ? '3-day' : '9-day'} · Free size x${r.qty}`;
     return r.addons?.length ? `${base} + ${r.addons.join(', ')}` : base;
   };
 
@@ -453,7 +446,7 @@ export function CartDrawer() {
                         ) : (
                           <>
                             <b className="text-[13px] leading-tight block">{r.p.name}</b>
-                            <p className="text-[11px] text-black/55">Size {r.size} • {r.plan === '3day' ? '3-day' : '9-day'} • x{r.qty}</p>
+                            <p className="text-[11px] text-black/55">Free size • {r.plan === '3day' ? '3-day' : '9-day'} • x{r.qty}</p>
                           </>
                         )}
                         {!!r.addons?.length && <p className="text-[11px] text-emerald-700 font-medium">+ {r.addons.join(', ')}</p>}

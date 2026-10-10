@@ -36,7 +36,8 @@ function ProductCard({ p, plan, index }: { p: Product; plan: '3day' | '9day'; in
   const wished = wishlist.includes(p.id);
   const price = plan === '3day' ? p.rent3 : p.rent9;
   const rank = index < 3 ? `N°0${index + 1}` : null;
-  const sizeChip = p.sizes.length > 1 ? `${p.sizes[0]} – ${p.sizes[p.sizes.length - 1]}` : p.sizes[0];
+  const savePct = p.buy > price ? Math.round((1 - price / p.buy) * 100) : 0;
+  const freeDandiya = lookFor(p).some((a) => a.tag === 'free' && /dandiya/i.test(a.name));
   const frames = spinFramesFor(p);
   const catLabel = { women: 'Women', men: 'Men', kids: 'Kids', combo: 'Combo', premium: 'Premium' }[p.category] ?? p.category;
 
@@ -69,9 +70,8 @@ function ProductCard({ p, plan, index }: { p: Product; plan: '3day' | '9day'; in
       <div className="p-3 sm:p-3.5 flex flex-col flex-1">
         <h3 className="font-display font-semibold text-[14.5px] sm:text-[15.5px] leading-snug line-clamp-2 text-black tracking-tight min-h-[42px]">{p.name}</h3>
         <div className="flex flex-wrap gap-1.5 mt-2">
-          <span className="text-[10.5px] font-bold text-[#3d2b36] bg-[#faf3ea] border border-[#c9a44a]/40 rounded-full px-2.5 py-1">{sizeChip}</span>
           <span className="text-[10.5px] font-bold text-[#3d2b36] bg-[#faf3ea] border border-[#c9a44a]/40 rounded-full px-2.5 py-1 truncate max-w-full">{p.fabric}</span>
-          <span className="text-[10.5px] font-semibold text-neutral-400 border border-black/10 rounded-full px-2.5 py-1">Buy: ₹{p.buy.toLocaleString('en-IN')}</span>
+          {savePct > 0 && <span className="text-[10.5px] font-black text-white bg-emerald-600 rounded-full px-2.5 py-1">SAVE {savePct}%</span>}
         </div>
         <p className="text-[12px] text-neutral-500 mt-2 leading-relaxed line-clamp-2">{p.desc}</p>
         <div className="flex items-center gap-1 text-xs font-semibold text-[#8a6d00] mt-2">
@@ -85,6 +85,7 @@ function ProductCard({ p, plan, index }: { p: Product; plan: '3day' | '9day'; in
           <span className="text-[11.5px] font-semibold text-neutral-500">/ {plan === '3day' ? '3-day' : '9-day'} rent</span>
         </div>
         <p className="text-[12px] font-bold text-[#8a6d00] mt-1">+ ₹{p.deposit.toLocaleString('en-IN')} Deposit</p>
+        {freeDandiya && <p className="text-[11.5px] font-black text-emerald-700 mt-0.5">✓ FREE Dandiya pair included</p>}
         <button onClick={(e) => { e.stopPropagation(); setQuickView(p.id); }}
           className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-[#221114] shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 hover:-translate-y-px active:translate-y-0 transition">
           <ShoppingBasket size={14} /> Rent or Buy Outfit
