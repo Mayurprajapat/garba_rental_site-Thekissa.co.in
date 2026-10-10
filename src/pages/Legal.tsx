@@ -218,7 +218,7 @@ export function RefundsPage() {
       <H>1. Security deposit — 100% refundable</H>
       <P>
         The refundable deposit collected on delivery is returned via UPI/cash within 24 hours of outfit return and quality
-        check. Normal wear and light dry-cleanable stains are never deducted.
+        check.
       </P>
       <H>2. Cancellation by you</H>
       <Ul
