@@ -86,7 +86,7 @@ function ProductCard({ p, plan, index }: { p: Product; plan: '3day' | '9day'; in
         </div>
         <p className="text-[12px] font-bold text-[#8a6d00] mt-1">+ ₹{p.deposit.toLocaleString('en-IN')} Deposit</p>
         <button onClick={(e) => { e.stopPropagation(); setQuickView(p.id); }}
-          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-[#641629] shadow-[0_12px_22px_-12px_rgba(77,15,31,.5)] hover:brightness-110 hover:-translate-y-px active:translate-y-0 transition">
+          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-[#221114] shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 hover:-translate-y-px active:translate-y-0 transition">
           <ShoppingBasket size={14} /> Rent or Buy Outfit
         </button>
       </div>
@@ -118,7 +118,7 @@ function SingleCard({ item, plan }: { item: SingleItem; plan: '3day' | '9day' })
           <span className="text-[11.5px] font-semibold text-neutral-500">rent</span>
         </div>
         <button onClick={() => addToCart(item.productId, 'One-size', plan, undefined, { name: item.name, price: item.price })}
-          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-[#641629] shadow-[0_12px_22px_-12px_rgba(77,15,31,.5)] hover:brightness-110 hover:-translate-y-px active:translate-y-0 transition">
+          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-[#221114] shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 hover:-translate-y-px active:translate-y-0 transition">
           <ShoppingBasket size={14} /> Rent Only This
         </button>
         <button onClick={() => setQuickView(item.productId)} className="mt-1.5 text-[12px] font-semibold text-neutral-400 hover:text-[#641629] transition">View dress →</button>
@@ -237,16 +237,13 @@ export default function Shop() {
               const on = activeCat?.id === c.id;
               return (
                 <button key={c.id} onClick={() => pickCat(on ? null : c)}
-                  className={`shrink-0 w-[88px] sm:w-[104px] rounded-2xl overflow-hidden border bg-white text-left transition-all duration-200 ${on ? 'border-[#641629] ring-2 ring-[#641629]/60 shadow-[0_10px_24px_-12px_rgba(77,15,31,.6)]' : 'border-black/10 hover:border-[#641629]/50'}`}>
-                  <div className="h-[60px] sm:h-[72px] overflow-hidden bg-[#f4f1ea]">
-                    {c.img
-                      ? <img src={c.img} alt={c.label} loading="lazy" className="w-full h-full object-cover" />
-                      : <div className="w-full h-full grid place-items-center text-[10px] text-neutral-400">No photo</div>}
-                  </div>
-                  <div className="px-2 py-1.5">
-                    <p className="text-[11px] font-bold leading-tight truncate text-black">{c.label}</p>
-                    <p className="text-[9.5px] font-semibold text-neutral-400">{c.kind === 'item' ? 'Only item' : 'Dresses'}</p>
-                  </div>
+                  className={`relative shrink-0 w-[132px] sm:w-[148px] h-[88px] sm:h-[98px] rounded-2xl overflow-hidden text-left transition-all duration-200 ${on ? 'ring-[3px] ring-[#221114] ring-offset-2 ring-offset-[#faf8f6]' : 'ring-1 ring-black/10 hover:ring-black/30'}`}>
+                  {c.img
+                    ? <img src={c.img} alt={c.label} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                    : <div className="absolute inset-0 grid place-items-center text-[10px] text-neutral-400 bg-[#f4f1ea]">No photo</div>}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+                  <span className="absolute top-1.5 right-1.5 text-[8.5px] font-bold tracking-wider uppercase bg-white/85 backdrop-blur rounded-full px-1.5 py-0.5">{c.kind === 'item' ? 'Item' : 'Dresses'}</span>
+                  <span className="absolute bottom-1.5 left-2 right-2 text-[11.5px] font-bold text-white leading-tight line-clamp-2 drop-shadow">{c.label}</span>
                 </button>
               );
             })}

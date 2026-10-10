@@ -32,7 +32,8 @@ export function Process() {
   useSiteVersion();
   const proc = getSiteContent().process;
   return (
-    <section id="process" className="container-x py-5">
+    <section id="process" className="bg-[#F4EBDD] border-y border-[#4d0f1f]/10">
+      <div className="container-x py-5">
       <div className="flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
         <h2 className="premium-heading font-display font-black text-lg sm:text-xl">{proc.title}</h2>
         <a href="#book" className="text-[13px] font-semibold text-[#641629] underline underline-offset-2 sm:ml-auto shrink-0">Book now →</a>
@@ -46,6 +47,7 @@ export function Process() {
             <p className="text-[12px] text-[#6f5b6a] mt-1 leading-relaxed">{s.p}</p>
           </motion.div>
         ))}
+      </div>
       </div>
     </section>
   );
@@ -108,7 +110,8 @@ export function Faq() {
   useSiteVersion();
   const faqs = getSiteContent().faqs;
   return (
-    <section id="faq" className="max-w-3xl mx-auto px-4 py-5">
+    <section id="faq" className="bg-[#F4EBDD] border-y border-[#4d0f1f]/10">
+      <div className="max-w-3xl mx-auto px-4 py-5">
       <h2 className="premium-heading font-display font-black text-lg sm:text-xl text-center">Frequently asked questions</h2>
       <div className="mt-3 space-y-2">
         {faqs.map((f, i) => (
@@ -123,6 +126,7 @@ export function Faq() {
             )}</AnimatePresence>
           </div>
         ))}
+      </div>
       </div>
     </section>
   );
@@ -197,7 +201,7 @@ export function MobileBar() {
   return (
     <div className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-black/10 px-4 pt-2.5" style={{ paddingBottom: 'calc(0.65rem + env(safe-area-inset-bottom))' }}>
       <div className="grid grid-cols-2 gap-2.5">
-        <a href="#shop" className="bg-[#641629] text-white text-center font-semibold text-[13.5px] rounded-full py-3">View dresses</a>
+        <a href="#shop" className="bg-[#221114] text-white text-center font-semibold text-[13.5px] rounded-full py-3">View dresses</a>
         <a href={waLink('Hi! I want to rent a Garba dress')} target="_blank" className="bg-[#25d366] text-white text-center font-semibold text-[13.5px] rounded-full py-3">WhatsApp us</a>
       </div>
     </div>

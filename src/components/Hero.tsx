@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Search } from 'lucide-react';
+import { Search, ShieldCheck, Star, Truck } from 'lucide-react';
 import { useState } from 'react';
 import { getSiteContent, useSiteVersion } from '../lib/siteContent';
 import { useStore } from '../store/useStore';
@@ -26,49 +26,59 @@ export default function Hero() {
   };
 
   return (
-    <section id="top" className="hero-vignette bg-gradient-to-b from-[#641629] via-[#4d0f1f] to-[#2b070e] text-white relative overflow-hidden scroll-mt-28">
-      <div className="max-w-6xl mx-auto px-4 py-4 sm:py-5 md:py-6 relative grid md:grid-cols-[1.15fr_.85fr] gap-5 items-center [&>*]:min-w-0">
+    <section id="top" className="bg-[#FAF5EC] text-[#221114] relative overflow-hidden scroll-mt-28">
+      <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 w-[420px] h-[420px] rounded-full bg-[#c9a44a]/15 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -bottom-32 -left-24 w-[380px] h-[380px] rounded-full bg-[#641629]/10 blur-3xl" />
+      <div className="max-w-6xl mx-auto px-4 py-8 sm:py-12 relative grid md:grid-cols-[1.05fr_.95fr] gap-8 items-center [&>*]:min-w-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="min-w-0">
-          <h1 className="premium-heading font-semibold tracking-tight text-balance text-[22px] min-[400px]:text-[24px] sm:text-[34px] leading-[1.1] mt-2.5">
+          <span className="inline-flex items-center gap-1.5 bg-[#221114] text-[#e8c66a] text-[10.5px] font-bold tracking-[0.16em] rounded-full px-3.5 py-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#e8c66a]" /> THE FESTIVE EDIT · LIVE
+          </span>
+          <h1 className="font-display font-black tracking-tight text-balance text-[30px] min-[400px]:text-[34px] sm:text-[46px] leading-[1.05] mt-3">
             {hero.titleA}
             <br />
-            <span className="font-display-i bg-gradient-to-r from-[#f3dfa4] via-[#e8c66a] to-[#c9a44a] bg-clip-text text-transparent">{hero.titleB}</span>
+            <span className="font-display-i font-normal text-[#641629]">{hero.titleB}</span>
           </h1>
-          <p className="text-white/60 max-w-xl text-[13px] sm:text-[13.5px] leading-relaxed mt-2">
+          <p className="text-[#6f5b6a] max-w-xl text-[13.5px] sm:text-[15px] leading-relaxed mt-3">
             {hero.subtitle.includes('{price}') ? (
               <>
                 {hero.subtitle.split('{price}')[0]}
-                <b className="text-white">{hero.minPrice}</b>
+                <b className="text-[#221114]">{hero.minPrice}</b>
                 {hero.subtitle.split('{price}').slice(1).join('{price}')}
               </>
             ) : hero.subtitle}
           </p>
 
-          {/* Search — seedha yahin se dhoondho */}
-          <form onSubmit={onSearch} className="mt-3 flex items-center gap-2 bg-white rounded-full p-1 pl-3.5 max-w-lg shadow-[0_20px_50px_-20px_rgba(0,0,0,.8)] ring-1 ring-white/20">
+          <form onSubmit={onSearch} className="mt-4 flex items-center gap-2 bg-white rounded-2xl p-1.5 pl-4 max-w-lg shadow-[0_20px_45px_-24px_rgba(34,17,20,.35)] ring-1 ring-black/10">
             <Search size={17} className="text-black/35 shrink-0" />
             <input value={q} onChange={(e) => setQ(e.target.value)}
               placeholder="What are you looking for? — mirror, red, blouse…"
               className="flex-1 bg-transparent outline-none text-[14px] text-black placeholder:text-black/35 min-w-0" />
-            <button type="submit" className="bg-[#641629] text-white text-[12.5px] sm:text-[13px] font-bold rounded-full px-4 sm:px-5 py-2.5 shrink-0 hover:brightness-110 transition ring-1 ring-white/20">Search</button>
+            <button type="submit" className="bg-[#221114] text-white text-[12.5px] sm:text-[13px] font-bold rounded-xl px-4 sm:px-5 py-2.5 shrink-0 hover:bg-black transition">Search</button>
           </form>
 
-          <p className="text-[11px] text-white/45 mt-2.5">Sanitised · Same-day delivery · Refundable deposit</p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 text-[12.5px] font-semibold text-[#3d2b36]">
+            <span className="flex items-center gap-1.5"><Star size={14} className="fill-[#c9960a] text-[#c9960a]" /> 4.9 rated</span>
+            <span className="flex items-center gap-1.5"><Truck size={14} className="text-emerald-700" /> Same-day delivery</span>
+            <span className="flex items-center gap-1.5"><ShieldCheck size={14} className="text-emerald-700" /> Refundable deposit</span>
+          </div>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
           className="relative hidden md:block"
         >
-          <div className="rounded-3xl overflow-hidden ring-1 ring-white/15 bg-white/[.05] backdrop-blur shadow-[0_40px_80px_-40px_rgba(0,0,0,.9)]">
-            <img src="/images/g-hero.webp" alt="Mirror-work Chaniya Choli" className="w-full h-52 object-cover" />
-            <div className="px-5 py-3 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] tracking-[0.18em] text-[#e8c66a] font-bold">SIGNATURE · N°01</p>
-                <p className="text-[13px] font-medium mt-0.5">Mirror-work Chaniya Choli</p>
-              </div>
-              <div className="text-right"><b className="text-lg">₹1,499</b><p className="text-[11px] text-white/35 line-through">₹4,999</p></div>
-            </div>
+          <div className="rounded-[2rem] overflow-hidden ring-1 ring-black/10 shadow-[0_40px_80px_-40px_rgba(34,17,20,.45)]">
+            <img src="/images/g-hero.webp" alt="Mirror-work Chaniya Choli" className="w-full h-72 object-cover" />
+          </div>
+          <div className="absolute -bottom-5 -left-5 w-40 rounded-2xl overflow-hidden ring-4 ring-[#FAF5EC] shadow-xl">
+            <img src="/images/g-chaniya2.webp" alt="Golden diva choli" className="w-full h-48 object-cover" />
+          </div>
+          <div className="absolute -top-4 -right-2 bg-white rounded-2xl ring-1 ring-black/10 shadow-xl px-4 py-3 flex items-center gap-2.5">
+            <span className="bg-emerald-500 text-white font-bold text-[11px] px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+              <Star size={10} className="fill-white" />4.9
+            </span>
+            <span className="text-[12px] font-semibold leading-tight">2,000+ happy<br />rentals</span>
           </div>
         </motion.div>
       </div>

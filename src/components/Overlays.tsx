@@ -429,7 +429,7 @@ export function CartDrawer() {
                   <p className="text-[11px] text-black/50">Deposit is 100% refunded via UPI/cash within 24h of return · Secure UPI/Card via Razorpay</p>
                 </div>
                 {err && <p className="text-[12.5px] text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{err}</p>}
-                <button disabled={paying} onClick={payOnline} className="w-full bg-[#641629] text-white font-semibold rounded-full py-3.5 text-sm disabled:opacity-50 flex items-center justify-center gap-2"><CreditCard size={15} /> {paying ? 'Processing…' : `Pay ${formatINR(token)} Token Online`}</button>
+                <button disabled={paying} onClick={payOnline} className="w-full bg-[#221114] text-white font-semibold rounded-full py-3.5 text-sm disabled:opacity-50 flex items-center justify-center gap-2"><CreditCard size={15} /> {paying ? 'Processing…' : `Pay ${formatINR(token)} Token Online`}</button>
                 <p className="text-[11px] text-black/45 text-center">UPI · Cards · Netbanking — secure via Razorpay</p>
                 {!RAZORPAY_KEY_ID && <p className="text-[11px] text-black/45 text-center">Online payment is coming soon — please confirm with Pay on delivery for now.</p>}
                 <button disabled={paying} onClick={confirmWithoutPayment} className="w-full border border-black/15 font-semibold rounded-full py-3 text-sm hover:bg-[#641629] hover:border-[#641629] hover:text-white transition flex items-center justify-center gap-2"><MessageCircle size={15} /> Confirm without payment →</button>
@@ -475,7 +475,7 @@ export function CartDrawer() {
                     <div className="flex justify-between text-emerald-700"><span>Security deposit</span><b>{formatINR(deposit)}</b></div>
                     <p className="text-[11px] text-black/50">Deposit is 100% refundable — returned via UPI/cash within 24h of return. It is paid separately on delivery, over and above the rent.</p>
                   </div>
-                  <button disabled={rows.length === 0} onClick={() => setStep('details')} className="w-full bg-[#641629] text-white font-semibold rounded-full py-3.5 text-sm disabled:opacity-40 flex items-center justify-center gap-2"><ShoppingBasket size={15} /> Proceed to Checkout →</button>
+                  <button disabled={rows.length === 0} onClick={() => setStep('details')} className="w-full bg-[#221114] text-white font-semibold rounded-full py-3.5 text-sm disabled:opacity-40 flex items-center justify-center gap-2"><ShoppingBasket size={15} /> Proceed to Checkout →</button>
                   <button onClick={clear} className="w-full text-xs text-black/50 underline">Clear list</button>
                 </div>
               </>
@@ -506,6 +506,6 @@ export function Toasts() {
 export function TrackFloat() {
   return (
     <a href="/track"
-      className="fixed bottom-20 right-4 sm:bottom-5 sm:right-5 z-40 w-14 h-14 grid place-items-center rounded-full bg-[#641629] text-white shadow-2xl hover:scale-110 transition ring-1 ring-white/20" aria-label="Track your delivery"><MapPin size={24} /></a>
+      className="fixed bottom-20 right-4 sm:bottom-5 sm:right-5 z-40 w-14 h-14 grid place-items-center rounded-full bg-[#221114] text-white shadow-2xl hover:scale-110 transition ring-1 ring-white/20" aria-label="Track your delivery"><MapPin size={24} /></a>
   );
 }

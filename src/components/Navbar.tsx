@@ -51,7 +51,7 @@ export default function Navbar() {
   return (
     <header className={`sticky top-0 z-40 transition-all duration-300 ${scrolled ? 'shadow-[0_16px_40px_-20px_rgba(0,0,0,.35)]' : ''}`}>
       {site.announcement.show && (
-        <div className="bg-gradient-to-r from-[#4d0f1f] via-[#641629] to-[#4d0f1f] text-white">
+        <div className="bg-[#171013] text-white">
           <div className="container-x flex items-center justify-center gap-2.5 py-1.5 text-[11px] sm:text-xs tracking-wide">
             <span className="glow-green inline-flex items-center gap-1 rounded-full border border-emerald-300/70 bg-emerald-500/15 text-emerald-200 text-[10px] sm:text-[10.5px] font-bold tracking-[0.08em] px-2.5 py-1 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" /> {site.announcement.badge}
@@ -96,7 +96,7 @@ export default function Navbar() {
               <Heart size={16} className={wishOnly ? 'fill-white text-white' : wishlist.length ? 'fill-black text-black' : 'text-black'} />
               {wishlist.length > 0 && <span className={`absolute -top-1 -right-1 text-[10px] font-bold min-w-5 h-5 px-1 grid place-items-center rounded-full ${wishOnly ? 'bg-white text-black' : 'bg-black text-white'}`}>{wishlist.length}</span>}
             </button>
-            <button onClick={() => setCartOpen(true)} className="flex items-center gap-2 bg-[#641629] text-white text-[13px] font-semibold rounded-full pl-4 pr-1.5 py-1.5 hover:brightness-110 transition ring-1 ring-[#641629]/20 shadow-[0_10px_24px_-12px_rgba(100,22,41,.6)]">
+            <button onClick={() => setCartOpen(true)} className="flex items-center gap-2 bg-[#221114] text-white text-[13px] font-semibold rounded-full pl-4 pr-1.5 py-1.5 hover:brightness-125 transition ring-1 ring-black/20 shadow-[0_10px_24px_-12px_rgba(34,17,20,.6)]">
               <ShoppingBasket size={15} />
               <span className="hidden sm:inline">Booking list</span>
               <span className="bg-white text-black text-xs font-bold min-w-7 h-7 px-1.5 grid place-items-center rounded-full">{count}</span>

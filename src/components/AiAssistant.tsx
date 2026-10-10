@@ -47,7 +47,7 @@ export default function AiAssistant() {
       <button
         onClick={() => setOpen(!open)}
         aria-label="AI assistant"
-        className="fixed bottom-[9.5rem] sm:bottom-24 right-4 sm:right-5 z-40 h-13 w-13 p-3.5 rounded-full bg-[#641629] text-white shadow-[0_16px_36px_-12px_rgba(100,22,41,.6)] ring-1 ring-white/20 hover:scale-105 transition flex items-center gap-2"
+        className="fixed bottom-[9.5rem] sm:bottom-24 right-4 sm:right-5 z-40 h-13 w-13 p-3.5 rounded-full bg-[#221114] text-white shadow-[0_16px_36px_-12px_rgba(34,17,20,.6)] ring-1 ring-white/20 hover:scale-105 transition flex items-center gap-2"
       >
         {open ? <X size={20} /> : <Bot size={20} />}
         {!open && <span className="hidden sm:inline text-xs font-semibold pr-1">AI Help</span>}
@@ -112,7 +112,7 @@ export default function AiAssistant() {
                   placeholder="Type budget, size, colour…"
                   className="flex-1 min-w-0 border border-black/15 rounded-full px-4 py-2.5 text-sm outline-none focus:border-black"
                 />
-                <button aria-label="Send" className="w-10 h-10 grid place-items-center rounded-full bg-[#641629] text-white shrink-0"><Send size={15} /></button>
+                <button aria-label="Send" className="w-10 h-10 grid place-items-center rounded-full bg-[#221114] text-white shrink-0"><Send size={15} /></button>
               </form>
             </div>
           </motion.div>
