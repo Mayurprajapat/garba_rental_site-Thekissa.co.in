@@ -50,7 +50,7 @@ export const DEFAULT_CONTENT: SiteContent = {
   store: {
     brand: 'TheKissa.co.in',
     phone: '6268305900',
-    email: 'hello@thekissa.in',
+    email: 'support.thekissa.co.in@gmail.com',
     city: 'Indore',
     addressShort: 'Online only · Doorstep delivery in Indore',
     addressLong: 'Online-only rental studio · Indore, Madhya Pradesh, India (no walk-in store — doorstep delivery & pickup)',
@@ -115,10 +115,18 @@ function valid(c: any): c is SiteContent {
 }
 
 function normalize(c: SiteContent): SiteContent {
+  const savedStore = c.store || {};
   return {
     ...DEFAULT_CONTENT,
     ...c,
-    store: { ...DEFAULT_CONTENT.store, ...(c.store || {}) },
+    store: {
+      ...DEFAULT_CONTENT.store,
+      ...savedStore,
+      // Purana default email ho to naya admin email kar do
+      email: !savedStore.email || savedStore.email === 'hello@thekissa.in'
+        ? DEFAULT_CONTENT.store.email
+        : savedStore.email,
+    },
     announcement: { ...DEFAULT_CONTENT.announcement, ...(c.announcement || {}) },
     hero: { ...DEFAULT_CONTENT.hero, ...(c.hero || {}) },
     process: { ...DEFAULT_CONTENT.process, ...(c.process || {}) },
