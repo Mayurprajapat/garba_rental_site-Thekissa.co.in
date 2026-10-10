@@ -27,9 +27,9 @@ export default function Hero() {
 
   return (
     <section id="top" className="hero-vignette bg-gradient-to-b from-[#641629] via-[#4d0f1f] to-[#2b070e] text-white relative overflow-hidden scroll-mt-28">
-      <div className="max-w-6xl mx-auto px-4 py-5 sm:py-6 md:py-8 relative grid md:grid-cols-[1.15fr_.85fr] gap-5 items-center [&>*]:min-w-0">
+      <div className="max-w-6xl mx-auto px-4 py-4 sm:py-5 md:py-6 relative grid md:grid-cols-[1.15fr_.85fr] gap-5 items-center [&>*]:min-w-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="min-w-0">
-          <h1 className="premium-heading font-semibold tracking-tight text-balance text-[24px] min-[400px]:text-[27px] sm:text-[42px] leading-[1.1] mt-2.5">
+          <h1 className="premium-heading font-semibold tracking-tight text-balance text-[22px] min-[400px]:text-[24px] sm:text-[34px] leading-[1.1] mt-2.5">
             {hero.titleA}
             <br />
             <span className="font-display-i bg-gradient-to-r from-[#f3dfa4] via-[#e8c66a] to-[#c9a44a] bg-clip-text text-transparent">{hero.titleB}</span>
@@ -45,7 +45,7 @@ export default function Hero() {
           </p>
 
           {/* Search — seedha yahin se dhoondho */}
-          <form onSubmit={onSearch} className="mt-3.5 flex items-center gap-2 bg-white rounded-full p-1.5 pl-4 max-w-lg shadow-[0_20px_50px_-20px_rgba(0,0,0,.8)] ring-1 ring-white/20">
+          <form onSubmit={onSearch} className="mt-3 flex items-center gap-2 bg-white rounded-full p-1 pl-3.5 max-w-lg shadow-[0_20px_50px_-20px_rgba(0,0,0,.8)] ring-1 ring-white/20">
             <Search size={17} className="text-black/35 shrink-0" />
             <input value={q} onChange={(e) => setQ(e.target.value)}
               placeholder="What are you looking for? — mirror, red, blouse…"
@@ -53,7 +53,7 @@ export default function Hero() {
             <button type="submit" className="bg-gradient-to-r from-[#d92b3f] to-[#641629] text-white text-[12.5px] sm:text-[13px] font-bold rounded-full px-4 sm:px-5 py-2.5 shrink-0 hover:brightness-110 transition ring-1 ring-white/20">Search</button>
           </form>
 
-          <p className="text-[11px] text-white/45 mt-3.5">Sanitised · Same-day delivery · Refundable deposit</p>
+          <p className="text-[11px] text-white/45 mt-2.5">Sanitised · Same-day delivery · Refundable deposit</p>
         </motion.div>
 
         <motion.div

@@ -16,8 +16,8 @@ export default function LiveTicker() {
   const p = PRODUCTS[(i * 7) % PRODUCTS.length];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 mt-4">
-      <div className="bg-white border border-[#4a0e2e]/15 rounded-full shadow-sm px-4 py-2 flex items-center gap-2.5 overflow-hidden">
+    <div className="max-w-7xl mx-auto px-4 mt-3">
+      <div className="bg-white border border-[#4a0e2e]/15 rounded-full shadow-sm px-4 py-1.5 flex items-center gap-2.5 overflow-hidden">
         <span className="relative flex h-2.5 w-2.5 shrink-0">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />

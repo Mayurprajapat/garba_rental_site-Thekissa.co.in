@@ -58,7 +58,7 @@ export function QuickView() {
           <motion.div initial={{ y: 60, scale: 0.99 }} animate={{ y: 0, scale: 1 }} exit={{ y: 60, scale: 0.99 }} transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
             className="relative bg-white rounded-t-[1.5rem] sm:rounded-[1.5rem] max-w-4xl w-full overflow-y-auto md:overflow-hidden overscroll-contain grid md:grid-cols-[0.9fr_1.1fr] max-h-[94dvh] sm:max-h-[92vh] shadow-[0_60px_120px_-40px_rgba(0,0,0,.7)] ring-1 ring-black/10">
             <div className="bg-[#f4f1ea] flex flex-col min-h-0 img-sheen">
-              <div className="relative aspect-[3/4] max-h-[54dvh] md:aspect-auto md:h-[540px] md:max-h-[80vh] overflow-hidden shrink-0">
+              <div className="relative aspect-[3/4] max-h-[44dvh] md:aspect-auto md:h-[540px] md:max-h-[80vh] overflow-hidden shrink-0">
                 {spin && canSpin ? (
                   <SpinViewer photos={frames} name={p.name} />
                 ) : (
@@ -128,10 +128,10 @@ export function QuickView() {
               </div>
             )}
             </div>
-            <div className="p-5 sm:p-7 min-h-0 md:max-h-[88vh] md:overflow-y-auto md:overscroll-contain">
+            <div className="p-4 sm:p-5 min-h-0 md:max-h-[88vh] md:overflow-y-auto md:overscroll-contain">
               <button onClick={() => setQuickView(null)} aria-label="Close" className="absolute top-4 right-4 w-9 h-9 grid place-items-center rounded-full bg-black/[.06] backdrop-blur hover:bg-[#641629] hover:text-white transition z-[3]"><X size={16} /></button>
               <p className="text-[11px] font-bold tracking-[0.14em] text-neutral-400">{p.id} · {p.fabric.toUpperCase()}</p>
-              <h3 className="premium-heading font-display font-black text-[26px] leading-tight mt-1.5 text-black">{p.name}</h3>
+              <h3 className="premium-heading font-display font-black text-[22px] leading-tight mt-1.5 text-black">{p.name}</h3>
               <p className="text-[13px] text-neutral-500 mt-0.5">{p.hindi}</p>
               <div className="flex items-center gap-1.5 text-[13px] mt-2.5"><Star size={14} className="fill-[#c9960a] text-[#c9960a]" /><b>{p.rating}</b><span className="text-neutral-400">({p.reviews} reviews)</span></div>
               <p className="text-[13.5px] mt-3 leading-relaxed text-neutral-600">{p.desc}</p>
@@ -189,7 +189,7 @@ export function QuickView() {
                   <button onClick={() => setPlan('9day')} className={`border rounded-2xl p-3 text-left transition ${plan === '9day' ? 'border-[#641629] bg-[#faf7ef]' : 'border-[#641629]/12'}`}><b className="text-sm">9-day · ₹{p.rent9.toLocaleString('en-IN')}</b><p className="text-[11px] text-[#6f5b6a] mt-0.5">Full Navratri value</p></button>
                 </div>
               </div>
-              <div className="flex items-baseline gap-2 mt-4"><b className="font-display text-[26px]">₹{(plan === '3day' ? p.rent3 : p.rent9).toLocaleString('en-IN')}</b><s className="text-[#8a7584] text-sm">₹{p.buy.toLocaleString('en-IN')}</s></div>
+              <div className="flex items-baseline gap-2 mt-3"><b className="font-display text-[22px]">₹{(plan === '3day' ? p.rent3 : p.rent9).toLocaleString('en-IN')}</b><s className="text-[#8a7584] text-sm">₹{p.buy.toLocaleString('en-IN')}</s></div>
               <p className="text-[11.5px] text-emerald-700 font-semibold mt-0.5">+ ₹{p.deposit.toLocaleString('en-IN')} fully refundable deposit</p>
               <div className="grid grid-cols-2 gap-2 mt-5">
                 <button onClick={addDress} className="btn-primary !py-3 !text-[13px]"><ShoppingBasket size={15} /> Add to list{pickedTotal ? ` +₹${pickedTotal.toLocaleString('en-IN')}` : ''}</button>

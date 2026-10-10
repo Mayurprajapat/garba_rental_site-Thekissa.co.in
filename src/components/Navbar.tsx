@@ -52,7 +52,7 @@ export default function Navbar() {
     <header className={`sticky top-0 z-40 transition-all duration-300 ${scrolled ? 'shadow-[0_16px_40px_-20px_rgba(0,0,0,.35)]' : ''}`}>
       {site.announcement.show && (
         <div className="bg-gradient-to-r from-[#4d0f1f] via-[#641629] to-[#4d0f1f] text-white">
-          <div className="container-x flex items-center justify-center gap-2.5 py-2 text-[11px] sm:text-xs tracking-wide">
+          <div className="container-x flex items-center justify-center gap-2.5 py-1.5 text-[11px] sm:text-xs tracking-wide">
             <span className="glow-green inline-flex items-center gap-1 rounded-full border border-emerald-300/70 bg-emerald-500/15 text-emerald-200 text-[10px] sm:text-[10.5px] font-bold tracking-[0.08em] px-2.5 py-1 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" /> {site.announcement.badge}
             </span>
@@ -62,7 +62,7 @@ export default function Navbar() {
       )}
 
       <div className="glass border-b border-black/[.07]">
-        <div className="container-x h-[60px] sm:h-[68px] flex items-center justify-between gap-1.5 sm:gap-3">
+        <div className="container-x h-[56px] sm:h-[64px] flex items-center justify-between gap-1.5 sm:gap-3">
           <a href="#top" className="flex items-center gap-2 group min-w-0">
             <span className="group-hover:scale-105 transition"><Logo /></span>
             <span className="leading-tight min-w-0 shrink-0">

@@ -66,7 +66,7 @@ function ProductCard({ p, plan, index }: { p: Product; plan: '3day' | '9day'; in
           <span className="absolute bottom-3 left-3 z-[2] bg-black/65 backdrop-blur text-white text-[10px] font-bold tracking-wide rounded-full px-2.5 py-1">⟳ 360°</span>
         )}
       </div>
-      <div className="p-3.5 sm:p-4 flex flex-col flex-1">
+      <div className="p-3 sm:p-3.5 flex flex-col flex-1">
         <h3 className="font-display font-semibold text-[14.5px] sm:text-[15.5px] leading-snug line-clamp-2 text-black tracking-tight min-h-[42px]">{p.name}</h3>
         <div className="flex flex-wrap gap-1.5 mt-2">
           <span className="text-[10.5px] font-bold text-[#3d2b36] bg-[#faf3ea] border border-[#c9a44a]/40 rounded-full px-2.5 py-1">{sizeChip}</span>
@@ -79,14 +79,14 @@ function ProductCard({ p, plan, index }: { p: Product; plan: '3day' | '9day'; in
           <span className="text-[#8a7584] font-normal">({p.reviews})</span>
           <span className="ml-auto text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">{plan === '3day' ? '3-day' : '9-day'}</span>
         </div>
-        <div className="hairline-premium my-2.5" />
+        <div className="hairline-premium my-2" />
         <div className="flex items-baseline gap-2 mt-auto">
-          <b className="font-display text-[21px] sm:text-[22px] text-[#641629] tabular-nums leading-none">₹{price.toLocaleString('en-IN')}</b>
+          <b className="font-display text-[19px] sm:text-[20px] text-[#641629] tabular-nums leading-none">₹{price.toLocaleString('en-IN')}</b>
           <span className="text-[11.5px] font-semibold text-neutral-500">/ {plan === '3day' ? '3-day' : '9-day'} rent</span>
         </div>
         <p className="text-[12px] font-bold text-[#8a6d00] mt-1">+ ₹{p.deposit.toLocaleString('en-IN')} Deposit</p>
         <button onClick={(e) => { e.stopPropagation(); setQuickView(p.id); }}
-          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-3 bg-gradient-to-r from-[#e8590c] to-[#c9273a] shadow-[0_12px_24px_-12px_rgba(200,60,20,.65)] hover:brightness-110 hover:-translate-y-px active:translate-y-0 transition">
+          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-gradient-to-r from-[#e8590c] to-[#c9273a] shadow-[0_12px_24px_-12px_rgba(200,60,20,.65)] hover:brightness-110 hover:-translate-y-px active:translate-y-0 transition">
           <ShoppingBasket size={14} /> Rent or Buy Outfit
         </button>
       </div>
@@ -105,20 +105,20 @@ function SingleCard({ item, plan }: { item: SingleItem; plan: '3day' | '9day' })
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
         <span className="absolute top-3 left-3 z-[2] bg-gradient-to-br from-[#f0d78c] to-[#c9a44a] text-[#1a0f1e] text-[10px] font-black tracking-[0.1em] rounded-full px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)]">ONLY ITEM</span>
       </div>
-      <div className="p-3.5 sm:p-4 flex flex-col flex-1">
+      <div className="p-3 sm:p-3.5 flex flex-col flex-1">
         <div className="flex items-center gap-1 text-xs font-semibold text-[#8a6d00]">
           <Gem size={12} className="text-[#c9960a]" />
           <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">Without dress · One-size</span>
         </div>
         <h3 className="font-display font-semibold text-[14.5px] sm:text-[15.5px] leading-snug mt-1.5 line-clamp-2 text-black tracking-tight min-h-[42px]">{item.name}</h3>
         <p className="text-[12px] text-neutral-500 mt-2 leading-relaxed line-clamp-2">Rent alone — wear with any look, no dress needed.</p>
-        <div className="hairline-premium my-2.5" />
+        <div className="hairline-premium my-2" />
         <div className="flex items-baseline gap-2 mt-auto">
-          <b className="font-display text-[21px] sm:text-[22px] text-[#641629] tabular-nums leading-none">₹{item.price.toLocaleString('en-IN')}</b>
+          <b className="font-display text-[19px] sm:text-[20px] text-[#641629] tabular-nums leading-none">₹{item.price.toLocaleString('en-IN')}</b>
           <span className="text-[11.5px] font-semibold text-neutral-500">rent</span>
         </div>
         <button onClick={() => addToCart(item.productId, 'One-size', plan, undefined, { name: item.name, price: item.price })}
-          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-3 bg-gradient-to-r from-[#e8590c] to-[#c9273a] shadow-[0_12px_24px_-12px_rgba(200,60,20,.65)] hover:brightness-110 hover:-translate-y-px active:translate-y-0 transition">
+          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-gradient-to-r from-[#e8590c] to-[#c9273a] shadow-[0_12px_24px_-12px_rgba(200,60,20,.65)] hover:brightness-110 hover:-translate-y-px active:translate-y-0 transition">
           <ShoppingBasket size={14} /> Rent Only This
         </button>
         <button onClick={() => setQuickView(item.productId)} className="mt-1.5 text-[12px] font-semibold text-neutral-400 hover:text-[#641629] transition">View dress →</button>
@@ -215,11 +215,11 @@ export default function Shop() {
 
   return (
     <section id="shop" className="bg-[#faf8f6] border-b border-[#641629]/10 scroll-mt-[100px]">
-      <div className="container-x pt-5 pb-3">
+      <div className="container-x pt-4 pb-2">
         <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
           <div>
             <p className="eyebrow">{isItemMode ? activeCat?.label ?? 'The festive collection' : 'The festive collection'}</p>
-            <h2 className="premium-heading font-display font-black text-2xl sm:text-[30px] mt-1 text-black">
+            <h2 className="premium-heading font-display font-black text-xl sm:text-2xl mt-1 text-black">
               {isItemMode ? <>{activeCat?.label} — <span className="font-display-i text-[#641629]">items only</span></> : <>Dress for Every <span className="font-display-i text-[#641629]">Celebration</span></>}
             </h2>
           </div>
@@ -231,14 +231,14 @@ export default function Shop() {
 
       {/* Photo category strip — har kapda/item alag tile, tap = filter */}
       {cats.length > 0 && (
-        <div className="container-x pb-3">
+        <div className="container-x pb-2">
           <div className="flex gap-2.5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
             {cats.map((c) => {
               const on = activeCat?.id === c.id;
               return (
                 <button key={c.id} onClick={() => pickCat(on ? null : c)}
-                  className={`shrink-0 w-[104px] sm:w-[124px] rounded-2xl overflow-hidden border bg-white text-left transition-all duration-200 ${on ? 'border-[#c9273a] ring-2 ring-[#c9273a]/60 shadow-[0_10px_24px_-12px_rgba(201,39,58,.6)]' : 'border-black/10 hover:border-[#c9273a]/50'}`}>
-                  <div className="h-[76px] sm:h-[88px] overflow-hidden bg-[#f4f1ea]">
+                  className={`shrink-0 w-[88px] sm:w-[104px] rounded-2xl overflow-hidden border bg-white text-left transition-all duration-200 ${on ? 'border-[#c9273a] ring-2 ring-[#c9273a]/60 shadow-[0_10px_24px_-12px_rgba(201,39,58,.6)]' : 'border-black/10 hover:border-[#c9273a]/50'}`}>
+                  <div className="h-[60px] sm:h-[72px] overflow-hidden bg-[#f4f1ea]">
                     {c.img
                       ? <img src={c.img} alt={c.label} loading="lazy" className="w-full h-full object-cover" />
                       : <div className="w-full h-full grid place-items-center text-[10px] text-neutral-400">No photo</div>}
@@ -256,7 +256,7 @@ export default function Shop() {
 
       {/* Sticky filter bar — collection scroll ho, filters haath me rahen */}
       <div className="sticky top-[100px] z-30 glass border-y border-black/[.07] shadow-[0_12px_28px_-22px_rgba(0,0,0,.45)]">
-        <div className="container-x py-2.5 flex flex-col gap-2">
+        <div className="container-x py-2 flex flex-col gap-2">
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
             <button onClick={() => pickCat(null)}
               className={`shrink-0 rounded-full px-4 py-2 text-[12.5px] font-bold border transition-all duration-200 ${!activeCat && !search.trim() && !wishOnly ? 'bg-[#c9273a] text-white border-[#c9273a] shadow-[0_8px_18px_-8px_rgba(201,39,58,.7)]' : 'bg-white text-[#3d2b36] border-black/10 hover:border-[#c9273a]/50 hover:text-[#641629]'}`}>
@@ -326,9 +326,9 @@ export default function Shop() {
         </div>
       </div>
 
-      <div className="container-x py-5">
+      <div className="container-x py-4">
         {loading && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4" aria-hidden>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3" aria-hidden>
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="card overflow-hidden">
                 <div className="aspect-[3/4] bg-[#f0e8e2] animate-pulse" />
@@ -343,7 +343,7 @@ export default function Shop() {
         )}
         {isItemMode ? (
           <>
-            <motion.div layout className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            <motion.div layout className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
               <AnimatePresence mode="popLayout">
                 {itemList.map((it) => (
                   <SingleCard key={it.name} item={it} plan={plan} />
@@ -351,7 +351,7 @@ export default function Shop() {
               </AnimatePresence>
             </motion.div>
             {itemList.length === 0 && !loading && (
-              <div className="text-center py-14">
+              <div className="text-center py-10">
                 <span className="mx-auto w-14 h-14 rounded-full bg-[#641629]/[.06] grid place-items-center"><Gem size={22} className="text-[#641629]" /></span>
                 <p className="font-display font-semibold text-lg mt-4">No items in this category yet</p>
                 <button onClick={() => { clearCat(); setSearch(''); setMaxPrice(4000); setWishOnly(false); }} className="btn-primary mt-4 !py-2.5 !text-[13px]">Show all</button>
@@ -360,7 +360,7 @@ export default function Shop() {
           </>
         ) : (
           <>
-            <motion.div layout className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            <motion.div layout className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
               <AnimatePresence mode="popLayout">
                 {list.map((p, i) => (
                   <ProductCard key={p.id} p={p} plan={plan} index={i} />
@@ -368,7 +368,7 @@ export default function Shop() {
               </AnimatePresence>
             </motion.div>
             {list.length === 0 && !loading && (
-              <div className="text-center py-14">
+              <div className="text-center py-10">
                 <span className="mx-auto w-14 h-14 rounded-full bg-[#641629]/[.06] grid place-items-center"><SearchX size={22} className="text-[#641629]" /></span>
                 <p className="font-display font-semibold text-lg mt-4">Nothing found</p>
                 <p className="text-[#6f5b6a] text-[13px] mt-1">Try another search or price.</p>
@@ -377,7 +377,7 @@ export default function Shop() {
             )}
           </>
         )}
-        <p className="text-center text-xs text-[#8a7584] mt-6">{getSiteContent().shopNote}</p>
+        <p className="text-center text-xs text-[#8a7584] mt-4">{getSiteContent().shopNote}</p>
       </div>
     </section>
   );
