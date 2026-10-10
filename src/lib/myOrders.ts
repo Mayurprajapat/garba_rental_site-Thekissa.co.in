@@ -20,6 +20,9 @@ export interface MyOrder {
   deposit: number;
   token: number;
   mode: string;
+  /** Admin ka reply — order milega ya nahi + wajah */
+  status?: string;
+  note?: string;
   /** Admin ne order kab tak ready hoga ye date di ho (YYYY-MM-DD) */
   readyDate?: string;
 }

@@ -203,12 +203,15 @@ export function CartDrawer() {
   useEffect(() => {
     const refreshOrders = () => {
       const list = getMyOrders();
-      // Admin ne ready date di ho to booking record se lao (same device par turant dikhega)
+      // Admin ne decision / ready date di ho to booking record se lao (same device par turant dikhega)
       try {
-        const byId = new Map(getLocalBookings().map((b) => [b.order_id, b.ready_date]));
+        const byId = new Map(getLocalBookings().map((b) => [b.order_id, b]));
         list.forEach((o) => {
-          const rd = byId.get(o.id);
-          if (rd) (o as MyOrder).readyDate = rd;
+          const b = byId.get(o.id);
+          if (!b) return;
+          if (b.ready_date) (o as MyOrder).readyDate = b.ready_date;
+          if (b.status) (o as MyOrder).status = b.status;
+          if (b.admin_note) (o as MyOrder).note = b.admin_note;
         });
       } catch { /* ignore */ }
       setOrders(list);
@@ -491,8 +494,11 @@ export function CartDrawer() {
                       </div>
                       <div className="border-t border-black/10 mt-2 pt-2 flex justify-between text-[13px]"><span>Total rent</span><b>{formatINR(o.total)}</b></div>
                       <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)} paid via QR` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} paid via QR · Balance ${formatINR(o.total - o.token)} on delivery` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} paid via QR` : 'Pay on delivery'} · Deposit {formatINR(o.deposit)} (refundable)</p>
-                      <span className="inline-block mt-1 text-[10.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">✓ Order confirmed</span>
+                      <span className={`inline-block mt-1 text-[10.5px] font-bold rounded-full px-2 py-0.5 border ${o.status === 'cancelled' ? 'text-rose-800 bg-rose-50 border-rose-200' : o.status === 'delivered' || o.status === 'returned' ? 'text-violet-800 bg-violet-50 border-violet-200' : 'text-emerald-800 bg-emerald-50 border-emerald-200'}`}>
+                        {o.status === 'cancelled' ? '✕ Not available' : o.status === 'delivered' ? '✓ Delivered' : o.status === 'returned' ? '✓ Returned' : o.status === 'confirmed' ? '✓ Confirmed — will be delivered' : '✓ Order confirmed'}
+                      </span>
                       {o.readyDate && <span className="inline-block mt-1 ml-1.5 text-[10.5px] font-bold text-[#641629] bg-[#faf3ea] border border-[#c9a44a]/50 rounded-full px-2 py-0.5">📦 Available by {new Date(o.readyDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                      {o.note && <p className="text-[12px] mt-1.5 bg-[#faf7ef] border border-[#c9a44a]/40 rounded-xl px-3 py-2"><b>Store message:</b> {o.note}</p>}
                       <a href={waLink(`Hi TheKissa.co! Reorder ${o.id} — same items please. Name: ${o.name}, Mobile: ${o.phone}`)} target="_blank" className="mt-2.5 w-full inline-flex items-center justify-center gap-1.5 bg-[#25d366] text-white text-[12.5px] font-bold rounded-full py-2.5"><MessageCircle size={14} /> Reorder on WhatsApp</a>
                     </div>
                   ))}

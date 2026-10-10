@@ -27,6 +27,8 @@ export async function saveBooking(payload: {
   payment_status?: string;
   /** Admin sets the date by which the order will be ready (YYYY-MM-DD) */
   ready_date?: string | null;
+  /** Admin's message for the customer (Out of stock / Available etc.) */
+  admin_note?: string | null;
   /** Bot-trap — bhara ho to booking silently drop (spam se bachao) */
   honeypot?: string;
 }) {
@@ -52,6 +54,7 @@ export async function saveBooking(payload: {
       payment_id: payload.payment_id ?? '',
       payment_status: payload.payment_status ?? 'pending',
       ready_date: payload.ready_date ?? null,
+      admin_note: payload.admin_note ?? null,
     });
   } catch { /* ignore */ }
 
@@ -75,13 +78,14 @@ export async function saveBooking(payload: {
     payment_id: payload.payment_id ?? '',
     payment_status: payload.payment_status ?? 'pending',
     ready_date: payload.ready_date ?? null,
+    admin_note: payload.admin_note ?? null,
     status: 'new',
   };
   let { error } = await supabase.from('bookings').insert(row);
-  if (error && /ready_date/i.test(error.message) && isMissingColumnError(error.message)) {
-    // Cloud me ready_date column nahi hai (migration pending) — uske bina retry
-    const { ready_date: _r, ...withoutReady } = row;
-    ({ error } = await supabase.from('bookings').insert(withoutReady));
+  if (error && isMissingColumnError(error.message)) {
+    // Cloud me naye columns nahi hain (migration pending) — unke bina retry
+    const { ready_date: _r, admin_note: _n, ...withoutNew } = row;
+    ({ error } = await supabase.from('bookings').insert(withoutNew));
   }
   if (error && isMissingColumnError(error.message)) {
     // Purana cloud schema — sirf base columns ke saath retry

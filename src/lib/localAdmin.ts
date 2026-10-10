@@ -157,6 +157,8 @@ export interface LocalBooking {
   payment_status?: string;
   /** Admin batata hai order kis date tak ready/mil jayega (YYYY-MM-DD) */
   ready_date?: string | null;
+  /** Admin ka customer ke liye message — Out of stock / Available etc. */
+  admin_note?: string | null;
   status: string;
   created_at: string;
 }

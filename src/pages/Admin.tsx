@@ -79,6 +79,74 @@ function downloadCSV(name: string, rows: Record<string, any>[]) {
   URL.revokeObjectURL(a.href);
 }
 
+/** Customer ko WhatsApp par order decision bhejo — number booking se, message ready-made */
+function waCustomerLink(b: BookingRow): string | null {
+  const digits = String(b.phone || '').replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '');
+  if (!/^[6-9]\d{9}$/.test(digits)) return null;
+  const decision = b.status === 'confirmed' ? 'Confirmed — we will deliver your outfit.'
+    : b.status === 'cancelled' ? 'We are sorry — we cannot fulfil this order.'
+    : b.status === 'delivered' ? 'Your outfit has been delivered. Enjoy!'
+    : 'We have received your order and will update you shortly.';
+  const parts = [`Hello ${b.name}! TheKissa.co — update on your order ${b.order_id || ''}:`, decision];
+  if (b.admin_note) parts.push(String(b.admin_note));
+  if (b.ready_date) parts.push(`Available by: ${b.ready_date}.`);
+  return `https://wa.me/91${digits}?text=${encodeURIComponent(parts.join(' '))}`;
+}
+
+/** Per-booking reply cell — dena hai ya nahi + wajah + WhatsApp notify */
+function ReplyCell({ b, reload, notify }: { b: BookingRow; reload: () => void; notify: (m: string) => void }) {
+  const [note, setNote] = useState(String(b.admin_note || ''));
+  useEffect(() => { setNote(String(b.admin_note || '')); }, [b.id, b.admin_note]);
+
+  const saveNote = async (v: string) => {
+    setNote(v);
+    if (useCloud && supabase) {
+      try {
+        const { error } = await supabase.from('bookings').update({ admin_note: v }).eq('id', b.id);
+        if (error) throw error;
+      } catch {
+        notify('Could not save reply — run supabase/migration_admin_note.sql in the SQL Editor.');
+        return;
+      }
+    } else {
+      updateLocalBooking(b.id, { admin_note: v || null });
+    }
+    reload();
+    notify(v ? 'Reply saved — customer will see it in My Orders.' : 'Reply cleared.');
+  };
+
+  const setDecision = async (status: 'confirmed' | 'cancelled') => {
+    if (useCloud && supabase) {
+      await supabase.from('bookings').update({ status }).eq('id', b.id);
+    } else {
+      updateLocalBooking(b.id, { status });
+    }
+    reload();
+    notify(status === 'confirmed' ? 'Order accepted — customer will see "Confirmed".' : 'Order rejected — customer will see "Not available".');
+  };
+
+  const wa = waCustomerLink(b);
+  return (
+    <div className="min-w-[190px] max-w-[230px] space-y-1.5">
+      <div className="flex gap-1">
+        <button onClick={() => setDecision('confirmed')} className={`flex-1 text-[11px] font-bold rounded-full px-2 py-1 border ${b.status === 'confirmed' ? 'bg-emerald-600 text-white border-emerald-600' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white'} transition`}>✓ Will give</button>
+        <button onClick={() => setDecision('cancelled')} className={`flex-1 text-[11px] font-bold rounded-full px-2 py-1 border ${b.status === 'cancelled' ? 'bg-rose-600 text-white border-rose-600' : 'border-rose-300 text-rose-700 hover:bg-rose-600 hover:text-white'} transition`}>✕ Can't give</button>
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {['Available — will deliver', 'Out of stock', 'Not available on this date'].map((r) => (
+          <button key={r} onClick={() => saveNote(r)} title="Send this reason to the customer" className="text-[10.5px] font-semibold bg-white border rounded-full px-2 py-0.5 hover:border-black">{r}</button>
+        ))}
+      </div>
+      <input value={note} onChange={(e) => setNote(e.target.value)} onBlur={(e) => { if (e.target.value !== String(b.admin_note || '')) saveNote(e.target.value); }}
+        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+        placeholder="Message for customer…" className="admin-input !py-1.5 !text-[12px]" />
+      {wa
+        ? <a href={wa} target="_blank" className="flex items-center justify-center gap-1 text-[11.5px] font-bold text-white bg-[#1e9e52] rounded-full px-3 py-1.5 hover:brightness-110 transition">WhatsApp customer →</a>
+        : <span className="block text-[11px] text-[#8a7584]">No valid mobile — can't WhatsApp.</span>}
+    </div>
+  );
+}
+
 export default function Admin() {
   const [cloudUser, setCloudUser] = useState<any>(null);
   const [localAuth, setLocalAuth] = useState(isLocalAdmin());
@@ -549,8 +617,8 @@ export default function Admin() {
                   <button onClick={() => downloadCSV('bookings.csv', filteredBookings)} className="ml-auto text-xs font-bold border rounded-full px-3.5 py-1.5 bg-white">Export CSV</button>
                 </div>
                 <div className="admin-card mt-4 overflow-x-auto">
-                  <table className="w-full min-w-[1140px]">
-                    <thead><tr className="border-b border-[#1a0f1e]/8"><th className="admin-th">Order</th><th className="admin-th">Customer</th><th className="admin-th">Event</th><th className="admin-th">Ready by</th><th className="admin-th">Total</th><th className="admin-th">Deposit</th><th className="admin-th">Payment</th><th className="admin-th">Status</th><th className="admin-th text-right">Actions</th></tr></thead>
+                  <table className="w-full min-w-[1340px]">
+                    <thead><tr className="border-b border-[#1a0f1e]/8"><th className="admin-th">Order</th><th className="admin-th">Customer</th><th className="admin-th">Event</th><th className="admin-th">Ready by</th><th className="admin-th">Total</th><th className="admin-th">Deposit</th><th className="admin-th">Payment</th><th className="admin-th">Status</th><th className="admin-th">Customer reply</th><th className="admin-th text-right">Actions</th></tr></thead>
                     <tbody>
                       {filteredBookings.map((b) => (
                         <tr key={b.id} className="hover:bg-[#faf7ef]">
@@ -619,6 +687,7 @@ export default function Admin() {
                             )}
                           </td>
                           <td className="admin-td"><span className={`status-pill ${statusStyle[b.status] || ''}`}>{b.status}</span></td>
+                          <td className="admin-td"><ReplyCell b={b} reload={loadBookings} notify={(m) => { setMsg(m); setTimeout(() => setMsg(''), 3000); }} /></td>
                           <td className="admin-td">
                             <div className="flex justify-end gap-1 flex-wrap">
                               {STATUSES.map((s) => (
