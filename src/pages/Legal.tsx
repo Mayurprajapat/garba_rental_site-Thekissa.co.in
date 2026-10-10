@@ -115,8 +115,8 @@ export function TermsPage() {
       </P>
       <H>1. Rental period</H>
       <P>
-        The standard rental is 3 days (pickup/event/return). The full-Navratri plan covers 9 days. Late returns are
-        charged at 25% of the 3-day rent per extra day unless an extension is confirmed with us in advance.
+        The standard rental is 1 day &amp; 3 days (pickup/event/return). The full-Navratri plan covers 9 days. Late returns are
+        charged at 25% of the 1-day &amp; 3-day rent per extra day unless an extension is confirmed with us in advance.
       </P>
       <H>2. Booking &amp; payment</H>
       <Ul
