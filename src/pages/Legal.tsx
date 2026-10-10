@@ -89,16 +89,16 @@ export function AboutPage() {
 export function ContactPage() {
   return (
     <Shell title="Contact Us" updated="October 2026">
-      <P>For bookings, fittings, delivery queries or support, reach us on any of these channels — we reply within 30 minutes between 10 AM and 9 PM.</P>
+      <P>For bookings, delivery queries or support, reach us on any of these channels — we reply within 30 minutes between 9 AM and 10 PM.</P>
       <H>Service area</H>
-      <P>Online only — doorstep delivery &amp; pickup across Indore (1–2 days across MP, 3–5 days pan-India). No walk-in store.</P>
+      <P>Online only — doorstep delivery &amp; pickup across Indore. No walk-in store.</P>
       <H>Phone &amp; WhatsApp</H>
       <P>
         <a className="underline font-semibold" href={BUSINESS.phoneHref}>{BUSINESS.phone}</a> — call or WhatsApp “Hi TheKissa.co.in!”.
       </P>
       <H>Email</H>
       <P>
-        <a className="underline font-semibold" href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a> — for invoices, receipts and formal requests.
+        <a className="underline font-semibold" href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a> — for queries, customer support and formal requests.
       </P>
       <H>Hours</H>
       <P>{BUSINESS.hours}</P>
