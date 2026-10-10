@@ -116,6 +116,21 @@ function valid(c: any): c is SiteContent {
 
 function normalize(c: SiteContent): SiteContent {
   const savedStore = c.store || {};
+  const savedHero = c.hero || {};
+  const savedLooks = c.looks || {};
+  // Purana default hero subtitle (menswear mention) ho to naya ladies-only subtitle
+  const OLD_SUB = 'Chaniya Choli, Kediyu-Dhoti and bridal couture';
+  const heroSubtitle =
+    typeof savedHero.subtitle === 'string' && savedHero.subtitle.includes(OLD_SUB)
+      ? savedHero.subtitle.replace(OLD_SUB, 'Designer Chaniya Choli, bridal couture and jewellery')
+      : typeof savedHero.subtitle === 'string' && savedHero.subtitle.trim()
+        ? savedHero.subtitle
+        : DEFAULT_CONTENT.hero.subtitle;
+  // Purani saved photos me mens/kids/combo images hon to hata do
+  const BANNED_IMG = /combo|kids|boys|kediya|kedia|angarkha|girls1/i;
+  const looksImgs = Array.isArray(savedLooks.imgs)
+    ? savedLooks.imgs.filter((s) => typeof s === 'string' && s.trim() && !BANNED_IMG.test(s))
+    : [...DEFAULT_CONTENT.looks.imgs];
   return {
     ...DEFAULT_CONTENT,
     ...c,
@@ -128,9 +143,9 @@ function normalize(c: SiteContent): SiteContent {
         : savedStore.email,
     },
     announcement: { ...DEFAULT_CONTENT.announcement, ...(c.announcement || {}) },
-    hero: { ...DEFAULT_CONTENT.hero, ...(c.hero || {}) },
+    hero: { ...DEFAULT_CONTENT.hero, ...(c.hero || {}), subtitle: heroSubtitle },
     process: { ...DEFAULT_CONTENT.process, ...(c.process || {}) },
-    looks: { ...DEFAULT_CONTENT.looks, ...(c.looks || {}) },
+    looks: { ...DEFAULT_CONTENT.looks, ...(c.looks || {}), imgs: looksImgs },
     booking: {
       ...DEFAULT_CONTENT.booking,
       ...(c.booking || {}),
