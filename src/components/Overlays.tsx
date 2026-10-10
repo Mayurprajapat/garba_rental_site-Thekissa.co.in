@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { BadgeCheck, Check, CheckCircle2, CreditCard, Heart, MapPin, MessageCircle, Plus, ReceiptText, ShieldCheck, ShoppingBasket, Sparkles, Star, Trash2, Truck, X } from 'lucide-react';
+import { BadgeCheck, Check, CheckCircle2, CreditCard, Heart, Mail, MapPin, MessageCircle, Plus, ReceiptText, ShieldCheck, ShoppingBasket, Sparkles, Star, Trash2, Truck, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { addonTotal, hotspotsFor, lookFor, photosFor, waLink, type Accessory, type Category, type Hotspot } from '../data/products';
 import { itemImgFor } from '../lib/items';
@@ -46,7 +46,7 @@ export function QuickView() {
           <motion.div initial={{ y: 60, scale: 0.99 }} animate={{ y: 0, scale: 1 }} exit={{ y: 60, scale: 0.99 }} transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
             className="relative bg-white rounded-t-[1.5rem] sm:rounded-[1.5rem] max-w-4xl w-full overflow-hidden grid md:grid-cols-[0.9fr_1.1fr] max-h-[94dvh] sm:max-h-[92vh] shadow-[0_60px_120px_-40px_rgba(0,0,0,.7)] ring-1 ring-black/10">
             <div className="bg-[#f4f1ea] flex flex-col min-h-0 img-sheen">
-              <div className="relative h-52 sm:h-72 md:h-[540px] md:max-h-[80vh] overflow-hidden shrink-0">
+              <div className="relative aspect-[3/4] max-h-[62dvh] md:aspect-auto md:h-[540px] md:max-h-[80vh] overflow-hidden shrink-0">
                 <img key={photos[photoIdx] ?? p.img} src={photos[photoIdx] ?? p.img} alt={p.name} className="w-full h-full object-cover" />
                 {p.badge && <span className="absolute top-4 left-4 bg-gradient-to-br from-[#f0d78c] to-[#c9a44a] text-[#641629] text-[10px] font-bold tracking-[0.12em] rounded-full px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)] z-[2]">{p.badge}</span>}
                 {photoIdx === 0 ? (
@@ -201,6 +201,7 @@ export function CartDrawer() {
   const [step, setStep] = useState<'cart' | 'details' | 'done'>('cart');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [paying, setPaying] = useState(false);
   const [err, setErr] = useState('');
   const [order, setOrder] = useState<{ id: string; paymentId: string; mode: string; token: number; total: number; deposit: number } | null>(null);
@@ -224,6 +225,7 @@ export function CartDrawer() {
   const validateDetails = () => {
     if (name.trim().length < 3) return 'Please enter your full name';
     if (!isValidIndianPhone(phone)) return 'Please enter a valid 10-digit mobile number';
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Please enter a valid email address';
     if (!eventDate) return 'Please select the event date';
     if (!rows.length) return 'Your list is empty';
     return '';
@@ -240,6 +242,9 @@ export function CartDrawer() {
       : `${i + 1}. ${r.p.name} (${r.p.id}) — ${rowLabel(r)} = ${formatINR(rowPrice(r) * r.qty)}`);
     return `Hi TheKissa.co.in! New Order ${orderId}\n\n${lines.join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate}\nSubtotal: ${formatINR(subtotal)}\nDiscount: -${formatINR(disc)}\nTotal rent: ${formatINR(total)}\nToken: ${payInfo}\nBalance on delivery: ${formatINR(balance)}\nDeposit (refundable): ${formatINR(deposit)}`;
   };
+
+  const buildCustomerMsg = (o: { id: string; total: number; deposit: number }) =>
+    `Your order has been confirmed successfully!\n\nOrder ID: ${o.id}\nName: ${name}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\nDeposit (refundable): ${formatINR(o.deposit)}\n\nThank you for renting with TheKissa.co.in! We will call/WhatsApp you within 30 minutes (9 AM – 10 PM).`;
 
   const confirmWithoutPayment = async () => {
     const v = validateDetails();
@@ -340,8 +345,8 @@ export function CartDrawer() {
               <div className="flex-1 overflow-y-auto p-5">
                 <div className="text-center py-2">
                   <CheckCircle2 size={44} className="mx-auto text-emerald-600" />
-                  <h4 className="font-semibold text-xl mt-3">Booking confirmed</h4>
-                  <p className="text-sm text-black/55 mt-1">Order <b className="text-black">{order.id}</b> · we will call/WhatsApp within 30 min</p>
+                  <h4 className="font-semibold text-xl mt-3">Your order has been confirmed successfully!</h4>
+                  <p className="text-sm text-black/55 mt-1">Order ID: <b className="text-black">{order.id}</b> · we will call/WhatsApp within 30 min</p>
                 </div>
                 <div className="mt-4 border border-black/10 rounded-2xl overflow-hidden">
                   <div className="px-4 py-3 bg-[#641629] text-white flex items-center gap-2 text-sm font-semibold"><ReceiptText size={15} /> Invoice</div>
@@ -355,7 +360,15 @@ export function CartDrawer() {
                     <p className="text-[11px] text-black/50 pt-1">Deposit is 100% refundable — returned via UPI/cash within 24h of return.</p>
                   </div>
                 </div>
-                <button onClick={resetAndClose} className="w-full mt-4 bg-[#641629] text-white font-semibold rounded-full py-3 text-sm">Continue shopping</button>
+                <p className="text-[12px] font-bold mt-4 text-center">Get your confirmation with Order ID:</p>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <a href={`https://wa.me/91${phone.replace(/\D/g, '')}?text=${encodeURIComponent(buildCustomerMsg(order))}`} target="_blank" className="bg-[#25d366] text-white font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-1.5"><MessageCircle size={15} /> WhatsApp</a>
+                  {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+                    ? <a href={`mailto:${email.trim()}?subject=${encodeURIComponent(`Order confirmed ${order.id} — TheKissa.co.in`)}&body=${encodeURIComponent(buildCustomerMsg(order))}`} className="bg-[#641629] text-white font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-1.5"><Mail size={15} /> Email</a>
+                    : <span className="bg-black/[.06] text-black/40 font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-1.5"><Mail size={15} /> Email</span>}
+                </div>
+                <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email for confirmation (optional)" inputMode="email" className="mt-2 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-black" />
+                <button onClick={resetAndClose} className="w-full mt-3 bg-[#641629] text-white font-semibold rounded-full py-3 text-sm">Continue shopping</button>
                 <a href="/track" className="w-full mt-2 border border-black/15 font-semibold rounded-full py-3 text-sm hover:bg-[#641629] hover:border-[#641629] hover:text-white transition flex items-center justify-center gap-2">📍 Track delivery boy</a>
                 <p className="text-[11px] text-black/45 text-center mt-2">Dispatch hote hi tracking link SMS/WhatsApp par milega</p>
               </div>
@@ -365,6 +378,7 @@ export function CartDrawer() {
                 <div className="grid gap-3">
                   <label className="text-xs font-bold">FULL NAME *<input value={name} onChange={(e) => setName(e.target.value)} placeholder="Priya Sharma" className="mt-1.5 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm font-normal outline-none focus:border-black" /></label>
                   <label className="text-xs font-bold">MOBILE *<input value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile" inputMode="numeric" className="mt-1.5 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm font-normal outline-none focus:border-black" /></label>
+                  <label className="text-xs font-bold">EMAIL (for order confirmation)<input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" inputMode="email" className="mt-1.5 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm font-normal outline-none focus:border-black" /></label>
                   <label className="text-xs font-bold">EVENT DATE *<input type="date" value={eventDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setEventDate(e.target.value)} className="mt-1.5 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm font-normal" /></label>
                 </div>
                 <div className="bg-[#fafafa] border border-black/10 rounded-2xl p-4 text-sm space-y-1">
