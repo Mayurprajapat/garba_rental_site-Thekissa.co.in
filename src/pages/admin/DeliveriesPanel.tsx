@@ -85,6 +85,57 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
     refresh();
   };
 
+  // Live control — agent link khole bina, admin panel se hi location chalao.
+  // Isi browser ka GPS agent location banta hai, customer ka map live update hota hai.
+  const watchId = useRef<number | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [shareCode, setShareCode] = useState<string | null>(null);
+
+  const pushPos = async (d: Delivery, lat: number, lng: number, status?: Delivery['status']) => {
+    const next = { ...d, agentLat: lat, agentLng: lng, status: status || d.status, updatedAt: new Date().toISOString() };
+    await upsertDelivery(next);
+    void publishPing(d.code, { lat, lng, status: next.status, ts: next.updatedAt });
+    refresh();
+  };
+
+  const stopShare = () => {
+    if (watchId.current !== null && typeof navigator !== 'undefined' && navigator.geolocation) {
+      try { navigator.geolocation.clearWatch(watchId.current); } catch { /* ignore */ }
+    }
+    watchId.current = null;
+    setSharing(false);
+    setShareCode(null);
+  };
+
+  const startShare = (d: Delivery) => {
+    if (!navigator.geolocation) { alert('GPS not supported on this device.'); return; }
+    stopShare();
+    setSharing(true);
+    setShareCode(d.code);
+    void pushPos(d, d.agentLat ?? STORE_POS.lat, d.agentLng ?? STORE_POS.lng, 'onway');
+    watchId.current = navigator.geolocation.watchPosition(
+      (pos) => { void pushPos({ ...d, status: 'onway' }, pos.coords.latitude, pos.coords.longitude); },
+      () => { alert('GPS permission denied — Allow location and retry.'); stopShare(); },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+  };
+
+  // Demo trip — store se customer tak 5 steps me (client demo ke liye, bina hile)
+  const demoTrip = async (d: Delivery) => {
+    stopShare();
+    const steps = 5;
+    for (let i = 1; i <= steps; i++) {
+      const lat = STORE_POS.lat + ((d.destLat - STORE_POS.lat) * i) / steps;
+      const lng = STORE_POS.lng + ((d.destLng - STORE_POS.lng) * i) / steps;
+      await pushPos(d, lat, lng, i === steps ? 'delivered' : 'onway');
+      await new Promise((r) => setTimeout(r, 1200));
+    }
+  };
+
+  useEffect(() => () => stopShare(), []);
+  // Dusri delivery select karte hi purani sharing band
+  useEffect(() => { if (shareCode && current?.code !== shareCode) stopShare(); });
+
   // One-click demo — client turant /track par test kar sake (delete bhi ho jayega)
   const loadDemo = async () => {
     const d: Delivery = {
@@ -190,9 +241,21 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
               <div className="flex gap-1.5 mt-2">
                 <button onClick={() => copy(customerUrl(current))} className="text-[11px] font-bold border rounded-full px-3 py-1.5 flex items-center gap-1"><Copy size={11} /> Copy</button>
                 <a href={customerUrl(current)} target="_blank" className="text-[11px] font-bold border rounded-full px-3 py-1.5 flex items-center gap-1">Open <ExternalLink size={11} /></a>
-                <a href={`https://wa.me/91${current.phone}?text=${encodeURIComponent(`TheKissa.co.in delivery live: ${customerUrl(current)} — track your outfit here`)}`} target="_blank" className="text-[11px] font-bold rounded-full px-3 py-1.5 bg-[#25d366] text-white">WhatsApp customer</a>
+                <a href={`https://wa.me/91${current.phone}?text=${encodeURIComponent(`TheKissa.co delivery live: ${customerUrl(current)} — track your outfit here`)}`} target="_blank" className="text-[11px] font-bold rounded-full px-3 py-1.5 bg-[#25d366] text-white">WhatsApp customer</a>
               </div>
             </div>
+          </div>
+          <div className="mt-3 bg-emerald-50/70 border border-emerald-200 rounded-xl p-3">
+            <b className="text-[12.5px]">Live control — run it from here, no need to copy the link</b>
+            <p className="text-[11.5px] text-[#6f5b6a] mt-0.5">Isi browser ka GPS agent location banega · customer ka map live update hoga.</p>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {!sharing
+                ? <button onClick={() => startShare(current)} className="text-[11.5px] font-bold rounded-full px-3.5 py-2 bg-emerald-600 text-white hover:bg-emerald-700 transition">Start live location</button>
+                : <button onClick={stopShare} className="text-[11.5px] font-bold rounded-full px-3.5 py-2 border border-emerald-600 text-emerald-700 hover:bg-emerald-600 hover:text-white transition">Stop sharing</button>}
+              <button onClick={() => { void demoTrip(current); }} className="text-[11.5px] font-bold rounded-full px-3.5 py-2 border hover:bg-black hover:text-white transition">Run demo trip</button>
+              <button onClick={() => { void setStatus(current, 'delivered'); }} className="text-[11.5px] font-bold rounded-full px-3.5 py-2 border hover:bg-black hover:text-white transition">Mark delivered</button>
+            </div>
+            {sharing && <p className="text-[11.5px] text-emerald-700 font-semibold mt-2"><span className="pulse-dot inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1.5" />Live sharing ON — keep this tab open.</p>}
           </div>
         </div>
       )}

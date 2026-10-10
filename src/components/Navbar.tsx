@@ -81,7 +81,7 @@ export default function Navbar() {
             <a href={STORE.phoneHref} className="hidden xl:flex items-center gap-1.5 text-[13px] font-semibold text-black border border-black/10 rounded-full px-4 py-2 hover:bg-black hover:text-white transition">
               <Phone size={14} /> {STORE.phoneShort}
             </a>
-            <a href={waLink('Hi TheKissa.co.in! I need help with a rental.')} target="_blank"
+            <a href={waLink('Hi TheKissa.co! I need help with a rental.')} target="_blank"
               className="hidden md:inline-flex items-center gap-1.5 text-[12.5px] font-bold text-white rounded-full px-4 py-2.5 bg-gradient-to-r from-[#2ecc71] to-[#1e9e52] shadow-[0_8px_20px_-10px_rgba(46,204,113,.7)] hover:brightness-110 transition">
               <MessageCircle size={14} /> WhatsApp Support
             </a>

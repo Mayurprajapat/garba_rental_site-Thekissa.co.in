@@ -7,6 +7,11 @@ const A_KEY = 'raasleela-admin-auth';
 
 export const ADMIN_PASSWORD = (import.meta.env.VITE_ADMIN_PASSWORD as string) || 'admin123';
 
+// Default password production me active ho to console me yaad dilao (behavior same rehta hai)
+if (!import.meta.env.VITE_ADMIN_PASSWORD && typeof location !== 'undefined' && !/localhost|127\.0\.0\.1/.test(location.hostname)) {
+  console.warn('[admin] VITE_ADMIN_PASSWORD is not set — default password is active. Vercel env me strong password set karo, phir Settings → Security me custom password lagao.');
+}
+
 // ---- Admin password: client khud badal sakta hai (Settings → Security) ----
 // Custom password lagte hi default/env password kaam karna BAND ho jata hai,
 // taaki handover ke baad purana password kahi kaam na kare. Hash me store hota hai.
@@ -150,6 +155,8 @@ export interface LocalBooking {
   payment_mode?: string;
   payment_id?: string;
   payment_status?: string;
+  /** Admin batata hai order kis date tak ready/mil jayega (YYYY-MM-DD) */
+  ready_date?: string | null;
   status: string;
   created_at: string;
 }
@@ -184,10 +191,18 @@ export function deleteLocalBooking(id: number) {
 }
 
 export function isLocalAdmin(): boolean {
-  return localStorage.getItem(A_KEY) === '1';
+  // Session 12 ghante me expire — shared/device kho jaye to khula admin na mile.
+  // Purana '1' format ab expired mana jata hai (ek baar dobara login hoga).
+  try {
+    const v = localStorage.getItem(A_KEY);
+    if (!v || v === '1') return false;
+    return Date.now() - Number(v) < 12 * 60 * 60 * 1000;
+  } catch { return false; }
 }
 
 export function setLocalAdmin(v: boolean) {
-  if (v) localStorage.setItem(A_KEY, '1');
-  else localStorage.removeItem(A_KEY);
+  try {
+    if (v) localStorage.setItem(A_KEY, String(Date.now()));
+    else localStorage.removeItem(A_KEY);
+  } catch { /* ignore */ }
 }

@@ -5,7 +5,7 @@ export default function Logo({ className = 'w-9 h-9 sm:w-10 sm:h-10' }: { classN
   return (
     <img
       src="/images/logo.png"
-      alt="TheKissa.co.in logo"
+      alt="TheKissa.co logo"
       loading="lazy"
       className={`${className} rounded-xl object-cover ring-1 ring-black/10 shrink-0`}
     />

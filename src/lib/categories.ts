@@ -20,19 +20,10 @@ export interface ShopCategory {
 }
 
 export const DEFAULT_CATEGORIES: ShopCategory[] = [
-  // ---- Dresses: har kapda alag ----
-  { id: 'chaniya', label: 'Chaniya Choli', query: 'chaniya, choli, ghaghra, diva', img: '/images/g-hero.webp', kind: 'dress' },
-  { id: 'choli', label: 'Choli', query: 'choli', img: '/images/g-chaniya1.jpg', kind: 'dress' },
+  { id: 'ghaghra', label: 'Lehenga', query: 'lehenga, ghaghra', img: '/images/g-girls2.jpg', kind: 'dress' },
   { id: 'blouse', label: 'Blouse', query: 'blouse', img: '/images/g-whiteblack.webp', kind: 'dress' },
-  { id: 'ghaghra', label: 'Ghaghra & Lehenga', query: 'ghaghra, lehenga', img: '/images/g-girls2.jpg', kind: 'dress' },
-  { id: 'koti', label: 'Koti Jacket', query: 'koti', img: '/images/g-pinkmulti.webp', kind: 'dress' },
-  { id: 'dupatta', label: 'Dupatta', query: 'dupatta, bandhani', img: '/images/g-multi2.webp', kind: 'dress' },
-  { id: 'dandiya', label: 'Dandiya (Free)', query: 'dandiya', img: '/images/g-combo2.jpg', kind: 'dress' },
-  { id: 'bridal', label: 'Premium Bridal', query: '', img: '/images/g-koti.webp', kind: 'dress', cats: ['premium'] },
   // ---- Single-rent items: har item alag (bina dress ke) ----
   { id: 'jewellery', label: 'Jewellery Set', query: 'jewellery set, necklace, haar', img: '/images/item-jewellery-set.jpg', kind: 'item' },
-  { id: 'jhumka', label: 'Oxidised Jhumka', query: 'oxidised jhumka', img: '/images/item-jhumka.jpg', kind: 'item' },
-  { id: 'kamarbandh', label: 'Kamarbandh (Tagdi)', query: 'kamarbandh, tagdi', img: '/images/item-kamarbandh.jpg', kind: 'item' },
 ];
 
 /** Category query matcher — comma = OR, comma ke andar space = AND (poora part milna chahiye). */
@@ -46,8 +37,8 @@ const KEY = 'raasleela-admin-categories';
 const EVT = 'raasleela-categories-updated';
 // Purani 3-tile wali list — isko nayi granular list se auto-upgrade kar do
 const OLD_IDS = ['chaniya', 'choli', 'jewellery'];
-// Hatayi hui tiles — saved list me hon to auto-saaf kar do (ladies-only site)
-const REMOVED_CAT_IDS = ['kids-girls', 'kids-boys', 'kids-jhumka', 'family', 'kediyu', 'dhoti', 'pagdi', 'mojari', 'brooch', 'couple'];
+// Hatayi hui tiles — saved list me hon to auto-saaf kar do (sirf Lehenga, Blouse, Jewellery Set rehte hain)
+const REMOVED_CAT_IDS = ['kids-girls', 'kids-boys', 'kids-jhumka', 'family', 'kediyu', 'dhoti', 'pagdi', 'mojari', 'brooch', 'couple', 'chaniya', 'choli', 'koti', 'dupatta', 'dandiya', 'bridal', 'jhumka', 'kamarbandh'];
 
 function valid(list: any): list is ShopCategory[] {
   return Array.isArray(list) && list.every((c) => c && typeof c.label === 'string' && typeof c.query === 'string');

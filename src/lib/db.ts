@@ -25,7 +25,13 @@ export async function saveBooking(payload: {
   payment_mode?: string;
   payment_id?: string;
   payment_status?: string;
+  /** Admin sets the date by which the order will be ready (YYYY-MM-DD) */
+  ready_date?: string | null;
+  /** Bot-trap — bhara ho to booking silently drop (spam se bachao) */
+  honeypot?: string;
 }) {
+  // Honeypot bhara = bot. Success jaisa response, par save mat karo.
+  if (payload.honeypot && payload.honeypot.trim()) return { ok: true as const, mode: 'local' as const };
   try {
     addLocalBooking({
       order_id: payload.order_id,
@@ -45,6 +51,7 @@ export async function saveBooking(payload: {
       payment_mode: payload.payment_mode ?? 'pending',
       payment_id: payload.payment_id ?? '',
       payment_status: payload.payment_status ?? 'pending',
+      ready_date: payload.ready_date ?? null,
     });
   } catch { /* ignore */ }
 
@@ -67,9 +74,15 @@ export async function saveBooking(payload: {
     payment_mode: payload.payment_mode ?? 'pending',
     payment_id: payload.payment_id ?? '',
     payment_status: payload.payment_status ?? 'pending',
+    ready_date: payload.ready_date ?? null,
     status: 'new',
   };
   let { error } = await supabase.from('bookings').insert(row);
+  if (error && /ready_date/i.test(error.message) && isMissingColumnError(error.message)) {
+    // Cloud me ready_date column nahi hai (migration pending) — uske bina retry
+    const { ready_date: _r, ...withoutReady } = row;
+    ({ error } = await supabase.from('bookings').insert(withoutReady));
+  }
   if (error && isMissingColumnError(error.message)) {
     // Purana cloud schema — sirf base columns ke saath retry
     const legacy = {

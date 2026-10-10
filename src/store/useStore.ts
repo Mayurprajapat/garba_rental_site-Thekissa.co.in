@@ -6,7 +6,7 @@ import { getSiteContent } from '../lib/siteContent';
 export interface CartItem {
   id: string;
   size: string;
-  plan: '3day' | '9day';
+  plan: '1day';
   qty: number;
   addons?: string[];
   // Bina dress ke sirf accessory rent ho to ye set hota hai (price snapshot)
@@ -47,14 +47,18 @@ interface Store {
   setCartOpen: (b: boolean) => void;
   setEventDate: (d: string) => void;
   setPromo: (p: string) => void;
-  addToCart: (id: string, size: string, plan: '3day' | '9day', addons?: string[], single?: { name: string; price: number; img?: string }) => void;
-  removeFromCart: (id: string, size: string, plan: '3day' | '9day', addons?: string[], singleName?: string) => void;
+  addToCart: (id: string, size: string, plan: '1day', addons?: string[], single?: { name: string; price: number; img?: string }, qty?: number) => void;
+  removeFromCart: (id: string, size: string, plan: '1day', addons?: string[], singleName?: string) => void;
+  setQty: (id: string, size: string, plan: '1day', addons: string[] | undefined, singleName: string | undefined, qty: number) => void;
   clearCart: () => void;
   toggleWish: (id: string) => void;
   pushToast: (msg: string) => void;
 }
 
 let toastId = 1;
+// Mistap guard — same item par double-tap ho to dusri tap ignore (800ms window)
+let lastAddKey = '';
+let lastAddAt = 0;
 
 export const useStore = create<Store>()(
   persist(
@@ -82,16 +86,35 @@ export const useStore = create<Store>()(
       setCartOpen: (cartOpen) => set({ cartOpen }),
       setEventDate: (eventDate) => set({ eventDate }),
       setPromo: (promo) => set({ promo }),
-      addToCart: (id, size, plan, addons, single) => {
+      addToCart: (id, size, plan, addons, single, qty = 1) => {
         const { cart } = get();
         const key = (addons ?? []).join('|');
         const sName = single?.name ?? '';
+        const dedupeKey = `${id}|${size}|${plan}|${key}|${sName}`;
+        const now = Date.now();
+        if (dedupeKey === lastAddKey && now - lastAddAt < 800) return;
+        lastAddKey = dedupeKey;
+        lastAddAt = now;
+        const want = Math.max(1, Math.min(10, Math.round(qty) || 1));
         const found = cart.find((c) => c.id === id && c.size === size && c.plan === plan && (c.addons ?? []).join('|') === key && (c.single?.name ?? '') === sName);
         const next = found
-          ? cart.map((c) => (c === found ? { ...c, qty: c.qty + 1 } : c))
-          : [...cart, { id, size, plan, qty: 1, addons: addons?.length ? [...addons] : undefined, single: single ? { ...single } : undefined }];
+          ? cart.map((c) => (c === found ? { ...c, qty: Math.min(10, c.qty + want) } : c))
+          : [...cart, { id, size, plan, qty: want, addons: addons?.length ? [...addons] : undefined, single: single ? { ...single } : undefined }];
         set({ cart: next, cartOpen: true });
         get().pushToast(single ? `Only ${single.name} added to the list!` : addons?.length ? 'Dress + accessories added!' : 'Added to your booking list!');
+      },
+      setQty: (id, size, plan, addons, singleName, qty) => {
+        const q = Math.max(1, Math.min(10, Math.round(qty) || 1));
+        const key = (addons ?? []).join('|');
+        set({
+          cart: get().cart.map((c) =>
+            c.id === id && c.size === size && c.plan === plan
+            && (c.addons ?? []).join('|') === key
+            && (c.single?.name ?? '') === (singleName ?? '')
+              ? { ...c, qty: q }
+              : c
+          ),
+        });
       },
       removeFromCart: (id, size, plan, addons, singleName) =>
         set({

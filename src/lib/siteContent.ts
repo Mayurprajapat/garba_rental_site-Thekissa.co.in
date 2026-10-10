@@ -14,6 +14,8 @@ export interface StoreInfo {
   addressLong: string;
   hours: string;
   hoursShort: string;
+  /** QR payment ke liye dukandaar ki UPI ID (jaise name@okhdfc) — Admin → Website → Store se badlo */
+  upi: string;
 }
 
 export interface Promo {
@@ -48,7 +50,7 @@ export interface SiteContent {
 
 export const DEFAULT_CONTENT: SiteContent = {
   store: {
-    brand: 'TheKissa.co.in',
+    brand: 'TheKissa.co',
     phone: '6268305900',
     email: 'support.thekissa.co.in@gmail.com',
     city: 'Indore',
@@ -56,15 +58,16 @@ export const DEFAULT_CONTENT: SiteContent = {
     addressLong: 'Online-only rental studio · Indore, Madhya Pradesh, India (no walk-in store — doorstep delivery & pickup)',
     hours: 'Delivery 9 AM – 10 PM daily (Navratri day 3–6: 4 PM – 10 PM)',
     hoursShort: '9 AM – 10 PM',
+    upi: '9425417744@ptaxis',
   },
-  announcement: { show: true, badge: 'NAVRATRI SLOTS OPEN', msg: 'Rent from ₹799 · Same-day delivery' },
+  announcement: { show: true, badge: 'NAVRATRI SLOTS OPEN', msg: 'Rent from ₹299 · 100% Secure QR Payments · Same-day delivery' },
   hero: {
     titleA: 'Rent designer Garba looks.',
     titleB: 'Return easily.',
     subtitle: 'Designer Chaniya Choli, bridal couture and jewellery — on rent from {price}. Sanitised, steam-pressed, same-day delivery.',
-    minPrice: '₹799',
+    minPrice: '₹299',
   },
-  features: ['Dry-cleaned & Sanitized', '100% Refundable Security Deposit', 'Live Availability Tracking'],
+  features: ['Dry-cleaned & Sanitized', '100% Refundable Security Deposit', '100% Secure QR Payments', 'Live Availability Tracking'],
   promos: [
     { code: 'NAVRATRI20', percent: 20 },
     { code: 'GROUP25', percent: 25 },
@@ -74,7 +77,7 @@ export const DEFAULT_CONTENT: SiteContent = {
     title: 'Renting in 2 quick steps',
     steps: [
       { n: '01', h: 'Pick your look', p: 'Browse the collection or WhatsApp us your size and colour.' },
-      { n: '02', h: 'Confirm & delivery', p: 'Lock with a small token. Same-day delivery or store pickup.' },
+      { n: '02', h: 'Confirm & delivery', p: 'Pay half now or the full amount. Same-day delivery or store pickup.' },
     ],
   },
   looks: {
@@ -88,7 +91,7 @@ export const DEFAULT_CONTENT: SiteContent = {
     ],
   },
   faqs: [
-    { q: 'How long is the rental period?', a: 'Standard rental is 3 days — event day plus pickup and return. The full-Navratri plan covers 9 days with three outfits.' },
+    { q: 'How long is the rental period?', a: 'Every rental is 1 day — pickup, event and return. Need it longer? Just re-book for the next day.' },
     { q: 'What if the size doesn’t fit?', a: 'We keep large sizes in stock — get the fitting done from us, and we also provide pins for minor adjustments. Share your size on email or WhatsApp and we confirm fit before dispatch.' },
     { q: 'Is the deposit refundable?', a: 'Yes, 100%. Refunded via UPI/cash within 24 hours of return and quality check. Normal wear is never charged.' },
     { q: 'What about stains or minor damage?', a: 'Light dry-cleanable stains are on us. Major damage is charged at repair cost only — optional ₹199 damage cover removes the worry.' },
@@ -104,7 +107,7 @@ export const DEFAULT_CONTENT: SiteContent = {
     about: 'Designer Garba outfits on rent — perfect fitting, doorstep delivery, easy return.',
     delivery: 'Online only — no walk-in store',
   },
-  shopNote: '1-day, 3-day or 9-day rentals · 100% refundable deposit',
+  shopNote: '1-day rentals · 100% refundable deposit · 100% secure QR payments',
 };
 
 const KEY = 'raasleela-site-content';
@@ -131,19 +134,41 @@ function normalize(c: SiteContent): SiteContent {
   const looksImgs = Array.isArray(savedLooks.imgs)
     ? savedLooks.imgs.filter((s) => typeof s === 'string' && s.trim() && !BANNED_IMG.test(s))
     : [...DEFAULT_CONTENT.looks.imgs];
+  // Purani saved content ko naye defaults par migrate karo (client ka likha hua safe)
+  const savedFeatures: string[] = Array.isArray((c as any).features)
+    ? (c as any).features.map((t: any) => String(t ?? ''))
+    : [...DEFAULT_CONTENT.features];
+  if (!savedFeatures.some((t) => /secure/i.test(t))) savedFeatures.push('100% Secure QR Payments');
+  const savedAnn = (c as any).announcement || {};
+  const annMsg = savedAnn.msg === 'Rent from ₹799 · Same-day delivery'
+    ? DEFAULT_CONTENT.announcement.msg
+    : (savedAnn.msg ?? DEFAULT_CONTENT.announcement.msg);
+  const savedMinPrice = (c as any).hero?.minPrice;
+  const minPrice = savedMinPrice === '₹799' ? DEFAULT_CONTENT.hero.minPrice : (savedMinPrice ?? DEFAULT_CONTENT.hero.minPrice);
+  const rawNote = typeof (c as any).shopNote === 'string' && (c as any).shopNote.trim()
+    ? (c as any).shopNote.replace(/\s*[·•|]\s*Codes:.*$/i, '').replace(/1-day, 3-day or 9-day rentals/i, '1-day rentals').trim()
+    : '';
+  const shopNote = rawNote || DEFAULT_CONTENT.shopNote;
   return {
     ...DEFAULT_CONTENT,
     ...c,
     store: {
       ...DEFAULT_CONTENT.store,
       ...savedStore,
+      // Purana brand naam ho to naya kar do
+      brand: !savedStore.brand || savedStore.brand === 'TheKissa.co.in'
+        ? DEFAULT_CONTENT.store.brand
+        : savedStore.brand,
+      // UPI khaali ho to default (pehle save ho chuki khaali value migrate)
+      upi: savedStore.upi?.trim() ? savedStore.upi : DEFAULT_CONTENT.store.upi,
       // Purana default email ho to naya admin email kar do
       email: !savedStore.email || savedStore.email === 'hello@thekissa.in'
         ? DEFAULT_CONTENT.store.email
         : savedStore.email,
     },
-    announcement: { ...DEFAULT_CONTENT.announcement, ...(c.announcement || {}) },
-    hero: { ...DEFAULT_CONTENT.hero, ...(c.hero || {}), subtitle: heroSubtitle },
+    announcement: { ...DEFAULT_CONTENT.announcement, ...savedAnn, msg: annMsg },
+    hero: { ...DEFAULT_CONTENT.hero, ...(c.hero || {}), subtitle: heroSubtitle, minPrice },
+    features: savedFeatures,
     process: { ...DEFAULT_CONTENT.process, ...(c.process || {}) },
     looks: { ...DEFAULT_CONTENT.looks, ...(c.looks || {}), imgs: looksImgs },
     booking: {
@@ -163,10 +188,8 @@ function normalize(c: SiteContent): SiteContent {
           a: String(f?.a ?? '').replace(/ — a wrong size gets exchanged at your doorstep\./g, ''),
         }))
       : [...DEFAULT_CONTENT.faqs],
-    // Purani saved line me "Codes: ..." ho to hata do
-    shopNote: typeof c.shopNote === 'string' && c.shopNote.trim()
-      ? c.shopNote.replace(/\s*[·•|]\s*Codes:.*$/i, '').trim() || DEFAULT_CONTENT.shopNote
-      : DEFAULT_CONTENT.shopNote,
+    // Purani saved line me "Codes: ..." ho to hata do, purana plan text ho to 1-day kar do
+    shopNote,
   };
 }
 

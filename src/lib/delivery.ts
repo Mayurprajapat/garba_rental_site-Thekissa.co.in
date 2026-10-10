@@ -1,6 +1,6 @@
 import { isSupabaseConfigured, supabase } from './supabase';
 
-export const STORE_POS = { lat: 22.7196, lng: 75.8577, label: 'TheKissa.co.in dispatch hub · Indore' };
+export const STORE_POS = { lat: 22.7196, lng: 75.8577, label: 'TheKissa.co dispatch hub · Indore' };
 
 export type DeliveryStatus = 'assigned' | 'picked' | 'onway' | 'delivered';
 

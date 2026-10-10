@@ -47,7 +47,7 @@ type BookingRow = LocalBooking & { [k: string]: any };
 
 const emptyProduct: ProductRow = {
   id: '', name: '', hindi: '', category: 'women',
-  rent3: 1299, rent9: 2499, buy: 4299, deposit: 2000,
+  rent1: 899, rent3: 1299, rent9: 2499, buy: 4299, deposit: 2000,
   rating: 4.8, reviews: 0,
   sizes: ['S', 'M', 'L', 'XL'], colors: ['Multicolor'],
   img: '/images/g-hero.webp', badge: '', desc: '', fabric: 'Cotton', stock: 5, active: true,
@@ -91,6 +91,7 @@ export default function Admin() {
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [q, setQ] = useState('');
   const [catFilter, setCatFilter] = useState('all');
+  const [prodStatus, setProdStatus] = useState<'all' | 'live' | 'oos' | 'hidden'>('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -136,7 +137,7 @@ export default function Admin() {
       let all = getLocalBookings();
       if (all.length === 0 && !localStorage.getItem('raasleela-seeded')) {
         localStorage.setItem('raasleela-seeded', '1');
-        addLocalBooking({ name: 'Priya Sharma', phone: '9876543210', category: 'Women Chaniya Choli', size: 'M (36)', event_date: '2026-10-15', plan: '3 days (standard)', note: 'RL-01 red', items: [{ id: 'RL-01', qty: 1 }], subtotal: 1499, total: 1499 });
+        addLocalBooking({ name: 'Priya Sharma', phone: '9876543210', category: 'Women Chaniya Choli', size: 'M (36)', event_date: '2026-10-15', plan: '1 day', note: 'RL-01 red', items: [{ id: 'RL-01', qty: 1 }], subtotal: 1499, total: 1499 });
         all = getLocalBookings();
       }
       setBookings(all as BookingRow[]);
@@ -144,6 +145,15 @@ export default function Admin() {
   };
 
   useEffect(() => { if (loggedIn) { loadProducts(); loadBookings(); setCats(getCategories()); } }, [loggedIn]);
+
+  // Admin route kabhi search me index na ho
+  useEffect(() => {
+    const m = document.createElement('meta');
+    m.name = 'robots';
+    m.content = 'noindex, nofollow';
+    document.head.appendChild(m);
+    return () => { document.head.removeChild(m); };
+  }, []);
 
   const persistCats = (list: ShopCategory[]) => {
     setCats(list);
@@ -163,7 +173,8 @@ export default function Admin() {
   const filteredProducts = products.filter((p) => {
     const okQ = q.trim() ? `${p.id} ${p.name} ${p.hindi}`.toLowerCase().includes(q.toLowerCase()) : true;
     const okC = catFilter === 'all' ? true : p.category === catFilter;
-    return okQ && okC;
+    const okS = prodStatus === 'all' ? true : prodStatus === 'live' ? p.active && (p.stock ?? 0) > 0 : prodStatus === 'oos' ? (p.stock ?? 0) <= 0 : !p.active;
+    return okQ && okC && okS;
   });
   const filteredBookings = bookings.filter((b) => (statusFilter === 'all' ? true : b.status === statusFilter));
 
@@ -256,7 +267,7 @@ export default function Admin() {
         <div className="hidden lg:flex flex-col justify-between p-12 text-white relative overflow-hidden" style={{ background: 'linear-gradient(160deg,#1a0f1e,#3d0a26 70%)' }}>
           <Link to="/" className="flex items-center gap-2.5">
             <Logo className="w-10 h-10" />
-            <span className="font-display text-xl">TheKissa.co.in</span>
+            <span className="font-display text-xl">TheKissa.co</span>
           </Link>
           <div>
             <p className="text-[11px] tracking-[0.24em] text-[#e8c66a] font-bold">STORE MANAGER</p>
@@ -268,7 +279,7 @@ export default function Admin() {
               ))}
             </div>
           </div>
-          <p className="text-[11px] text-white/40">© 2026 TheKissa.co.in Garba Rental · Indore</p>
+          <p className="text-[11px] text-white/40">© 2026 TheKissa.co Garba Rental · Indore</p>
         </div>
         <div className="grid place-items-center p-6 bg-[#f7f3ea]">
           <form onSubmit={login} className="w-full max-w-sm admin-card p-8">
@@ -302,7 +313,7 @@ export default function Admin() {
         <aside className="hidden md:flex w-[264px] shrink-0 flex-col bg-[#0e0a12] text-white p-5 sticky top-0 h-screen border-r border-[#e8c66a]/15">
           <Link to="/" className="flex items-center gap-2.5 px-1">
             <Logo className="w-9 h-9" />
-            <span className="leading-tight"><b className="font-display block text-[17px]">TheKissa.co.in</b><small className="text-[9.5px] tracking-[0.24em] text-[#e8c66a]/80 font-bold">STUDIO · ADMIN</small></span>
+            <span className="leading-tight"><b className="font-display block text-[17px]">TheKissa.co</b><small className="text-[9.5px] tracking-[0.24em] text-[#e8c66a]/80 font-bold">STUDIO · ADMIN</small></span>
           </Link>
           <div className="hairline-light my-5" />
           <nav className="space-y-1">
@@ -404,6 +415,13 @@ export default function Admin() {
                   <button onClick={() => setEditing({ ...emptyProduct, id: `RL-${Date.now().toString().slice(-4)}` })} className="bg-[#1a0f1e] text-white text-[13px] font-semibold rounded-xl px-4 py-2.5 flex items-center justify-center gap-1.5"><Plus size={14} /> New product</button>
                   <button onClick={() => downloadCSV('products.csv', filteredProducts)} className="text-[13px] font-semibold border rounded-xl px-4 py-2.5">Export CSV</button>
                 </div>
+                <div className="flex gap-1.5 flex-wrap items-center mt-3">
+                  {(['all', 'live', 'oos', 'hidden'] as const).map((s) => (
+                    <button key={s} onClick={() => setProdStatus(s)} className={`text-xs font-bold rounded-full px-3.5 py-1.5 border ${prodStatus === s ? 'bg-[#1a0f1e] text-white border-[#1a0f1e]' : 'bg-white'}`}>
+                      {s === 'all' ? `All · ${products.length}` : s === 'live' ? `Live · ${products.filter((p) => p.active && (p.stock ?? 0) > 0).length}` : s === 'oos' ? `Out of stock · ${products.filter((p) => (p.stock ?? 0) <= 0).length}` : `Hidden · ${products.filter((p) => !p.active).length}`}
+                    </button>
+                  ))}
+                </div>
 
                 <div className="admin-card mt-4 overflow-x-auto">
                   <table className="w-full min-w-[760px]">
@@ -418,14 +436,19 @@ export default function Admin() {
                             </div>
                           </td>
                           <td className="admin-td capitalize text-[#3d2b36]">{p.category}</td>
-                          <td className="admin-td font-semibold">₹{p.rent3.toLocaleString('en-IN')} <span className="font-normal text-[#8a7584]">/ ₹{p.rent9.toLocaleString('en-IN')}</span></td>
+                          <td className="admin-td font-semibold">₹{((p as any).rent1 ?? p.rent3).toLocaleString('en-IN')} <span className="font-normal text-[#8a7584]">/ 1-day</span></td>
                           <td className="admin-td"><span className={`font-bold ${p.stock <= 2 ? 'text-rose-700' : ''}`}>{p.stock}</span>
                             <span className="block w-20 h-1.5 bg-black/10 rounded-full mt-1.5 overflow-hidden"><span className={`block h-full rounded-full ${p.stock <= 2 ? 'bg-rose-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(100, (p.stock / 10) * 100)}%` }} /></span>
                           </td>
-                          <td className="admin-td"><span className={`status-pill ${p.active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-black/5 text-black/50 border'}`}>{p.active ? 'Live' : 'Hidden'}</span></td>
+                          <td className="admin-td"><span className={`status-pill ${!p.active ? 'bg-black/5 text-black/50 border' : (p.stock ?? 0) <= 0 ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>{!p.active ? 'Hidden' : (p.stock ?? 0) <= 0 ? 'Out of stock' : 'Live'}</span></td>
                           <td className="admin-td">
                             <div className="flex justify-end gap-1">
                               <button onClick={() => setEditing(p)} title="Edit" className="w-8 h-8 grid place-items-center rounded-lg border hover:bg-[#1a0f1e] hover:text-white transition"><Pencil size={13} /></button>
+                              <button onClick={async () => {
+                                const nextStock = (p.stock ?? 0) > 0 ? 0 : 5;
+                                if (useCloud && supabase) { await supabase.from('products').update({ stock: nextStock }).eq('id', p.id); loadProducts(); }
+                                else persistProducts(products.map((x) => (x.id === p.id ? { ...x, stock: nextStock } : x)));
+                              }} title={(p.stock ?? 0) > 0 ? 'Mark out of stock (stock → 0)' : 'Restock (stock → 5)'} className={`h-8 px-2 flex items-center gap-1 rounded-lg border text-[10.5px] font-bold transition ${(p.stock ?? 0) > 0 ? 'border-rose-200 text-rose-700 hover:bg-rose-600 hover:text-white' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white'}`}>{(p.stock ?? 0) > 0 ? 'OOS' : '+5'}</button>
                               <button onClick={async () => {
                                 if (useCloud && supabase) { await supabase.from('products').update({ active: !p.active }).eq('id', p.id); loadProducts(); }
                                 else persistProducts(products.map((x) => (x.id === p.id ? { ...x, active: !x.active } : x)));
@@ -454,10 +477,10 @@ export default function Admin() {
             {view === 'categories' && (
               <div>
                 <div className="admin-card p-4 text-[13px] text-[#3d2b36] leading-relaxed">
-                  <b>Shop by category</b> — website par photo tiles dikhte hain (har kapda / item alag). Tap = collection filter.
+                  <b>Shop by category</b> — the website shows photo tiles (one per dress / item). Tap = collection filter.
                   <b>Dress</b> = dresses · <b>Item</b> = single-rent items only (jhumka, kamarbandh — without a dress).
                   Keyword comma (,) means <b>OR</b> (e.g. <code>dupatta, bandhani</code>); words inside one comma part must all match (e.g. <code>oxidised jhumka</code>).
-                  Khaali keyword = us group ke sab products.
+                  Empty keyword = all products in that group.
                 </div>
                 <div className="flex flex-wrap gap-2 mt-4">
                   <button onClick={() => persistCats([{ id: `cat-${Date.now().toString(36)}`, label: 'New category', query: '', img: '/images/g-hero.webp', kind: 'dress' }, ...cats])} className="bg-[#1a0f1e] text-white text-[13px] font-semibold rounded-xl px-4 py-2.5 flex items-center gap-1.5"><Plus size={14} /> New category</button>
@@ -526,15 +549,38 @@ export default function Admin() {
                   <button onClick={() => downloadCSV('bookings.csv', filteredBookings)} className="ml-auto text-xs font-bold border rounded-full px-3.5 py-1.5 bg-white">Export CSV</button>
                 </div>
                 <div className="admin-card mt-4 overflow-x-auto">
-                  <table className="w-full min-w-[1040px]">
-                    <thead><tr className="border-b border-[#1a0f1e]/8"><th className="admin-th">Order</th><th className="admin-th">Customer</th><th className="admin-th">Event</th><th className="admin-th">Total</th><th className="admin-th">Deposit</th><th className="admin-th">Payment</th><th className="admin-th">Status</th><th className="admin-th text-right">Actions</th></tr></thead>
+                  <table className="w-full min-w-[1140px]">
+                    <thead><tr className="border-b border-[#1a0f1e]/8"><th className="admin-th">Order</th><th className="admin-th">Customer</th><th className="admin-th">Event</th><th className="admin-th">Ready by</th><th className="admin-th">Total</th><th className="admin-th">Deposit</th><th className="admin-th">Payment</th><th className="admin-th">Status</th><th className="admin-th text-right">Actions</th></tr></thead>
                     <tbody>
                       {filteredBookings.map((b) => (
                         <tr key={b.id} className="hover:bg-[#faf7ef]">
                           <td className="admin-td font-bold">{b.order_id || `#${String(b.id).slice(-6)}`}<span className="block text-[11px] font-normal text-[#8a7584]">#{String(b.id).slice(-6)}</span></td>
                           <td className="admin-td"><b className="block text-[13px]">{b.name}</b><a href={`tel:${b.phone}`} className="text-[12px] text-blue-700 hover:underline">{b.phone}</a></td>
                           <td className="admin-td text-[12.5px] text-[#3d2b36]">{b.event_date || '—'}<span className="block text-[#8a7584]">{b.category} · {b.size}</span></td>
-                          <td className="admin-td font-bold">₹{(b.total || b.subtotal || 0).toLocaleString('en-IN')}{!!b.token_amount && <span className="block text-[11px] font-normal text-emerald-700">token ₹{Number(b.token_amount).toLocaleString('en-IN')}</span>}</td>
+                          <td className="admin-td">
+                            <input type="date" value={b.ready_date || ''} title="Set the date by which this order will be ready — the customer sees it in My Orders"
+                              onChange={async (e) => {
+                                const v = e.target.value || null;
+                                if (useCloud && supabase) {
+                                  try {
+                                    const { error } = await supabase.from('bookings').update({ ready_date: v }).eq('id', b.id);
+                                    if (error) throw error;
+                                  } catch {
+                                    setMsg('Could not save ready date — run supabase/migration_ready_date.sql in the SQL Editor.');
+                                    setTimeout(() => setMsg(''), 4000);
+                                    return;
+                                  }
+                                } else {
+                                  updateLocalBooking(b.id, { ready_date: v });
+                                }
+                                loadBookings();
+                                setMsg(v ? `Ready date set — customer will see "Available by ${v}".` : 'Ready date cleared.');
+                                setTimeout(() => setMsg(''), 3000);
+                              }}
+                              className="admin-input !w-[132px] !py-1.5 !text-[12px]" />
+                            {b.ready_date && <span className="block text-[11px] text-emerald-700 font-semibold mt-0.5">✓ shown in My Orders</span>}
+                          </td>
+                          <td className="admin-td font-bold">₹{(b.total || b.subtotal || 0).toLocaleString('en-IN')}{!!b.token_amount && <span className="block text-[11px] font-normal text-emerald-700">{b.payment_mode === 'upi-qr-full' ? `full ₹${Number(b.token_amount).toLocaleString('en-IN')}` : (b.payment_mode === 'upi-qr-half' ? `half ₹${Number(b.token_amount).toLocaleString('en-IN')}` : `token ₹${Number(b.token_amount).toLocaleString('en-IN')}`)}</span>}</td>
                           <td className="admin-td">
                             <b className="block text-[13px]">₹{Number(b.deposit || 0).toLocaleString('en-IN')}</b>
                             <button
@@ -553,7 +599,25 @@ export default function Admin() {
                               {b.deposit_status === 'refunded' ? 'refunded ✓' : b.deposit_status === 'collected' ? 'collected ✓' : 'pending'}
                             </button>
                           </td>
-                          <td className="admin-td"><span className="text-[11.5px] font-semibold">{b.payment_mode || 'pending'}</span><span className="block text-[11px] text-[#8a7584]">{b.payment_status || ''}{b.payment_id ? ` · ${String(b.payment_id).slice(0, 14)}` : ''}</span></td>
+                          <td className="admin-td"><span className="text-[11.5px] font-semibold">{b.payment_mode || 'pending'}</span><span className="block text-[11px] text-[#8a7584]">{b.payment_status || ''}{b.payment_id ? ` · ${String(b.payment_id).slice(0, 14)}` : ''}</span>
+                            {(b.payment_mode === 'upi-qr' || b.payment_mode === 'upi-qr-full' || b.payment_mode === 'upi-qr-half') && (
+                              <button
+                                title="Match with the bank statement, then tap to verify payment"
+                                onClick={async () => {
+                                  const next = b.payment_status === 'verified' ? 'unverified' : 'verified';
+                                  if (useCloud && supabase) {
+                                    try { await supabase.from('bookings').update({ payment_status: next }).eq('id', b.id); } catch { /* purana schema */ }
+                                  } else {
+                                    updateLocalBooking(b.id, { payment_status: next });
+                                  }
+                                  loadBookings();
+                                }}
+                                className={`text-[10.5px] font-bold rounded-full px-2 py-0.5 border mt-1 ${b.payment_status === 'verified' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}
+                              >
+                                {b.payment_status === 'verified' ? 'verified ✓' : 'tap to verify'}
+                              </button>
+                            )}
+                          </td>
                           <td className="admin-td"><span className={`status-pill ${statusStyle[b.status] || ''}`}>{b.status}</span></td>
                           <td className="admin-td">
                             <div className="flex justify-end gap-1 flex-wrap">
@@ -633,8 +697,8 @@ export default function Admin() {
               </div>
               <label className="label-pro block">Name<input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} className="admin-input mt-1.5" placeholder="Mirror-work Chaniya Choli" required /></label>
               <label className="label-pro block">Tagline<input value={editing.hindi} onChange={(e) => setEditing({ ...editing, hindi: e.target.value })} className="admin-input mt-1.5" /></label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {([['rent3', '3-day rent'], ['rent9', '9-day rent'], ['buy', 'Buy price'], ['deposit', 'Deposit']] as const).map(([k, l]) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {([['rent1', '1-day rent'], ['buy', 'Buy price'], ['deposit', 'Deposit']] as const).map(([k, l]) => (
                   <label key={k} className="label-pro">{l}<input type="number" min={0} value={(editing as any)[k]} onChange={(e) => setEditing({ ...editing, [k]: Number(e.target.value) } as any)} className="admin-input mt-1.5" /></label>
                 ))}
               </div>
@@ -643,30 +707,60 @@ export default function Admin() {
                 <label className="label-pro">Stock<input type="number" min={0} value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: Number(e.target.value) })} className="admin-input mt-1.5" /></label>
               </div>
               <div>
-                <p className="label-pro">Photos (line 1 = main photo, next lines = 360° spin angles in order)</p>
-                <div className="flex gap-3 mt-1.5">
-                  <div className="flex gap-1.5 shrink-0">
-                    {[editing.img, ...(editing.images ?? [])].filter(Boolean).slice(0, 4).map((src, i) => (
-                      <img key={`${src}-${i}`} src={src} alt="" className={`w-14 h-16 object-cover rounded-xl border-2 ${i === 0 ? 'border-black' : ''}`} />
-                    ))}
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <textarea
-                      value={[editing.img, ...(editing.images ?? [])].filter(Boolean).join('\n')}
-                      onChange={(e) => {
-                        const lines = e.target.value.split('\n').map((s) => s.trim()).filter(Boolean);
-                        setEditing({ ...editing, img: lines[0] ?? '', images: lines.slice(1) });
-                      }}
-                      className="admin-input" rows={3} placeholder={'/images/g-hero.webp\n/images/g-hero-back.webp'} />
-                    <input type="file" accept="image/*" onChange={async (e) => {
-                      const f = e.target.files?.[0];
-                      if (!f) return;
-                      const url = await uploadImage(f);
-                      if (url) setEditing({ ...editing, img: editing.img || url, images: editing.img ? [...(editing.images ?? []), url] : (editing.images ?? []) });
-                    }} className="text-xs" />
-                    {uploading && <span className="text-xs">Uploading…</span>}
-                  </div>
-                </div>
+                <p className="label-pro">Photos — first = main photo, rest = angles (tap ✕ to remove, + to add more)</p>
+                {(() => {
+                  const all = [editing.img, ...(editing.images ?? [])].filter(Boolean);
+                  const dropAt = (idx: number) => {
+                    const next = all.filter((_, j) => j !== idx);
+                    setEditing({ ...editing, img: next[0] ?? '', images: next.slice(1) });
+                  };
+                  const addUrls = (urls: string[]) => {
+                    const next = [...all, ...urls.filter(Boolean)].slice(0, 12);
+                    setEditing({ ...editing, img: next[0] ?? '', images: next.slice(1) });
+                  };
+                  return (
+                    <div className="mt-1.5">
+                      <div className="flex flex-wrap gap-1.5">
+                        {all.map((src, i) => (
+                          <div key={`${src}-${i}`} className="relative">
+                            <img src={src} alt="" className={`w-14 h-16 object-cover rounded-xl border-2 ${i === 0 ? 'border-black' : 'border-black/10'}`} />
+                            {i === 0 && <span className="absolute top-0.5 left-0.5 text-[8.5px] font-black bg-black text-white rounded-full px-1.5 py-0.5">MAIN</span>}
+                            <button type="button" onClick={() => dropAt(i)} title="Remove photo" className="absolute -top-1.5 -right-1.5 w-5 h-5 grid place-items-center rounded-full bg-rose-600 text-white text-[11px] font-bold">✕</button>
+                          </div>
+                        ))}
+                        <label title="Add photos" className="w-14 h-16 grid place-items-center rounded-xl border-2 border-dashed border-black/25 cursor-pointer hover:border-black hover:bg-black/5 transition text-xl font-bold text-black/40">+
+                          <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                            const files = [...(e.target.files ?? [])].slice(0, Math.max(0, 12 - all.length));
+                            if (!files.length) return;
+                            setUploading(true);
+                            try {
+                              const urls: string[] = [];
+                              for (const f of files) {
+                                const url = await uploadImage(f);
+                                if (url) urls.push(url);
+                              }
+                              if (urls.length) addUrls(urls);
+                            } finally {
+                              setUploading(false);
+                              e.target.value = '';
+                            }
+                          }} />
+                        </label>
+                      </div>
+                      {uploading && <span className="text-xs">Uploading…</span>}
+                      <div className="flex gap-1.5 mt-2">
+                        <input placeholder="Paste photo link, then + Add" className="admin-input" onKeyDown={(e) => {
+                          if (e.key === 'Enter') { e.preventDefault(); const el = e.target as HTMLInputElement; if (el.value.trim()) { addUrls([el.value.trim()]); el.value = ''; } }
+                        }} />
+                        <button type="button" onClick={(e) => {
+                          const wrap = (e.currentTarget as HTMLElement).closest('div');
+                          const inp = wrap?.querySelector('input') as HTMLInputElement | null;
+                          if (inp?.value.trim()) { addUrls([inp.value.trim()]); inp.value = ''; }
+                        }} className="shrink-0 text-[12.5px] font-bold border rounded-xl px-3.5 hover:bg-black hover:text-white transition">+ Add</button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
                 <label className="label-pro">Badge (optional)<input value={editing.badge} onChange={(e) => setEditing({ ...editing, badge: e.target.value })} placeholder="BESTSELLER" className="admin-input mt-1.5" /></label>

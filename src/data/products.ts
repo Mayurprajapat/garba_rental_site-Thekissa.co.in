@@ -135,8 +135,8 @@ const SPOT: [RegExp, number, number][] = [
   [/choli|blouse|chaniya|kediyu|lehenga|ghaghra|dhoti|kurta|angrakha/, 38, 60],
 ];
 
-export function hotspotsFor(p: Pick<Product, 'category' | 'desc' | 'accessories' | 'name' | 'rent3'>): Hotspot[] {
-  const spots: Hotspot[] = [{ key: '__dress', name: p.name, tag: 'dress', price: p.rent3, x: 38, y: 58 }];
+export function hotspotsFor(p: Pick<Product, 'category' | 'desc' | 'accessories' | 'name' | 'rent1'>): Hotspot[] {
+  const spots: Hotspot[] = [{ key: '__dress', name: p.name, tag: 'dress', price: p.rent1, x: 38, y: 58 }];
   const used = ['38,58'];
   lookFor(p).forEach((a, i) => {
     let x = a.x;
@@ -164,14 +164,6 @@ export function spinFramesFor(p: Pick<Product, 'img' | 'images'>): string[] {
   const extra = (p.images ?? []).filter(Boolean);
   return [p.img, ...extra.filter((x) => x !== p.img)].slice(0, 24);
 }
-
-export const CATEGORIES: { id: Category | 'all'; label: string; img: string; note: string }[] = [
-  { id: 'women', label: 'Women Chaniya Choli', img: '/images/g-girls2.jpg', note: 'Rent from ₹1299' },
-  { id: 'men', label: 'Men Kediyu-Dhoti', img: '/images/g-kedia-green.jpg', note: 'Rent from ₹999' },
-  { id: 'kids', label: 'Kids (2–14 yrs)', img: '/images/g-kids1.webp', note: 'Rent from ₹799' },
-  { id: 'combo', label: 'Couple / Family Combo', img: '/images/g-combo2.jpg', note: 'Rent from ₹2499' },
-  { id: 'premium', label: 'Premium Bridal', img: '/images/g-koti.webp', note: 'Rent from ₹2499' },
-];
 
 export { STORE, waLink } from './store';
 // Purane imports na toote — WA_NUMBER ab store se aata hai

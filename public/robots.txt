@@ -2,5 +2,8 @@ User-agent: *
 Allow: /
 Disallow: /d/
 Disallow: /t/
+# Secret admin path (default) — kabhi index na ho. Agar VITE_ADMIN_PATH
+# badla ho to yaha bhi wahi path add karo.
+Disallow: /rl-manager-2026
 
 Sitemap: https://garba-rental-website-phi.vercel.app/sitemap.xml

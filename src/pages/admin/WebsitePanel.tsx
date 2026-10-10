@@ -54,6 +54,10 @@ export default function WebsitePanel() {
             <Field label="Hours (full)"><input value={c.store.hours} onChange={(e) => setStore('hours', e.target.value)} className="admin-input" /></Field>
             <Field label="Hours (short)"><input value={c.store.hoursShort} onChange={(e) => setStore('hoursShort', e.target.value)} className="admin-input" /></Field>
           </div>
+          <Field label="UPI ID (for QR payments)">
+            <input value={c.store.upi} onChange={(e) => setStore('upi', e.target.value.trim())} className="admin-input" placeholder="e.g. yourname@okhdfc" />
+            <p className="text-[11.5px] text-[#8a7584] mt-1">Customers scan this QR at checkout to pay half or full. Enter your GPay/PhonePe UPI ID here.</p>
+          </Field>
         </Card>
 
         <Card title="Top banner" hint="The strip at the very top of the website.">
@@ -73,7 +77,7 @@ export default function WebsitePanel() {
             <Field label="Title line 2 (golden)"><input value={c.hero.titleB} onChange={(e) => setC((p) => ({ ...p, hero: { ...p.hero, titleB: e.target.value } }))} className="admin-input" /></Field>
           </div>
           <Field label="Subtitle"><textarea value={c.hero.subtitle} onChange={(e) => setC((p) => ({ ...p, hero: { ...p.hero, subtitle: e.target.value } }))} className="admin-input" rows={2} /></Field>
-          <Field label="Starting price (jaise ₹799)"><input value={c.hero.minPrice} onChange={(e) => setC((p) => ({ ...p, hero: { ...p.hero, minPrice: e.target.value } }))} className="admin-input" /></Field>
+          <Field label="Starting price (e.g. ₹799)"><input value={c.hero.minPrice} onChange={(e) => setC((p) => ({ ...p, hero: { ...p.hero, minPrice: e.target.value } }))} className="admin-input" /></Field>
         </Card>
 
         <Card title="Features (3 points below the hero)">

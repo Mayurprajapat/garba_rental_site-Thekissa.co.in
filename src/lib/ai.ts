@@ -7,6 +7,13 @@ import { PRODUCTS } from '../data/products';
 const AI_URL = (import.meta.env.VITE_AI_API_URL as string) || '';
 const AI_KEY = (import.meta.env.VITE_AI_API_KEY as string) || '';
 
+// NOTE: Ye key frontend bundle me PUBLIC ho jati hai — real provider secret
+// kabhi yaha mat dalo. Live LLM ke liye apna backend proxy URL use karo,
+// secret hamesha server-side rakho.
+if (AI_KEY && typeof location !== 'undefined' && !/localhost|127\.0\.0\.1/.test(location.hostname)) {
+  console.warn('[ai] VITE_AI_API_KEY is bundled publicly in the frontend. Use a backend proxy and keep real provider keys server-side.');
+}
+
 export interface ChatProduct {
   id: string;
   name: string;
@@ -27,7 +34,7 @@ function pickProducts(query: string, limit = 3): ChatProduct[] {
   if (m) {
     const budget = parseInt(m[1], 10);
     if (budget >= 500 && budget <= 15000) {
-      list = list.filter((p) => p.rent3 <= budget).sort((a, b) => b.rating - a.rating);
+      list = list.filter((p) => p.rent1 <= budget).sort((a, b) => b.rating - a.rating);
     }
   }
 
@@ -42,7 +49,7 @@ function pickProducts(query: string, limit = 3): ChatProduct[] {
   }
 
   if (!list.length) list = [...PRODUCTS].sort((a, b) => b.rating - a.rating);
-  return list.slice(0, limit).map((p) => ({ id: p.id, name: p.name, price: p.rent3, fabric: p.fabric }));
+  return list.slice(0, limit).map((p) => ({ id: p.id, name: p.name, price: p.rent1, fabric: p.fabric }));
 }
 
 function localReply(query: string): { text: string; products: ChatProduct[] } {
@@ -50,7 +57,7 @@ function localReply(query: string): { text: string; products: ChatProduct[] } {
 
   if (/namaste|hello|hi\b|hey|sat sri|kem cho/.test(q) && q.length < 20) {
     return {
-      text: 'Hello! I am the TheKissa.co.in assistant. Tell me your budget, size and occasion — e.g. "women white look under 1500, size M" — and I will share the 3 best options.',
+      text: 'Hello! I am the TheKissa.co assistant. Tell me your budget, size and occasion — e.g. "women white look under 1500, size M" — and I will share the 3 best options.',
       products: pickProducts('', 3),
     };
   }
@@ -67,14 +74,14 @@ function localReply(query: string): { text: string; products: ChatProduct[] } {
     return { text: 'We deliver in 1-2 hours in Indore. Delivery is free on bulk orders.', products: [] };
   }
   if (/size/.test(q)) {
-    return { text: 'Presize available — tell me your size and I will suggest the best option.', products: pickProducts(query, 3) };
+    return { text: 'Sizes S to XXL available — tell me your size and I will suggest the best option.', products: pickProducts(query, 3) };
   }
   if (/price|rate|rent|cost|charge|paisa/.test(q) && !/\d/.test(q)) {
-    return { text: 'Rent starts at ₹499 — Blouse ₹499+, Chaniya Choli ₹1299+, Premium Bridal ₹2499+. What is your budget?', products: pickProducts('', 3) };
+    return { text: 'Rent starts at ₹299 — Blouse ₹299+, Chaniya Choli ₹779+, Premium Bridal ₹1499+. What is your budget?', products: pickProducts('', 3) };
   }
   if (/book|order|reserve|buy|lena hai/.test(q)) {
     const recs = pickProducts(query, 3);
-    return { text: `Great choice! These ${recs.length} options will suit you best. Select one and press Reserve in the Shop — your booking locks with just a 20% token advance.`, products: recs };
+    return { text: `Great choice! These ${recs.length} options will suit you best. Select one and press Reserve in the Shop — your booking locks with just a 50% half payment (or pay in full).`, products: recs };
   }
 
   const recs = pickProducts(query, 3);
@@ -82,7 +89,7 @@ function localReply(query: string): { text: string; products: ChatProduct[] } {
     const lines = recs.map((r, i) => `${i + 1}. ${r.name} (${r.id}) — ₹${r.price.toLocaleString('en-IN')} · ${r.fabric}`).join('\n');
     return { text: `Here are your ${recs.length} best matches:\n${lines}\n\nTell me more about size or budget and I will filter further?`, products: recs };
   }
-  return { text: 'Got it! Share your budget + category + size — e.g. "men kediyu XL under 2000".', products: [] };
+  return { text: 'Got it! Share your budget + size — e.g. "wine chaniya M under 2000".', products: [] };
 }
 
 export async function askAssistant(query: string): Promise<{ text: string; products: ChatProduct[]; live: boolean }> {
@@ -96,7 +103,7 @@ export async function askAssistant(query: string): Promise<{ text: string; produ
           messages: [
             {
               role: 'system',
-              content: `You are TheKissa.co.in Garba Rental assistant. Reply in English, short. Only suggest from this catalog: ${PRODUCTS.map((p) => `${p.id}:${p.name}:Rs${p.rent3}:${p.category}`).join(', ')}. Never invent price.`,
+              content: `You are TheKissa.co Garba Rental assistant. Reply in English, short. Only suggest from this catalog: ${PRODUCTS.map((p) => `${p.id}:${p.name}:Rs${p.rent1}:${p.category}`).join(', ')}. Never invent price. All rentals are 1-day only.`,
             },
             { role: 'user', content: query },
           ],

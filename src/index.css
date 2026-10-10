@@ -202,6 +202,9 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Honeypot bot-trap — humans kabhi nahi dekhte/bharte, bots bhar dete hain */
+.hp-trap { position: absolute !important; left: -9999px !important; top: auto !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
+
 /* refined card hover (subtle, premium) */
 .card-hover { transition: transform .3s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease, border-color .3s ease; }
 .card-hover:hover { transform: translateY(-4px); box-shadow: 0 28px 56px -30px rgba(31,26,23,.28), 0 4px 12px -6px rgba(31,26,23,.06); border-color: rgba(31,26,23,.16); }

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Gem, Heart, SearchX, ShoppingBasket, SlidersHorizontal, Star, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { lookFor, spinFramesFor, type Product } from '../data/products';
+import type { LiveProduct } from '../lib/ProductsContext';
 import { categoriesEvent, getCategories, matchesCategory, type ShopCategory } from '../lib/categories';
 import { itemImgFor } from '../lib/items';
 import { useProducts } from '../lib/ProductsContext';
@@ -29,16 +30,17 @@ export function singlesFor(products: Product[]): SingleItem[] {
   return [...map.values()];
 }
 
-function ProductCard({ p, plan, index }: { p: Product; plan: '3day' | '9day'; index: number }) {
+function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
   const toggleWish = useStore((s) => s.toggleWish);
   const wishlist = useStore((s) => s.wishlist);
   const setQuickView = useStore((s) => s.setQuickView);
   const wished = wishlist.includes(p.id);
-  const price = plan === '3day' ? p.rent3 : p.rent9;
+  const price = p.rent1;
   const rank = index < 3 ? `N°0${index + 1}` : null;
   const savePct = p.buy > price ? Math.round((1 - price / p.buy) * 100) : 0;
   const freeDandiya = lookFor(p).some((a) => a.tag === 'free' && /dandiya/i.test(a.name));
   const frames = spinFramesFor(p);
+  const soldOut = (p.stock ?? 1) <= 0;
   const catLabel = { women: 'Women', men: 'Men', kids: 'Kids', combo: 'Combo', premium: 'Premium' }[p.category] ?? p.category;
 
   return (
@@ -49,6 +51,7 @@ function ProductCard({ p, plan, index }: { p: Product; plan: '3day' | '9day'; in
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f4f1ea] img-sheen">
         <img src={p.img} alt={p.name} loading="lazy" className="w-full h-full object-cover transition duration-700 group-hover:scale-[1.06]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
+        {soldOut && <span className="absolute inset-0 grid place-items-center bg-black/45 z-[1]"><span className="bg-white text-black text-[11px] font-black tracking-[0.14em] rounded-full px-3.5 py-1.5">OUT OF STOCK</span></span>}
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 z-[2]">
           {rank && <span className="bg-gradient-to-br from-[#f0d78c] to-[#c9a44a] text-[#1a0f1e] text-[10px] font-black tracking-[0.1em] rounded-full px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)]">{rank}</span>}
           <span className="bg-white/95 backdrop-blur text-[#641629] text-[10px] font-bold tracking-[0.08em] uppercase rounded-full px-2.5 py-1 ring-1 ring-[#641629]/15">{catLabel}</span>
@@ -77,25 +80,26 @@ function ProductCard({ p, plan, index }: { p: Product; plan: '3day' | '9day'; in
         <div className="flex items-center gap-1 text-xs font-semibold text-[#8a6d00] mt-2">
           <Star size={12} className="fill-[#c9960a] text-[#c9960a]" /> {p.rating}
           <span className="text-[#8a7584] font-normal">({p.reviews})</span>
-          <span className="ml-auto text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">{plan === '3day' ? '3-day' : '9-day'}</span>
+          <span className="ml-auto text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">1-day</span>
         </div>
         <div className="hairline-premium my-2" />
         <div className="flex items-baseline gap-2 mt-auto">
           <b className="font-display text-[19px] sm:text-[20px] text-[#641629] tabular-nums leading-none">₹{price.toLocaleString('en-IN')}</b>
-          <span className="text-[11.5px] font-semibold text-neutral-500">/ {plan === '3day' ? '3-day' : '9-day'} rent</span>
+          <span className="text-[11.5px] font-semibold text-neutral-500">/ 1-day rent</span>
         </div>
         <p className="text-[12px] font-bold text-[#8a6d00] mt-1">+ ₹{p.deposit.toLocaleString('en-IN')} Deposit</p>
         {freeDandiya && <p className="text-[11.5px] font-black text-emerald-700 mt-0.5">✓ FREE Dandiya pair included</p>}
-        <button onClick={(e) => { e.stopPropagation(); setQuickView(p.id); }}
-          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-[#221114] shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 hover:-translate-y-px active:translate-y-0 transition">
-          <ShoppingBasket size={14} /> Rent or Buy Outfit
+        <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id); }}
+          disabled={soldOut}
+          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-[#221114] shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 hover:-translate-y-px active:translate-y-0 transition disabled:opacity-40 disabled:hover:brightness-100 disabled:hover:translate-y-0">
+          <ShoppingBasket size={14} /> {soldOut ? 'Out of Stock' : 'Rent or Buy Outfit'}
         </button>
       </div>
     </div>
   );
 }
 
-function SingleCard({ item, plan }: { item: SingleItem; plan: '3day' | '9day' }) {
+function SingleCard({ item }: { item: SingleItem }) {
   const addToCart = useStore((s) => s.addToCart);
   const setQuickView = useStore((s) => s.setQuickView);
 
@@ -118,7 +122,7 @@ function SingleCard({ item, plan }: { item: SingleItem; plan: '3day' | '9day' })
           <b className="font-display text-[19px] sm:text-[20px] text-[#641629] tabular-nums leading-none">₹{item.price.toLocaleString('en-IN')}</b>
           <span className="text-[11.5px] font-semibold text-neutral-500">rent</span>
         </div>
-        <button onClick={() => addToCart(item.productId, 'One-size', plan, undefined, { name: item.name, price: item.price })}
+        <button onClick={() => addToCart(item.productId, 'One-size', '1day', undefined, { name: item.name, price: item.price })}
           className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-[#221114] shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 hover:-translate-y-px active:translate-y-0 transition">
           <ShoppingBasket size={14} /> Rent Only This
         </button>
@@ -142,7 +146,6 @@ export default function Shop() {
   const wishOnly = useStore((s) => s.wishOnly);
   const setWishOnly = useStore((s) => s.setWishOnly);
   const wishlist = useStore((s) => s.wishlist);
-  const [plan, setPlan] = useState<'3day' | '9day'>('3day');
   const [showFilters, setShowFilters] = useState(false);
   const [cats, setCats] = useState<ShopCategory[]>(() => getCategories());
 
@@ -183,7 +186,7 @@ export default function Shop() {
         });
       }
     }
-    l = l.filter((p) => p.rent3 <= maxPrice);
+    l = l.filter((p) => p.rent1 <= maxPrice);
     if (search.trim()) {
       const words = search.toLowerCase().split(/\s+/).filter(Boolean);
       l = l.filter((p) => {
@@ -191,8 +194,8 @@ export default function Shop() {
         return words.every((w) => hay.includes(w));
       });
     }
-    if (sort === 'low') l = [...l].sort((a, b) => a.rent3 - b.rent3);
-    if (sort === 'high') l = [...l].sort((a, b) => b.rent3 - a.rent3);
+    if (sort === 'low') l = [...l].sort((a, b) => a.rent1 - b.rent1);
+    if (sort === 'high') l = [...l].sort((a, b) => b.rent1 - a.rent1);
     if (sort === 'rating') l = [...l].sort((a, b) => b.rating - a.rating);
     if (wishOnly) l = l.filter((p) => wishlist.includes(p.id));
     return l;
@@ -268,10 +271,7 @@ export default function Shop() {
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex bg-black/[.05] ring-1 ring-black/5 rounded-full p-0.5 text-[12.5px] font-semibold shrink-0">
-              <button onClick={() => setPlan('3day')} className={`px-3.5 py-1.5 rounded-full transition ${plan === '3day' ? 'bg-white shadow-[0_2px_8px_-2px_rgba(0,0,0,.2)] text-black' : 'text-neutral-400'}`}>3-day</button>
-              <button onClick={() => setPlan('9day')} className={`px-3.5 py-1.5 rounded-full transition ${plan === '9day' ? 'bg-white shadow-[0_2px_8px_-2px_rgba(0,0,0,.2)] text-black' : 'text-neutral-400'}`}>9-day</button>
-            </div>
+            <div className="flex bg-black/[.05] ring-1 ring-black/5 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold text-black shrink-0">1-day rental</div>
             <button onClick={() => setShowFilters((v) => !v)}
               className="shrink-0 relative flex items-center gap-1.5 text-[12.5px] font-semibold border border-black/10 rounded-full px-3.5 py-1.5 hover:border-black/40 bg-white transition">
               <SlidersHorizontal size={14} /> <span className="hidden sm:inline">Filters</span>
@@ -314,7 +314,7 @@ export default function Shop() {
               </select>
               <label className="flex items-center gap-2 text-[12.5px] text-neutral-500 font-semibold">
                 Max <b className="text-black">₹{maxPrice.toLocaleString('en-IN')}</b>
-                <input type="range" min={799} max={4000} step={100} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-32 accent-black" aria-label="Maximum price" />
+                <input type="range" min={299} max={4000} step={100} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-32 accent-black" aria-label="Maximum price" />
               </label>
               {activeFilters > 0 && (
                 <button onClick={() => { setMaxPrice(4000); setSort('pop'); setSearch(''); clearCat(); setWishOnly(false); }} className="text-[12px] font-semibold text-black underline underline-offset-2">Clear all</button>
@@ -344,7 +344,7 @@ export default function Shop() {
             <motion.div layout className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
               <AnimatePresence mode="popLayout">
                 {itemList.map((it) => (
-                  <SingleCard key={it.name} item={it} plan={plan} />
+                  <SingleCard key={it.name} item={it} />
                 ))}
               </AnimatePresence>
             </motion.div>
@@ -361,7 +361,7 @@ export default function Shop() {
             <motion.div layout className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
               <AnimatePresence mode="popLayout">
                 {list.map((p, i) => (
-                  <ProductCard key={p.id} p={p} plan={plan} index={i} />
+                  <ProductCard key={p.id} p={p} index={i} />
                 ))}
               </AnimatePresence>
             </motion.div>

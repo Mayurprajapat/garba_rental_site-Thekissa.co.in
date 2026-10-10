@@ -40,10 +40,10 @@ const SINGLES = ['oxidised jhumka', 'kamarbandh (tagdi)', 'oxidised jhumka - pea
 
 // No mens/kids content should remain
 const BANNED = [/kediyu/i, /dhoti/i, /pagdi/i, /safa/i, /mojari/i, /brooch/i, /boys/i, /\bkids?\b/i, /couple/i, /groom/i, /dulha/i, /\bmen\b/i, /mother/i, /daughter/i, /family/i];
-const hayAll = PRODUCTS.map((p) => [p[1], p[2], p[0], p[4], p[5], p[6], p[7].join(' ')].join(' ').toLowerCase()).join(' | ');
+const hayOne = (p) => [p[1], p[2], p[0], p[4], p[5], p[6], p[7].join(' ')].join(' ').toLowerCase();
 let bannedHits = [];
 for (const re of BANNED) {
-  const idx = PRODUCTS.map((p, i) => re.test([p[1], p[2], p[0], p[4], p[5], p[6], p[7].join(' ')].join(' ').toLowerCase()) ? p[0] : null).filter(Boolean);
+  const idx = PRODUCTS.map((p) => re.test(hayOne(p)) ? p[0] : null).filter(Boolean);
   if (idx.length) bannedHits.push(`${re} in ${idx.join(',')}`);
 }
 const catIds = CATS.map((c) => c[0]);

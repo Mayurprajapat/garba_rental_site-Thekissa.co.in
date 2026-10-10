@@ -20,6 +20,8 @@ export interface MyOrder {
   deposit: number;
   token: number;
   mode: string;
+  /** Admin ne order kab tak ready hoga ye date di ho (YYYY-MM-DD) */
+  readyDate?: string;
 }
 
 const KEY = 'raasleela-my-orders';

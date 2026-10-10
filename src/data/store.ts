@@ -1,4 +1,4 @@
-// TheKissa.co.in — single source of truth for store contact details.
+// TheKissa.co — single source of truth for store contact details.
 // NUMBER/EMAIL AB CODE ME NAHI — Admin panel → Website → Store/Contact se badlo.
 // Ye object hamesha wahi values deta hai (proxy), isliye save karte hi poori site update.
 

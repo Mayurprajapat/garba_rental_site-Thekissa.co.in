@@ -9,8 +9,15 @@ export function makeOrderId(): string {
 
 export function tokenAdvance(total: number): number {
   if (total <= 0) return 0;
-  // 20% ya minimum ₹499 — jo bada ho, total se zyada nahi
+  // Legacy: 20% ya minimum ₹499 — jo bada ho, total se zyada nahi
+  // (purane orders ke display ke liye rakha hai; naya flow halfAdvance use karta hai)
   return Math.min(total, Math.max(499, Math.round(total * 0.2)));
+}
+
+/** Half payment — order ke time 50% advance, baaki 50% delivery par. */
+export function halfAdvance(total: number): number {
+  if (total <= 0) return 0;
+  return Math.round(total / 2);
 }
 
 export function formatINR(n: number): string {

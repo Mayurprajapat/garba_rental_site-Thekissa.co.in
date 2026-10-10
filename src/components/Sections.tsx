@@ -14,11 +14,11 @@ export function FeatureBanner() {
   return (
     <div className="bg-[#faf8f6]">
       <div className="container-x pt-3">
-        <div className="mandala-bg bg-gradient-to-r from-[#2b070e] via-[#641629] to-[#2b070e] border border-[#c9a44a]/50 rounded-b-2xl rounded-t-lg shadow-[0_18px_40px_-24px_rgba(100,22,41,.7)]">
+        <div className="bg-white border border-black/10 rounded-b-2xl rounded-t-lg shadow-[0_18px_40px_-24px_rgba(0,0,0,.25)]">
           <div className="flex items-center justify-center gap-4 sm:gap-10 overflow-x-auto no-scrollbar whitespace-nowrap px-4 py-2">
             {items.map((it) => (
-              <span key={it.t} className="flex items-center gap-2 shrink-0 text-[12px] sm:text-[13px] font-semibold text-[#f7ead0]">
-                <it.icon size={15} className="text-[#e8c66a] shrink-0" />{it.t}
+              <span key={it.t} className="flex items-center gap-2 shrink-0 text-[12px] sm:text-[13px] font-bold text-[#221114]">
+                <it.icon size={15} className="text-[#641629] shrink-0" />{it.t}
               </span>
             ))}
           </div>
@@ -133,7 +133,7 @@ export function Faq() {
 }
 
 export function Booking() {
-  const [f, setF] = useState({ name: '', phone: '', cat: 'Women Chaniya Choli', date: '', days: '3 days (standard)', note: '' });
+  const [f, setF] = useState({ name: '', phone: '', cat: 'Women Chaniya Choli', date: '', days: '1 day', note: '', web: '' });
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
   useSiteVersion();
@@ -145,12 +145,12 @@ export function Booking() {
     await saveBooking({
       name: f.name, phone: f.phone, category: f.cat, size: '',
       event_date: f.date || null, plan: f.days, note: f.note,
-      items: [], subtotal: 0, total: 0,
+      items: [], subtotal: 0, total: 0, honeypot: f.web,
     });
     setSaving(false);
     setDone(true);
     const subject = `New Booking — ${f.name} (${f.date || 'date TBD'})`;
-    const body = `Hi TheKissa.co.in! New booking:\nName: ${f.name}\nMobile: ${f.phone}\nCategory: ${f.cat}\nEvent: ${f.date}\nPlan: ${f.days}\nNote: ${f.note}`;
+    const body = `Hi TheKissa.co! New booking:\nName: ${f.name}\nMobile: ${f.phone}\nCategory: ${f.cat}\nEvent: ${f.date}\nPlan: ${f.days}\nNote: ${f.note}`;
     window.location.href = `mailto:${STORE.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
   return (
@@ -186,9 +186,10 @@ export function Booking() {
           <label className="label-pro">Category<select value={f.cat} onChange={(e) => setF({ ...f, cat: e.target.value })} className="input-pro mt-1.5 font-normal">{['Women Chaniya Choli', 'Choli / Blouse', 'Ghaghra / Lehenga', 'Jewellery / Accessories', 'Dupatta / Dandiya'].map((o) => <option key={o}>{o}</option>)}</select></label>
           <div className="grid grid-cols-2 gap-3 [&>*]:min-w-0">
             <label className="label-pro">Event date *<input type="date" required value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} className="input-pro mt-1.5" /></label>
-            <label className="label-pro">Plan<select value={f.days} onChange={(e) => setF({ ...f, days: e.target.value })} className="input-pro mt-1.5 font-normal">{['3 days (standard)', 'Full Navratri (9 days)', '1 day only'].map((o) => <option key={o}>{o}</option>)}</select></label>
+            <label className="label-pro">Plan<div className="input-pro mt-1.5 font-semibold bg-[#faf7ef]">1 day (fixed)</div></label>
           </div>
           <label className="label-pro block">Notes<input value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="Preferred colour, size and product ID e.g. RL-01" className="input-pro mt-1.5" /></label>
+          <label aria-hidden className="hp-trap">Website<input value={f.web} onChange={(e) => setF({ ...f, web: e.target.value })} tabIndex={-1} autoComplete="off" className="input-pro mt-1.5" /></label>
           <button className="btn-primary w-full !py-3"><Mail size={15} /> {saving ? 'Reserving…' : done ? 'Reserved — send the email' : 'Confirm on Email'} </button>
           <p className="text-[11px] text-[#8a7584] text-center flex items-center justify-center gap-1.5"><Sparkles size={12} /> No advance needed to enquire · Reply within 30 minutes, 10 AM–9 PM</p>
         </form>
@@ -214,16 +215,16 @@ export function Footer() {
   return (
     <footer id="contact" className="bg-gradient-to-b from-[#3d0a1a] to-[#1c0409] text-white/70 relative overflow-hidden">
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#c9a44a]/60 to-transparent" />
-      <div aria-hidden className="pointer-events-none select-none absolute -bottom-6 left-1/2 -translate-x-1/2 font-display font-black whitespace-nowrap leading-none text-[20vw] sm:text-[10rem] text-white/[.035]">TheKissa.co.in</div>
+      <div aria-hidden className="pointer-events-none select-none absolute -bottom-6 left-1/2 -translate-x-1/2 font-display font-black whitespace-nowrap leading-none text-[20vw] sm:text-[10rem] text-white/[.035]">TheKissa.co</div>
       <div className="container-x py-5 grid grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
         <div>
           <div className="flex items-center gap-2.5">
             <Logo className="w-10 h-10" />
-            <span><b className="font-display text-xl text-white block">TheKissa.co.in</b><small className="text-[10px] tracking-[0.22em] text-white/40">GARBA RENTAL</small></span>
+            <span><b className="font-display text-xl text-white block">TheKissa.co</b><small className="text-[10px] tracking-[0.22em] text-white/40">GARBA RENTAL</small></span>
           </div>
           <p className="mt-4 text-[13px] leading-relaxed text-white/55">{foot.about}</p>
           <p className="mt-4 text-[13px]">📞 <a href={STORE.phoneHref} className="text-white font-semibold">{STORE.phoneDisplay}</a><br />
-            💬 <a href={waLink('Hi TheKissa.co.in!')} target="_blank" className="text-white font-semibold">WhatsApp us</a><br />✉️ {STORE.email}</p>
+            💬 <a href={waLink('Hi TheKissa.co!')} target="_blank" className="text-white font-semibold">WhatsApp us</a><br />✉️ {STORE.email}</p>
         </div>
         <div><h4 className="text-white font-semibold mb-4 text-[13px] tracking-wide">SHOP</h4><div className="space-y-2.5 flex flex-col text-[13.5px]">{[['Women Chaniya Choli', '/#shop'], ['Ghaghra & Lehenga', '/#shop'], ['Premium Bridal', '/#shop'], ['Jewellery', '/#shop']].map(([l, h]) => <a key={l as string} href={h as string} className="hover:text-white w-fit">{l as string}</a>)}</div></div>
         <div><h4 className="text-white font-semibold mb-4 text-[13px] tracking-wide">SUPPORT</h4><div className="space-y-2.5 flex flex-col text-[13.5px]">{[['How it works', '/#process'], ['FAQs', '/#faq'], ['Track delivery', '/track'], ['Book now', '/#book'], ['About us', '/about'], ['Contact us', '/contact']].map(([l, h]) => <a key={l as string} href={h as string} className="hover:text-white w-fit">{l as string}</a>)}</div></div>
@@ -233,7 +234,7 @@ export function Footer() {
       </div>
       <div className="border-t border-white/10">
         <div className="container-x py-4 flex flex-col sm:flex-row items-center gap-2 text-[11.5px] text-white/40">
-          <p>© 2026 TheKissa.co.in Garba Rental. All rights reserved.</p>
+          <p>© 2026 TheKissa.co Garba Rental. All rights reserved.</p>
           <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 sm:ml-auto">
             <a href="/terms" className="hover:text-white underline underline-offset-2">Terms &amp; Conditions</a>
             <a href="/privacy" className="hover:text-white underline underline-offset-2">Privacy Policy</a>

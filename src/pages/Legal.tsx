@@ -68,7 +68,7 @@ export function AboutPage() {
       <H>What we offer</H>
       <Ul
         items={[
-          '1-day, 3-day standard rental and 9-day full-Navratri rental plans.',
+          'Simple 1-day rental plan for every outfit.',
           'Delivery in Indore in 1–2 hours.',
           'Every outfit is dry-cleaned, sanitised and quality-checked before dispatch.',
         ]}
@@ -95,7 +95,7 @@ export function ContactPage() {
       <P>Online only — doorstep delivery &amp; pickup across Indore. No walk-in store.</P>
       <H>Phone &amp; WhatsApp</H>
       <P>
-        <a className="underline font-semibold" href={BUSINESS.phoneHref}>{BUSINESS.phone}</a> — call or WhatsApp “Hi TheKissa.co.in!”.
+        <a className="underline font-semibold" href={BUSINESS.phoneHref}>{BUSINESS.phone}</a> — call or WhatsApp “Hi TheKissa.co!”.
       </P>
       <H>Email</H>
       <P>
@@ -111,20 +111,20 @@ export function TermsPage() {
   return (
     <Shell title="Terms & Conditions" updated="October 2026">
       <P>
-        By booking or renting from {BUSINESS.name} (“TheKissa.co.in”, “we”), you agree to these terms. If you do not agree,
+        By booking or renting from {BUSINESS.name} (“TheKissa.co”, “we”), you agree to these terms. If you do not agree,
         please do not place a booking.
       </P>
       <H>1. Rental period</H>
       <P>
-        The standard rental is 1 day &amp; 3 days (pickup/event/return). The full-Navratri plan covers 9 days. Late returns are
-        charged at 25% of the 1-day &amp; 3-day rent per extra day unless an extension is confirmed with us in advance.
+        Every rental is 1 day (pickup/event/return). Late returns are
+        charged at 25% of the 1-day rent per extra day unless an extension is confirmed with us in advance.
       </P>
       <H>2. Booking &amp; payment</H>
       <Ul
         items={[
-          'A booking is confirmed after a token advance (20% of total rent, minimum ₹499) or full payment, online or on delivery.',
-          'Online payments are processed securely via Razorpay (UPI, cards, netbanking). We never see or store your card details.',
-          'The balance rent plus a refundable security deposit is collected on delivery/pickup.',
+          'A booking is confirmed after half payment (50% of total rent) or full payment via UPI QR at the time of order.',
+          'Online payment is via UPI QR scan (GPay, PhonePe, Paytm, BHIM). Your UPI credentials go directly to your bank app — we never see or store them.',
+          'With half payment, the remaining 50% balance plus a refundable security deposit is collected on delivery/pickup.',
         ]}
       />
       <H>3. Security deposit</H>
@@ -178,13 +178,13 @@ export function PrivacyPage() {
       />
       <H>3. Payments</H>
       <P>
-        Online payments are handled by Razorpay, our PCI-DSS compliant payment gateway. Card/UPI credentials go
-        directly to Razorpay; we only receive a payment reference and status. Please also read Razorpay’s privacy
-        policy on their website.
+        Online token payments are made by scanning our UPI QR code with your own UPI app.
+        Your credentials stay inside your bank/UPI app; we only receive the payment amount
+        and the UTR reference you share.
       </P>
       <H>4. Data sharing</H>
       <P>
-        We share data only with service providers essential to fulfil your order (payment gateway, delivery partners)
+        We share data only with service providers essential to fulfil your order (delivery partners)
         and with authorities when legally required. No selling, no marketing resale.
       </P>
       <H>5. Retention &amp; deletion</H>
@@ -219,9 +219,9 @@ export function RefundsPage() {
       <H>2. Cancellation by you</H>
       <Ul
         items={[
-          '48+ hours before event/pickup: full refund of token advance, or free rescheduling to another date.',
-          '24–48 hours before: 50% of token advance refunded; balance adjusted if you reschedule.',
-          'Under 24 hours / no-show: token advance is non-refundable (the outfit was blocked for you).',
+          '48+ hours before event/pickup: full refund of the advance paid, or free rescheduling to another date.',
+          '24–48 hours before: 50% of the advance paid refunded; balance adjusted if you reschedule.',
+          'Under 24 hours / no-show: the advance paid is non-refundable (the outfit was blocked for you).',
         ]}
       />
       <H>3. Cancellation or failure by us</H>
@@ -232,14 +232,14 @@ export function RefundsPage() {
       <H>4. How refunds are paid</H>
       <Ul
         items={[
-          'Online payments: refunded to the original source (UPI/bank/card) within 1 to 2 working days.',
+          'QR/UPI advance payments: refunded via UPI within 1 to 2 working days.',
           'Pay-on-delivery bookings: refunded via UPI within 48 hours of approval.',
           'Deposit refunds: via UPI/cash within 24 hours of return and quality check.',
         ]}
       />
       <H>5. Non-refundable items</H>
       <P>
-        Only two things are non-refundable: (a) token advance on under-24-hour cancellations, and (b) the optional
+        Only two things are non-refundable: (a) the advance paid on under-24-hour cancellations, and (b) the optional
         ₹199 damage-cover fee once the outfit is dispatched. Everything else follows the slabs above.
       </P>
     </Shell>
