@@ -35,7 +35,7 @@ export function Process() {
     <section id="process" className="container-x py-5">
       <div className="flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
         <h2 className="premium-heading font-display font-black text-lg sm:text-xl">{proc.title}</h2>
-        <a href="#book" className="text-[13px] font-semibold text-[#c9273a] underline underline-offset-2 sm:ml-auto shrink-0">Book now →</a>
+        <a href="#book" className="text-[13px] font-semibold text-[#641629] underline underline-offset-2 sm:ml-auto shrink-0">Book now →</a>
       </div>
       <div className="grid grid-cols-2 gap-2.5 mt-3">
         {proc.steps.map((s, i) => (

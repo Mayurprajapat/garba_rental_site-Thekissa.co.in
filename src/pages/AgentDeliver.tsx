@@ -77,7 +77,7 @@ export default function AgentDeliver() {
     <div className="min-h-screen bg-[#f7f3ea] p-4">
       <div className="max-w-2xl mx-auto space-y-3">
         <div className="admin-card p-5">
-          <p className="text-[11px] font-bold tracking-[0.16em] text-[#c9273a]">DELIVERY AGENT · {d.code}</p>
+          <p className="text-[11px] font-bold tracking-[0.16em] text-[#641629]">DELIVERY AGENT · {d.code}</p>
           <h1 className="font-display font-black text-2xl mt-1">{d.customer} → delivery</h1>
           <p className="text-[13px] text-[#6f5b6a] mt-1">{d.address} · {d.phone}</p>
           <p className="text-[13px] mt-2">Status: <b className="capitalize">{d.status}</b></p>

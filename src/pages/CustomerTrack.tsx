@@ -70,7 +70,7 @@ export default function CustomerTrack() {
         <div className="flex items-center gap-1.5 mt-5">
           {STEPS.map((s, i) => (
             <div key={s} className="flex-1 min-w-0">
-              <div className={`h-1.5 rounded-full ${i <= stepIdx ? 'bg-[#c9273a]' : 'bg-black/10'}`} />
+              <div className={`h-1.5 rounded-full ${i <= stepIdx ? 'bg-[#641629]' : 'bg-black/10'}`} />
               <p className={`text-[9.5px] sm:text-[10.5px] font-bold capitalize mt-1.5 truncate ${i <= stepIdx ? '' : 'text-[#8a7584]'}`}>{s}</p>
             </div>
           ))}

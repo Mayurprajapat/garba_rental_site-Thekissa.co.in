@@ -47,7 +47,7 @@ export default function AiAssistant() {
       <button
         onClick={() => setOpen(!open)}
         aria-label="AI assistant"
-        className="fixed bottom-[9.5rem] sm:bottom-24 right-4 sm:right-5 z-40 h-13 w-13 p-3.5 rounded-full bg-gradient-to-br from-[#d92b3f] to-[#641629] text-white shadow-[0_16px_36px_-12px_rgba(100,22,41,.6)] ring-1 ring-white/20 hover:scale-105 transition flex items-center gap-2"
+        className="fixed bottom-[9.5rem] sm:bottom-24 right-4 sm:right-5 z-40 h-13 w-13 p-3.5 rounded-full bg-[#641629] text-white shadow-[0_16px_36px_-12px_rgba(100,22,41,.6)] ring-1 ring-white/20 hover:scale-105 transition flex items-center gap-2"
       >
         {open ? <X size={20} /> : <Bot size={20} />}
         {!open && <span className="hidden sm:inline text-xs font-semibold pr-1">AI Help</span>}

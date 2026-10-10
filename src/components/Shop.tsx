@@ -60,7 +60,7 @@ function ProductCard({ p, plan, index }: { p: Product; plan: '3day' | '9day'; in
           aria-label="Wishlist"
           className={`absolute top-3 right-3 w-9 h-9 grid place-items-center rounded-full bg-white/95 backdrop-blur shadow-[0_6px_16px_-8px_rgba(0,0,0,.4)] hover:scale-110 transition z-[2] ${wished ? 'heart-pop' : ''}`}
         >
-          <Heart size={15} className={wished ? 'fill-[#c9273a] text-[#c9273a]' : 'text-black'} />
+          <Heart size={15} className={wished ? 'fill-[#641629] text-[#641629]' : 'text-black'} />
         </button>
         {frames.length > 1 && (
           <span className="absolute bottom-3 left-3 z-[2] bg-black/65 backdrop-blur text-white text-[10px] font-bold tracking-wide rounded-full px-2.5 py-1">⟳ 360°</span>
@@ -86,7 +86,7 @@ function ProductCard({ p, plan, index }: { p: Product; plan: '3day' | '9day'; in
         </div>
         <p className="text-[12px] font-bold text-[#8a6d00] mt-1">+ ₹{p.deposit.toLocaleString('en-IN')} Deposit</p>
         <button onClick={(e) => { e.stopPropagation(); setQuickView(p.id); }}
-          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-gradient-to-r from-[#e8590c] to-[#c9273a] shadow-[0_12px_24px_-12px_rgba(200,60,20,.65)] hover:brightness-110 hover:-translate-y-px active:translate-y-0 transition">
+          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-[#641629] shadow-[0_12px_22px_-12px_rgba(77,15,31,.5)] hover:brightness-110 hover:-translate-y-px active:translate-y-0 transition">
           <ShoppingBasket size={14} /> Rent or Buy Outfit
         </button>
       </div>
@@ -118,7 +118,7 @@ function SingleCard({ item, plan }: { item: SingleItem; plan: '3day' | '9day' })
           <span className="text-[11.5px] font-semibold text-neutral-500">rent</span>
         </div>
         <button onClick={() => addToCart(item.productId, 'One-size', plan, undefined, { name: item.name, price: item.price })}
-          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-gradient-to-r from-[#e8590c] to-[#c9273a] shadow-[0_12px_24px_-12px_rgba(200,60,20,.65)] hover:brightness-110 hover:-translate-y-px active:translate-y-0 transition">
+          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-[#641629] shadow-[0_12px_22px_-12px_rgba(77,15,31,.5)] hover:brightness-110 hover:-translate-y-px active:translate-y-0 transition">
           <ShoppingBasket size={14} /> Rent Only This
         </button>
         <button onClick={() => setQuickView(item.productId)} className="mt-1.5 text-[12px] font-semibold text-neutral-400 hover:text-[#641629] transition">View dress →</button>
@@ -237,7 +237,7 @@ export default function Shop() {
               const on = activeCat?.id === c.id;
               return (
                 <button key={c.id} onClick={() => pickCat(on ? null : c)}
-                  className={`shrink-0 w-[88px] sm:w-[104px] rounded-2xl overflow-hidden border bg-white text-left transition-all duration-200 ${on ? 'border-[#c9273a] ring-2 ring-[#c9273a]/60 shadow-[0_10px_24px_-12px_rgba(201,39,58,.6)]' : 'border-black/10 hover:border-[#c9273a]/50'}`}>
+                  className={`shrink-0 w-[88px] sm:w-[104px] rounded-2xl overflow-hidden border bg-white text-left transition-all duration-200 ${on ? 'border-[#641629] ring-2 ring-[#641629]/60 shadow-[0_10px_24px_-12px_rgba(77,15,31,.6)]' : 'border-black/10 hover:border-[#641629]/50'}`}>
                   <div className="h-[60px] sm:h-[72px] overflow-hidden bg-[#f4f1ea]">
                     {c.img
                       ? <img src={c.img} alt={c.label} loading="lazy" className="w-full h-full object-cover" />
@@ -259,12 +259,12 @@ export default function Shop() {
         <div className="container-x py-2 flex flex-col gap-2">
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
             <button onClick={() => pickCat(null)}
-              className={`shrink-0 rounded-full px-4 py-2 text-[12.5px] font-bold border transition-all duration-200 ${!activeCat && !search.trim() && !wishOnly ? 'bg-[#c9273a] text-white border-[#c9273a] shadow-[0_8px_18px_-8px_rgba(201,39,58,.7)]' : 'bg-white text-[#3d2b36] border-black/10 hover:border-[#c9273a]/50 hover:text-[#641629]'}`}>
+              className={`shrink-0 rounded-full px-4 py-2 text-[12.5px] font-bold border transition-all duration-200 ${!activeCat && !search.trim() && !wishOnly ? 'bg-[#641629] text-white border-[#641629] shadow-[0_8px_18px_-8px_rgba(77,15,31,.7)]' : 'bg-white text-[#3d2b36] border-black/10 hover:border-[#641629]/50 hover:text-[#641629]'}`}>
               All Outfits
             </button>
             {cats.map((c) => (
               <button key={c.id} onClick={() => pickCat(c)}
-                className={`shrink-0 rounded-full px-4 py-2 text-[12.5px] font-bold border transition-all duration-200 ${activeCat?.id === c.id ? 'bg-[#c9273a] text-white border-[#c9273a] shadow-[0_8px_18px_-8px_rgba(201,39,58,.7)]' : 'bg-white text-[#3d2b36] border-black/10 hover:border-[#c9273a]/50 hover:text-[#641629]'}`}>
+                className={`shrink-0 rounded-full px-4 py-2 text-[12.5px] font-bold border transition-all duration-200 ${activeCat?.id === c.id ? 'bg-[#641629] text-white border-[#641629] shadow-[0_8px_18px_-8px_rgba(77,15,31,.7)]' : 'bg-white text-[#3d2b36] border-black/10 hover:border-[#641629]/50 hover:text-[#641629]'}`}>
                 {c.label}
               </button>
             ))}
@@ -277,7 +277,7 @@ export default function Shop() {
             <button onClick={() => setShowFilters((v) => !v)}
               className="shrink-0 relative flex items-center gap-1.5 text-[12.5px] font-semibold border border-black/10 rounded-full px-3.5 py-1.5 hover:border-black/40 bg-white transition">
               <SlidersHorizontal size={14} /> <span className="hidden sm:inline">Filters</span>
-              {activeFilters > 0 && <span className="w-4 h-4 rounded-full bg-[#c9273a] text-white text-[9px] font-bold grid place-items-center">{activeFilters}</span>}
+              {activeFilters > 0 && <span className="w-4 h-4 rounded-full bg-[#641629] text-white text-[9px] font-bold grid place-items-center">{activeFilters}</span>}
             </button>
           </div>
 

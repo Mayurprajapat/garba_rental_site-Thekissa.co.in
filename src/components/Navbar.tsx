@@ -66,14 +66,14 @@ export default function Navbar() {
           <a href="#top" className="flex items-center gap-2 group min-w-0">
             <span className="group-hover:scale-105 transition"><Logo /></span>
             <span className="leading-tight min-w-0 shrink-0">
-              <b className="font-display font-black text-[15px] min-[400px]:text-[19px] sm:text-[22px] block text-[#c9273a] tracking-tight whitespace-nowrap">{STORE.brand}</b>
+              <b className="font-display font-black text-[15px] min-[400px]:text-[19px] sm:text-[22px] block text-[#641629] tracking-tight whitespace-nowrap">{STORE.brand}</b>
               <small className="hidden min-[400px]:block text-[8.5px] sm:text-[9px] tracking-[0.2em] text-[#8a6d00] font-bold">GARBHA & FESTIVE RENTALS</small>
             </span>
           </a>
 
           <nav className="hidden lg:flex items-center gap-6 text-[13.5px] font-medium text-neutral-500">
             {links.map(([l, h]) => (
-              <a key={l} href={h} className="hover:text-[#641629] transition-colors relative after:absolute after:left-0 after:-bottom-1 after:h-px after:w-0 after:bg-[#c9273a] after:transition-all hover:after:w-full">{l}</a>
+              <a key={l} href={h} className="hover:text-[#641629] transition-colors relative after:absolute after:left-0 after:-bottom-1 after:h-px after:w-0 after:bg-[#641629] after:transition-all hover:after:w-full">{l}</a>
             ))}
           </nav>
 
@@ -96,7 +96,7 @@ export default function Navbar() {
               <Heart size={16} className={wishOnly ? 'fill-white text-white' : wishlist.length ? 'fill-black text-black' : 'text-black'} />
               {wishlist.length > 0 && <span className={`absolute -top-1 -right-1 text-[10px] font-bold min-w-5 h-5 px-1 grid place-items-center rounded-full ${wishOnly ? 'bg-white text-black' : 'bg-black text-white'}`}>{wishlist.length}</span>}
             </button>
-            <button onClick={() => setCartOpen(true)} className="flex items-center gap-2 bg-gradient-to-r from-[#d92b3f] to-[#641629] text-white text-[13px] font-semibold rounded-full pl-4 pr-1.5 py-1.5 hover:brightness-110 transition ring-1 ring-[#641629]/20 shadow-[0_10px_24px_-12px_rgba(100,22,41,.6)]">
+            <button onClick={() => setCartOpen(true)} className="flex items-center gap-2 bg-[#641629] text-white text-[13px] font-semibold rounded-full pl-4 pr-1.5 py-1.5 hover:brightness-110 transition ring-1 ring-[#641629]/20 shadow-[0_10px_24px_-12px_rgba(100,22,41,.6)]">
               <ShoppingBasket size={15} />
               <span className="hidden sm:inline">Booking list</span>
               <span className="bg-white text-black text-xs font-bold min-w-7 h-7 px-1.5 grid place-items-center rounded-full">{count}</span>

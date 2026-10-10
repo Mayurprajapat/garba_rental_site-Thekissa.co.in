@@ -193,7 +193,7 @@ export function QuickView() {
               <p className="text-[11.5px] text-emerald-700 font-semibold mt-0.5">+ ₹{p.deposit.toLocaleString('en-IN')} fully refundable deposit</p>
               <div className="grid grid-cols-2 gap-2 mt-5">
                 <button onClick={addDress} className="btn-primary !py-3 !text-[13px]"><ShoppingBasket size={15} /> Add to list{pickedTotal ? ` +₹${pickedTotal.toLocaleString('en-IN')}` : ''}</button>
-                <button onClick={() => toggleWish(p.id)} className="btn-outline-dark !py-3 !text-[13px]"><Heart size={15} className={wishlist.includes(p.id) ? 'fill-[#c9273a] text-[#c9273a]' : ''} /> Wishlist</button>
+                <button onClick={() => toggleWish(p.id)} className="btn-outline-dark !py-3 !text-[13px]"><Heart size={15} className={wishlist.includes(p.id) ? 'fill-[#641629] text-[#641629]' : ''} /> Wishlist</button>
               </div>
               <a href={waLink(`Hi TheKissa.co.in! Is ${p.name} (${p.id}), size ${size}, ${plan === '3day' ? '3-day' : '9-day'} available?`)} target="_blank" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 border border-[#641629]/15 rounded-full py-3 text-[13px] font-semibold hover:border-[#641629] transition"><MessageCircle size={15} /> Ask on WhatsApp</a>
               <div className="grid grid-cols-3 gap-2 mt-5 text-[11px] font-medium text-[#6f5b6a] border-t border-[#641629]/8 pt-4">
@@ -506,6 +506,6 @@ export function Toasts() {
 export function TrackFloat() {
   return (
     <a href="/track"
-      className="fixed bottom-20 right-4 sm:bottom-5 sm:right-5 z-40 w-14 h-14 grid place-items-center rounded-full bg-gradient-to-br from-[#d92b3f] to-[#641629] text-white shadow-2xl hover:scale-110 transition ring-1 ring-white/20" aria-label="Track your delivery"><MapPin size={24} /></a>
+      className="fixed bottom-20 right-4 sm:bottom-5 sm:right-5 z-40 w-14 h-14 grid place-items-center rounded-full bg-[#641629] text-white shadow-2xl hover:scale-110 transition ring-1 ring-white/20" aria-label="Track your delivery"><MapPin size={24} /></a>
   );
 }
