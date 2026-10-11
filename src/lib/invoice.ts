@@ -138,7 +138,7 @@ export function downloadInvoicePDF(o: MyOrder, opts?: {
   row('Total rent', inr(o.total), true);
   row('Paid now', inr(o.token));
   row('Balance on delivery', inr(Math.max(0, o.total - o.token)));
-  row('Refundable extra 30% (you get back)', inr(o.deposit), true, [22, 120, 70]);
+  row('Refundable extra 30% (30% of ' + inr(o.total) + ' rent)', inr(o.deposit), true, [22, 120, 70]);
   row('Total collection (rent + deposit)', inr(o.total + o.deposit), true);
   if (opts?.paymentId) {
     doc.setFont('helvetica', 'normal');
@@ -159,7 +159,7 @@ export function downloadInvoicePDF(o: MyOrder, opts?: {
   doc.setFontSize(9);
   doc.setTextColor(...MUTED);
   const notes = [
-    `You will get ${inr(o.deposit)} back via UPI/cash within 24 hours of return and quality check.`,
+    `30% of ${inr(o.total)} rent = ${inr(o.deposit)} refundable — you will get ${inr(o.deposit)} back via UPI/cash within 24 hours of return and quality check.`,
     'Every rental is 1 day (pickup / event / return). Late returns are charged per extra day.',
     'Thank you for renting with us! For help, contact us on call or WhatsApp.',
   ];
