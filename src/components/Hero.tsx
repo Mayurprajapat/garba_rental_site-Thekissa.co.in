@@ -27,11 +27,12 @@ export default function Hero() {
 
   return (
     <section id="top" className="bg-[#FAF5EC] text-[#221114] relative overflow-hidden scroll-mt-28">
-      <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 w-[420px] h-[420px] rounded-full bg-[#c9a44a]/15 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 w-[420px] h-[420px] rounded-full bg-[#c9a44a]/20 blur-3xl" />
       <div aria-hidden className="pointer-events-none absolute -bottom-32 -left-24 w-[380px] h-[380px] rounded-full bg-[#641629]/10 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#c9a44a]/60 to-transparent" />
       <div className="max-w-6xl mx-auto px-4 py-8 sm:py-12 relative grid md:grid-cols-[1.05fr_.95fr] gap-8 items-center [&>*]:min-w-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="min-w-0">
-          <span className="inline-flex items-center gap-1.5 bg-[#221114] text-[#e8c66a] text-[10.5px] font-bold tracking-[0.16em] rounded-full px-3.5 py-1.5">
+          <span className="inline-flex items-center gap-1.5 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] text-[#f0d78c] text-[10.5px] font-bold tracking-[0.16em] rounded-full px-3.5 py-1.5 ring-1 ring-[#c9a44a]/40 shadow-[0_8px_20px_-10px_rgba(34,17,20,.6),inset_0_1px_0_rgba(240,215,140,.25)]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#e8c66a]" /> THE FESTIVE EDIT · LIVE
           </span>
           <h1 className="font-display font-black tracking-tight text-balance text-[30px] min-[400px]:text-[34px] sm:text-[46px] leading-[1.05] mt-3">
@@ -49,12 +50,12 @@ export default function Hero() {
             ) : hero.subtitle}
           </p>
 
-          <form onSubmit={onSearch} className="mt-4 flex items-center gap-2 bg-white rounded-2xl p-1.5 pl-4 max-w-lg shadow-[0_20px_45px_-24px_rgba(34,17,20,.35)] ring-1 ring-black/10">
+          <form onSubmit={onSearch} className="mt-4 flex items-center gap-2 bg-[#fffdf9] rounded-2xl p-1.5 pl-4 max-w-lg shadow-[0_20px_45px_-24px_rgba(34,17,20,.35)] ring-1 ring-[#c9a44a]/35 focus-within:ring-[#c9a44a]/70 transition">
             <Search size={17} className="text-black/35 shrink-0" />
             <input value={q} onChange={(e) => setQ(e.target.value)}
               placeholder="What are you looking for? — mirror, red, blouse…"
               className="flex-1 bg-transparent outline-none text-[14px] text-black placeholder:text-black/35 min-w-0" />
-            <button type="submit" className="bg-[#221114] text-white text-[12.5px] sm:text-[13px] font-bold rounded-xl px-4 sm:px-5 py-2.5 shrink-0 hover:bg-black transition">Search</button>
+            <button type="submit" className="bg-gradient-to-b from-[#2b141b] to-[#1c0d12] ring-1 ring-[#c9a44a]/40 text-[#f7ead0] text-[12.5px] sm:text-[13px] font-bold rounded-xl px-4 sm:px-5 py-2.5 shrink-0 hover:brightness-125 transition">Search</button>
           </form>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 text-[12.5px] font-semibold text-[#3d2b36]">
@@ -63,8 +64,9 @@ export default function Hero() {
             <span className="flex items-center gap-1.5"><ShieldCheck size={14} className="text-emerald-700" /> Refundable deposit</span>
             <span className="flex items-center gap-1.5"><Lock size={14} className="text-emerald-700" /> 100% Secure payments</span>
           </div>
-          <div className="mt-5 rounded-2xl bg-gradient-to-r from-[#3d0a26] via-[#641629] to-[#8e1a4f] text-white px-5 py-4 shadow-[0_20px_45px_-20px_rgba(61,10,38,.6)] ring-1 ring-white/10">
-            <p className="font-display font-black text-[22px] min-[400px]:text-[26px] sm:text-[32px] leading-tight tracking-tight break-words text-balance">100% Refundable Deposit</p>
+          <div className="mt-5 rounded-2xl bg-gradient-to-br from-[#2b070e] via-[#4d0f1f] to-[#6e1a34] text-white px-5 py-4 shadow-[0_20px_45px_-20px_rgba(61,10,38,.6)] ring-1 ring-[#c9a44a]/35 relative overflow-hidden">
+            <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e8c66a]/70 to-transparent" />
+            <p className="font-display font-black text-[22px] min-[400px]:text-[26px] sm:text-[32px] leading-tight tracking-tight break-words text-balance text-[#f7ead0]">100% Refundable Deposit</p>
             <p className="text-white/70 text-[12.5px] sm:text-[13px] mt-1.5">Returned via UPI/cash within 24 hours of return — no deductions on normal wear</p>
           </div>
         </motion.div>

@@ -75,13 +75,13 @@ export default function Navbar() {
         </div>
       )}
 
-      <div className="glass border-b border-black/[.07]">
+      <div className="glass border-b border-[#c9a44a]/25 shadow-[0_12px_30px_-22px_rgba(60,30,40,.35)]">
         <div className="container-x h-[56px] sm:h-[64px] flex items-center justify-between gap-1.5 sm:gap-3">
           <a href="#top" className="flex items-center gap-2 group min-w-0">
-            <span className="group-hover:scale-105 transition"><Logo /></span>
+            <span className="group-hover:scale-105 transition drop-shadow-[0_6px_12px_rgba(100,22,41,.3)]"><Logo /></span>
             <span className="leading-tight min-w-0 shrink-0">
-              <b className="font-display font-black text-[15px] min-[400px]:text-[19px] sm:text-[22px] block text-[#641629] tracking-tight whitespace-nowrap">{STORE.brand}</b>
-              <small className="hidden min-[400px]:block text-[8.5px] sm:text-[9px] tracking-[0.2em] text-[#8a6d00] font-bold">GARBA & FESTIVE RENTALS</small>
+              <b className="font-display font-black text-[15px] min-[400px]:text-[19px] sm:text-[22px] block text-[#4d0f1f] tracking-tight whitespace-nowrap">{STORE.brand}</b>
+              <small className="hidden min-[400px]:block text-[8.5px] sm:text-[9px] tracking-[0.2em] text-[#8a6d1f] font-bold">GARBA & FESTIVE RENTALS</small>
             </span>
           </a>
 
@@ -110,10 +110,10 @@ export default function Navbar() {
               <Heart size={16} className={wishOnly ? 'fill-white text-white' : wishlist.length ? 'fill-black text-black' : 'text-black'} />
               {wishlist.length > 0 && <span className={`absolute -top-1 -right-1 text-[10px] font-bold min-w-5 h-5 px-1 grid place-items-center rounded-full ${wishOnly ? 'bg-white text-black' : 'bg-black text-white'}`}>{wishlist.length}</span>}
             </button>
-            <button onClick={() => setCartOpen(true)} className="flex items-center gap-2 bg-[#221114] text-white text-[13px] font-semibold rounded-full pl-4 pr-1.5 py-1.5 hover:brightness-125 transition ring-1 ring-black/20 shadow-[0_10px_24px_-12px_rgba(34,17,20,.6)]">
+            <button onClick={() => setCartOpen(true)} className="flex items-center gap-2 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] text-[#f7ead0] text-[13px] font-semibold rounded-full pl-4 pr-1.5 py-1.5 hover:brightness-125 transition ring-1 ring-[#c9a44a]/40 shadow-[0_10px_24px_-12px_rgba(34,17,20,.6),inset_0_1px_0_rgba(240,215,140,.25)]">
               <ShoppingBasket size={15} />
               <span className="hidden sm:inline">Booking list</span>
-              <span className="bg-white text-black text-xs font-bold min-w-7 h-7 px-1.5 grid place-items-center rounded-full">{count}</span>
+              <span className="bg-gradient-to-b from-[#f0d78c] to-[#c9a44a] text-[#3d0a1a] text-xs font-bold min-w-7 h-7 px-1.5 grid place-items-center rounded-full">{count}</span>
             </button>
             <button onClick={openOrders} title="Apne orders dekho" aria-label="My Orders"
               className="relative w-10 h-10 grid place-items-center rounded-full border border-black/10 bg-white hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)] transition">

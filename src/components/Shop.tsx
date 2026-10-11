@@ -45,7 +45,7 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
 
   return (
     <div
-      className="card card-hover group cursor-pointer h-full overflow-hidden flex flex-col !rounded-[18px]"
+      className="card card-hover group cursor-pointer h-full overflow-hidden flex flex-col !rounded-[20px] ring-1 ring-[#c9a44a]/20"
       onClick={() => setQuickView(p.id)}
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f4f1ea] img-sheen">
@@ -53,10 +53,10 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
         {soldOut && <span className="absolute inset-0 grid place-items-center bg-black/45 z-[1]"><span className="bg-white text-black text-[11px] font-black tracking-[0.14em] rounded-full px-3.5 py-1.5">OUT OF STOCK</span></span>}
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 z-[2]">
-          {rank && <span className="bg-gradient-to-br from-[#f0d78c] to-[#c9a44a] text-[#1a0f1e] text-[10px] font-black tracking-[0.1em] rounded-full px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)]">{rank}</span>}
-          <span className="bg-white/95 backdrop-blur text-[#641629] text-[10px] font-bold tracking-[0.08em] uppercase rounded-full px-2.5 py-1 ring-1 ring-[#641629]/15">{catLabel}</span>
+          {rank && <span className="bg-gradient-to-br from-[#f5e3ae] via-[#e8c66a] to-[#b98a2e] text-[#3d0a1a] text-[10px] font-black tracking-[0.1em] rounded-full px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.6),0_6px_14px_-6px_rgba(120,85,20,.5)]">{rank}</span>}
+          <span className="bg-white/95 backdrop-blur text-[#641629] text-[10px] font-bold tracking-[0.08em] uppercase rounded-full px-2.5 py-1 ring-1 ring-[#c9a44a]/35">{catLabel}</span>
           {p.badge && (
-            <span className="bg-[#641629]/90 backdrop-blur text-[#f7ead0] text-[10px] font-bold tracking-[0.1em] rounded-full px-2.5 py-1.5 ring-1 ring-white/15">{p.badge}</span>
+            <span className="bg-[#3d0a1a]/90 backdrop-blur text-[#f0d78c] text-[10px] font-bold tracking-[0.1em] rounded-full px-2.5 py-1.5 ring-1 ring-[#c9a44a]/40">{p.badge}</span>
           )}
         </div>
         <button
@@ -84,14 +84,14 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
         </div>
         <div className="hairline-premium my-2" />
         <div className="flex items-baseline gap-2 mt-auto">
-          <b className="font-display text-[19px] sm:text-[20px] text-[#641629] tabular-nums leading-none">₹{price.toLocaleString('en-IN')}</b>
+          <b className="font-display text-[19px] sm:text-[20px] text-[#4d0f1f] tabular-nums leading-none">₹{price.toLocaleString('en-IN')}</b>
           <span className="text-[11.5px] font-semibold text-neutral-500">/ 1-day rent</span>
         </div>
-        <p className="text-[12px] font-bold text-[#8a6d00] mt-1">+ ₹{p.deposit.toLocaleString('en-IN')} Deposit</p>
+        <p className="text-[12px] font-bold text-[#8a6d1f] mt-1">+ ₹{p.deposit.toLocaleString('en-IN')} Deposit</p>
         {freeDandiya && <p className="text-[11.5px] font-black text-emerald-700 mt-0.5">✓ FREE Dandiya pair included</p>}
         <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id); }}
           disabled={soldOut}
-          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-[#221114] shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 hover:-translate-y-px active:translate-y-0 transition disabled:opacity-40 disabled:hover:brightness-100 disabled:hover:translate-y-0">
+          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-[#f7ead0] text-[13px] font-bold rounded-full py-2.5 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] ring-1 ring-[#c9a44a]/40 shadow-[0_12px_22px_-12px_rgba(34,17,20,.55),inset_0_1px_0_rgba(240,215,140,.25)] hover:brightness-125 hover:-translate-y-px active:translate-y-0 transition disabled:opacity-40 disabled:hover:brightness-100 disabled:hover:translate-y-0">
           <ShoppingBasket size={14} /> {soldOut ? 'Out of Stock' : 'Rent or Buy Outfit'}
         </button>
       </div>

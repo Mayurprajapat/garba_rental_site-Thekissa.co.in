@@ -15,14 +15,15 @@ export function FeatureBanner() {
   return (
     <div className="bg-[#faf8f6]">
       <div className="container-x pt-3">
-        <div className="bg-white border border-black/10 rounded-b-2xl rounded-t-lg shadow-[0_18px_40px_-24px_rgba(0,0,0,.25)]">
+        <div className="bg-[#fffdf9] border border-[#c9a44a]/30 rounded-b-2xl rounded-t-lg shadow-[0_18px_40px_-24px_rgba(60,30,40,.3)]">
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 sm:gap-x-10 px-4 py-2">
             {items.map((it) => (
-              <span key={it.t} className="flex items-center gap-2 text-[12px] sm:text-[13px] font-bold text-[#221114]">
-                <it.icon size={15} className="text-[#641629] shrink-0" />{it.t}
+              <span key={it.t} className="flex items-center gap-2 text-[12px] sm:text-[13px] font-bold text-[#3d0a1a]">
+                <it.icon size={15} className="text-[#8a6d1f] shrink-0" />{it.t}
               </span>
             ))}
           </div>
+          <div aria-hidden className="h-px bg-gradient-to-r from-transparent via-[#c9a44a]/50 to-transparent" />
         </div>
       </div>
     </div>
@@ -33,11 +34,11 @@ export function Process() {
   useSiteVersion();
   const proc = getSiteContent().process;
   return (
-    <section id="process" className="bg-[#F4EBDD] border-y border-[#4d0f1f]/10">
+    <section id="process" className="bg-[#F6EFE3] border-y border-[#c9a44a]/25">
       <div className="container-x py-5">
       <div className="flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
         <h2 className="premium-heading font-display font-black text-lg sm:text-xl">{proc.title}</h2>
-        <a href="#book" className="text-[13px] font-semibold text-[#641629] underline underline-offset-2 sm:ml-auto shrink-0">Book now →</a>
+        <a href="#book" className="text-[13px] font-semibold text-[#641629] underline underline-offset-2 decoration-[#c9a44a] sm:ml-auto shrink-0">Book now →</a>
       </div>
       <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2.5 mt-3">
         {proc.steps.map((s, i) => (
@@ -162,9 +163,10 @@ export function Booking() {
   };
   return (
     <section id="book" className="container-x pb-6">
-      <div className="grid lg:grid-cols-[1fr_1.05fr] gap-0 card overflow-hidden card-shadow">
-        <div className="bg-gradient-to-br from-[#641629] via-[#4d0f1f] to-[#2b070e] text-white p-5 sm:p-6 relative overflow-hidden">
+      <div className="grid lg:grid-cols-[1fr_1.05fr] gap-0 card overflow-hidden card-shadow ring-1 ring-[#c9a44a]/25">
+        <div className="bg-gradient-to-br from-[#2b070e] via-[#4d0f1f] to-[#5e1628] text-white p-5 sm:p-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-bandhani opacity-10" />
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e8c66a]/70 to-transparent" />
           <div className="relative">
             <p className="eyebrow eyebrow-light">Instant booking</p>
             <h2 className="premium-heading font-display font-black text-xl sm:text-2xl mt-2 leading-tight">{booking.title}</h2>
@@ -221,8 +223,8 @@ export function Footer() {
   useSiteVersion();
   const foot = getSiteContent().footer;
   return (
-    <footer id="contact" className="bg-gradient-to-b from-[#3d0a1a] to-[#1c0409] text-white/70 relative overflow-hidden">
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#c9a44a]/60 to-transparent" />
+    <footer id="contact" className="bg-gradient-to-b from-[#2b070e] via-[#25060d] to-[#160309] text-white/70 relative overflow-hidden">
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#c9a44a]/70 to-transparent" />
       <div aria-hidden className="pointer-events-none select-none absolute -bottom-6 left-1/2 -translate-x-1/2 font-display font-black whitespace-nowrap leading-none text-[20vw] sm:text-[10rem] text-white/[.035]">TheKissa.co</div>
       <div className="container-x py-5 grid grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
         <div>

@@ -446,8 +446,8 @@ export function CartDrawer() {
         <div className="fixed inset-0 z-50">
           <motion.div className="absolute inset-0 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetAndClose} />
           <motion.aside initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="absolute right-0 top-0 h-full w-full max-w-md bg-white flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-black/10">
+            className="absolute right-0 top-0 h-full w-full max-w-md bg-[#fffdf9] flex flex-col ring-1 ring-[#c9a44a]/30">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#c9a44a]/25 bg-gradient-to-b from-[#fbf3df] to-[#fffdf9]">
               <div>
                 <h3 className="font-semibold text-[17px] tracking-tight">Booking {step === 'cart' ? `(${cart.reduce((a, c) => a + c.qty, 0)})` : step === 'details' ? '— Details' : step === 'qr' ? '— QR Payment' : '— Confirmed'}</h3>
                 <p className="text-[11px] text-black/50 mt-0.5">Step {step === 'cart' ? '1/3 List' : step === 'details' ? '2/3 Details' : step === 'qr' ? '3/3 QR Payment' : '3/3 Invoice'} · 100% Secure checkout</p>
@@ -456,8 +456,8 @@ export function CartDrawer() {
             </div>
             {step === 'cart' && (
               <div className="flex gap-1.5 px-4 pt-3">
-                <button onClick={() => setTab('list')} className={`flex-1 rounded-full py-2 text-[12.5px] font-bold transition ${tab === 'list' ? 'bg-[#221114] text-white' : 'bg-black/5 text-black/60'}`}>Booking list ({cart.reduce((a, c) => a + c.qty, 0)})</button>
-                <button onClick={() => setTab('orders')} className={`flex-1 rounded-full py-2 text-[12.5px] font-bold transition ${tab === 'orders' ? 'bg-[#221114] text-white' : 'bg-black/5 text-black/60'}`}>My Orders ({orders.length})</button>
+                <button onClick={() => setTab('list')} className={`flex-1 rounded-full py-2 text-[12.5px] font-bold transition ${tab === 'list' ? 'bg-gradient-to-b from-[#2b141b] to-[#1c0d12] text-[#f7ead0] ring-1 ring-[#c9a44a]/40' : 'bg-black/5 text-black/60'}`}>Booking list ({cart.reduce((a, c) => a + c.qty, 0)})</button>
+                <button onClick={() => setTab('orders')} className={`flex-1 rounded-full py-2 text-[12.5px] font-bold transition ${tab === 'orders' ? 'bg-gradient-to-b from-[#2b141b] to-[#1c0d12] text-[#f7ead0] ring-1 ring-[#c9a44a]/40' : 'bg-black/5 text-black/60'}`}>My Orders ({orders.length})</button>
               </div>
             )}
 
