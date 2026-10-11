@@ -176,7 +176,7 @@ function ReplyCell({ b, reload, notify }: { b: BookingRow; reload: () => void; n
   const [msg, setMsgText] = useState(() => buildNotifyMsg('update', b));
   useEffect(() => { setMsgText(buildNotifyMsg(kind, b)); }, [kind, b]);
   return (
-    <div className="min-w-[172px] max-w-[204px] space-y-1.5">
+    <div className="min-w-[150px] max-w-[182px] space-y-1.5">
       <div className="grid grid-cols-2 gap-1">
         <button onClick={() => setDecision('confirmed')} className={`text-[10.5px] font-bold rounded-lg px-1 py-1 border transition ${b.status === 'confirmed' ? 'bg-emerald-600 text-white border-emerald-600' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white'}`}>✓ Will give</button>
         <button onClick={() => setDecision('cancelled')} className={`text-[10.5px] font-bold rounded-lg px-1 py-1 border transition ${b.status === 'cancelled' ? 'bg-rose-600 text-white border-rose-600' : 'border-rose-300 text-rose-700 hover:bg-rose-600 hover:text-white'}`}>✕ Can't give</button>
@@ -743,15 +743,16 @@ export default function Admin() {
                 </div>
                 <div className="admin-card mt-4 overflow-x-auto relative ring-1 ring-[#c9a44a]/25 !rounded-2xl shadow-[0_24px_50px_-30px_rgba(60,30,40,.35)]">
                   <div aria-hidden className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-[#e8c66a] via-[#c9a44a] to-[#8e1a4f] rounded-t-2xl" />
-                  <table className="w-full min-w-[1340px]">
-                    <thead className="bg-gradient-to-b from-[#fbf3df] to-[#f7efe0]"><tr className="border-b border-[#c9a44a]/30"><th className="admin-th">Order</th><th className="admin-th">Customer</th><th className="admin-th">Event</th><th className="admin-th">Ready by</th><th className="admin-th">Total</th><th className="admin-th">Deposit</th><th className="admin-th">Payment</th><th className="admin-th">Status</th><th className="admin-th">Customer reply</th><th className="admin-th text-right">Actions</th></tr></thead>
+                  <table className="w-full min-w-[1040px]">
+                    <thead className="bg-gradient-to-b from-[#fbf3df] to-[#f7efe0]"><tr className="border-b border-[#c9a44a]/30"><th className="admin-th">Order</th><th className="admin-th">Customer</th><th className="admin-th">Event / Ready</th><th className="admin-th">Amount</th><th className="admin-th">Payment</th><th className="admin-th">Status</th><th className="admin-th">Customer reply</th><th className="admin-th text-right">Actions</th></tr></thead>
                     <tbody>
                       {filteredBookings.map((b, bi) => (
                         <tr key={b.id} className={`transition hover:bg-[#faf3e2] ${bi % 2 === 1 ? 'bg-[#fffdf6]' : ''}`}>
-                          <td className="admin-td font-bold text-[#4d0f1f]">{b.order_id || `#${String(b.id).slice(-6)}`}<span className="block text-[11px] font-normal text-[#8a7584]">#{String(b.id).slice(-6)}</span></td>
-                          <td className="admin-td"><b className="block text-[13px]">{b.name}</b><a href={`tel:${b.phone}`} className="text-[12px] text-blue-700 hover:underline">{b.phone}</a>{b.address && <span className="block text-[11.5px] text-[#3d2b36] mt-0.5 max-w-[180px]">📍 {String(b.address)}</span>}</td>
-                          <td className="admin-td text-[12.5px] text-[#3d2b36]">{b.event_date || '—'}<span className="block text-[#8a7584]">{b.category} · {b.size}</span></td>
-                          <td className="admin-td">
+                          <td className="admin-td !px-2.5 !py-2 font-bold text-[#4d0f1f]">{b.order_id || `#${String(b.id).slice(-6)}`}<span className="block text-[11px] font-normal text-[#8a7584]">#{String(b.id).slice(-6)}</span></td>
+                          <td className="admin-td !px-2.5 !py-2"><b className="block text-[13px]">{b.name}</b><a href={`tel:${b.phone}`} className="text-[12px] text-blue-700 hover:underline">{b.phone}</a>{b.address && <span className="block text-[11.5px] text-[#3d2b36] mt-0.5 max-w-[180px]">📍 {String(b.address)}</span>}</td>
+                          <td className="admin-td !px-2.5 !py-2 text-[12.5px] text-[#3d2b36]">
+                            <b>{b.event_date || '—'}</b>
+                            <span className="block text-[#8a7584] text-[11.5px]">{b.category} · {b.size}</span>
                             <input type="date" value={b.ready_date || ''} title="Set the date by which this order will be ready — the customer sees it in My Orders"
                               onChange={async (e) => {
                                 const v = e.target.value || null;
@@ -771,12 +772,13 @@ export default function Admin() {
                                 setMsg(v ? `Ready date set — customer will see "Available by ${v}".` : 'Ready date cleared.');
                                 setTimeout(() => setMsg(''), 3000);
                               }}
-                              className="admin-input !w-[132px] !py-1.5 !text-[12px]" />
+                              className="admin-input !w-[128px] !py-1 !text-[11.5px] mt-1" />
                             {b.ready_date && <span className="block text-[11px] text-emerald-700 font-semibold mt-0.5">✓ shown in My Orders</span>}
                           </td>
-                          <td className="admin-td font-bold">₹{(b.total || b.subtotal || 0).toLocaleString('en-IN')}{!!b.token_amount && <span className="block text-[11px] font-normal text-emerald-700">{b.payment_mode === 'upi-qr-full' ? `full ₹${Number(b.token_amount).toLocaleString('en-IN')}` : (b.payment_mode === 'upi-qr-half' ? `half ₹${Number(b.token_amount).toLocaleString('en-IN')}` : `token ₹${Number(b.token_amount).toLocaleString('en-IN')}`)}</span>}</td>
-                          <td className="admin-td">
-                            <b className="block text-[13px]">₹{Number(b.deposit || 0).toLocaleString('en-IN')}</b>
+                          <td className="admin-td !px-2.5 !py-2">
+                            <b className="block text-[14px]">₹{(b.total || b.subtotal || 0).toLocaleString('en-IN')}</b>
+                            {!!b.token_amount && <span className="block text-[11px] font-normal text-emerald-700">{b.payment_mode === 'upi-qr-full' ? `full ₹${Number(b.token_amount).toLocaleString('en-IN')}` : (b.payment_mode === 'upi-qr-half' ? `half ₹${Number(b.token_amount).toLocaleString('en-IN')}` : `token ₹${Number(b.token_amount).toLocaleString('en-IN')}`)}</span>}
+                            <span className="block text-[11.5px] mt-1">Deposit <b>₹{Number(b.deposit || 0).toLocaleString('en-IN')}</b></span>
                             <button
                               title="Change deposit status (tap)"
                               onClick={async () => {
@@ -800,7 +802,7 @@ export default function Admin() {
                               {b.deposit_status === 'refunded' ? 'refunded ✓' : b.deposit_status === 'collected' ? 'collected ✓' : 'pending'}
                             </button>
                           </td>
-                          <td className="admin-td"><span className="text-[11.5px] font-semibold">{b.payment_mode || 'pending'}</span><span className="block text-[11px] text-[#8a7584]">{b.payment_status || ''}{b.payment_id ? ` · ${String(b.payment_id).slice(0, 14)}` : ''}</span>
+                          <td className="admin-td !px-2.5 !py-2"><span className="text-[11.5px] font-semibold">{b.payment_mode || 'pending'}</span><span className="block text-[11px] text-[#8a7584]">{b.payment_status || ''}{b.payment_id ? ` · ${String(b.payment_id).slice(0, 14)}` : ''}</span>
                             {(b.payment_mode === 'upi-qr' || b.payment_mode === 'upi-qr-full' || b.payment_mode === 'upi-qr-half') && (
                               <button
                                 title="Match with the bank statement, then tap to verify payment"
@@ -826,10 +828,10 @@ export default function Admin() {
                               </button>
                             )}
                           </td>
-                          <td className="admin-td"><span className={`status-pill ${statusStyle[b.status] || ''}`}>{b.status}</span></td>
-                          <td className="admin-td"><ReplyCell b={b} reload={loadBookings} notify={(m) => { setMsg(m); setTimeout(() => setMsg(''), 3000); }} /></td>
-                          <td className="admin-td">
-                            <div className="min-w-[218px]">
+                          <td className="admin-td !px-2.5 !py-2"><span className={`status-pill ${statusStyle[b.status] || ''}`}>{b.status}</span></td>
+                          <td className="admin-td !px-2.5 !py-2"><ReplyCell b={b} reload={loadBookings} notify={(m) => { setMsg(m); setTimeout(() => setMsg(''), 3000); }} /></td>
+                          <td className="admin-td !px-2.5 !py-2">
+                            <div className="min-w-[186px]">
                               <div className="grid grid-cols-3 gap-1">
                               {STATUSES.map((s) => (
                                 <button key={s} onClick={async () => {
