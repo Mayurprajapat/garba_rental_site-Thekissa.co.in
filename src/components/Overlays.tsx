@@ -9,6 +9,10 @@ import { useProducts } from '../lib/ProductsContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { getSiteContent, useSiteVersion } from '../lib/siteContent';
 import { isValidVpa, merchantUpi, upiUrl } from '../lib/upi';
+import { bookedQtyFor } from '../lib/slots';
+import { isPickableDate } from '../lib/availability';
+import { fetchApprovedReviews, getLocalReviews, submitReview, type Review } from '../lib/reviews';
+import { validReview } from '../lib/reviewForm';
 import { OPEN_ORDERS_EVENT, clearMyOrdersFully, getMyOrders, saveMyOrder, subscribeMyOrders, type MyOrder } from '../lib/myOrders';
 import { dataUrlToBlob, fileToCompressedDataUrl } from '../lib/proof';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
@@ -29,7 +33,10 @@ export function QuickView() {
   const [photoIdx, setPhotoIdx] = useState(0);
   const [spin, setSpin] = useState(false);
   const [qty, setQty] = useState(1);
-  useEffect(() => { setPicked([]); setPhotoIdx(0); setSpin(false); setQty(1); }, [id]);
+  // Date availability checker (additive — Add to list flow same rehta hai)
+  const [availDate, setAvailDate] = useState('');
+  const [avail, setAvail] = useState<{ checking: boolean; qty: number } | null>(null);
+  useEffect(() => { setPicked([]); setPhotoIdx(0); setSpin(false); setQty(1); setAvailDate(''); setAvail(null); }, [id]);
   // Modal khula ho to background page lock — saara scroll card ke andar
   useEffect(() => {
     if (!p) return;
@@ -52,6 +59,17 @@ export function QuickView() {
     if (!p || soldOut) return;
     addToCart(p.id, 'Free size', '1day', picked.length ? picked : undefined, undefined, qty);
     setQuickView(null);
+  };
+  const checkAvail = async (d: string) => {
+    setAvailDate(d);
+    if (!p || !isPickableDate(d)) { setAvail(null); return; }
+    setAvail({ checking: true, qty: 0 });
+    try {
+      const r = await bookedQtyFor(p.id, d);
+      setAvail({ checking: false, qty: r.qty });
+    } catch {
+      setAvail(null);
+    }
   };
 
   return (
@@ -146,6 +164,19 @@ export function QuickView() {
                 <p className="label-pro">Rental plan</p>
                 <div className="mt-2 border border-[#641629] bg-[#faf7ef] rounded-2xl p-3"><b className="text-sm">1-day · ₹{p.rent1.toLocaleString('en-IN')}</b><p className="text-[11px] text-[#6f5b6a] mt-0.5">Single event + returns · same price for all days</p></div>
               </div>
+              <div className="mt-3 rounded-2xl border border-[#c9a44a]/50 bg-[#fffdf9] p-3.5">
+                <p className="label-pro">Check date availability</p>
+                <input type="date" value={availDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => checkAvail(e.target.value)} className="input-pro !py-2 text-[13px] mt-2" />
+                {avail?.checking && <p className="text-[12px] text-black/55 mt-2">Checking live bookings…</p>}
+                {avail && !avail.checking && avail.qty === 0 && (
+                  <p className="text-[12.5px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 mt-2">✓ Available on {availDate} — book it before someone else does.</p>
+                )}
+                {avail && !avail.checking && avail.qty > 0 && (
+                  <p className="text-[12.5px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mt-2">
+                    {avail.qty} already booked that day — <a href={waLink(`Hi TheKissa.co! Is ${p.name} (${p.id}) available on ${availDate}?`)} target="_blank" className="underline">ask us to confirm yours →</a>
+                  </p>
+                )}
+              </div>
               <div className="flex items-baseline gap-2 mt-3"><b className="font-display text-[22px]">₹{p.rent1.toLocaleString('en-IN')}</b><s className="text-[#8a7584] text-sm">₹{p.buy.toLocaleString('en-IN')}</s>{p.buy > p.rent1 && <span className="text-[11px] font-black text-white bg-emerald-600 rounded-full px-2 py-0.5">SAVE {Math.round((1 - p.rent1 / p.buy) * 100)}%</span>}</div>
               <p className="text-[11.5px] text-emerald-700 font-semibold mt-0.5">+ ₹{p.deposit.toLocaleString('en-IN')} fully refundable deposit</p>
               <div className="flex items-center justify-between mt-4 border border-black/10 rounded-2xl px-3.5 py-2.5">
@@ -162,6 +193,7 @@ export function QuickView() {
               </div>
               {soldOut && <p className="text-[12px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 mt-2 text-center">This outfit is currently out of stock. Please check back soon or ask on WhatsApp.</p>}
               <a href={waLink(`Hi TheKissa.co! Is ${p.name} (${p.id}), free size, 1-day available?`)} target="_blank" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 border border-[#641629]/15 rounded-full py-3 text-[13px] font-semibold hover:border-[#641629] transition"><MessageCircle size={15} /> Ask on WhatsApp</a>
+              <ProductReviews productId={p.id} productName={p.name} />
               <div className="grid grid-cols-3 gap-2 mt-5 text-[11px] font-medium text-[#6f5b6a] border-t border-[#641629]/8 pt-4">
                 <span className="flex items-center gap-1.5"><ShieldCheck size={13} className="text-emerald-600" /> Sanitised</span>
                 <span className="flex items-center gap-1.5"><Truck size={13} className="text-emerald-600" /> Same-day</span>
@@ -172,6 +204,115 @@ export function QuickView() {
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+function ProductReviews({ productId, productName }: { productId: string; productName: string }) {
+  const [list, setList] = useState<Review[]>(() => getLocalReviews(productId));
+  const [showForm, setShowForm] = useState(false);
+  const [rName, setRName] = useState('');
+  const [stars, setStars] = useState(5);
+  const [text, setText] = useState('');
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  useEffect(() => {
+    let on = true;
+    setList(getLocalReviews(productId));
+    (async () => {
+      try {
+        const cloud = await fetchApprovedReviews(productId);
+        if (!on) return;
+        const seen = new Set(cloud.map((r) => r.id));
+        setList([...cloud, ...getLocalReviews(productId).filter((r) => !seen.has(r.id))].slice(0, 10));
+      } catch { /* local list hi sahi */ }
+    })();
+    return () => { on = false; };
+  }, [productId]);
+
+  const pickPhoto = async (f: File | undefined) => {
+    if (!f) return;
+    if (!f.type.startsWith('image/')) { setMsg('Please attach an image file (JPG/PNG).'); return; }
+    if (f.size > 8 * 1024 * 1024) { setMsg('Photo is too large (max 8MB).'); return; }
+    setMsg('');
+    const small = await fileToCompressedDataUrl(f);
+    if (!small) { setMsg('Could not read that photo — please try another.'); return; }
+    setPhoto(small);
+  };
+
+  const submit = async () => {
+    const err = validReview(rName, stars, text);
+    if (err) { setMsg(err); return; }
+    if (busy) return;
+    setBusy(true);
+    setMsg('');
+    try {
+      let url: string | undefined;
+      if (photo && isSupabaseConfigured && supabase) {
+        try {
+          const blob = dataUrlToBlob(photo);
+          if (blob) {
+            const path = `reviews/${productId}-${Date.now()}.jpg`;
+            const { error } = await supabase.storage.from('review-photos').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+            if (!error) url = supabase.storage.from('review-photos').getPublicUrl(path).data.publicUrl || undefined;
+          }
+        } catch { /* local copy fallback below */ }
+      }
+      const mode = await submitReview({ productId, name: rName, rating: stars, text, photoUrl: url || (!isSupabaseConfigured ? photo || undefined : undefined) });
+      setMsg(mode === 'cloud' ? 'Thanks! Your review will appear after store approval.' : 'Thanks! Your review is saved.');
+      setRName(''); setStars(5); setText(''); setPhoto(null); setShowForm(false);
+      setList(getLocalReviews(productId).length ? [...(await fetchApprovedReviews(productId)), ...getLocalReviews(productId)].slice(0, 10) : list);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 rounded-2xl border border-black/[.07] bg-[#fafafa] p-3.5">
+      <div className="flex items-center gap-2">
+        <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] text-black"><Star size={13} className="fill-[#c9960a] text-[#c9960a]" /> CUSTOMER REVIEWS{list.length > 0 ? ` (${list.length})` : ''}</p>
+        <button onClick={() => { setShowForm((v) => !v); setMsg(''); }} className="ml-auto text-[12px] font-bold text-[#641629] underline underline-offset-2">{showForm ? 'Close' : 'Write a review'}</button>
+      </div>
+      {list.length === 0 && !showForm && <p className="text-[12px] text-black/50 mt-1.5">No reviews yet — be the first to share your look.</p>}
+      {list.length > 0 && (
+        <div className="mt-2 space-y-2">
+          {list.slice(0, 3).map((r) => (
+            <div key={r.id} className="bg-white border border-black/[.07] rounded-xl p-2.5">
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star key={i} size={11} className={i <= r.rating ? 'fill-[#c9960a] text-[#c9960a]' : 'text-black/20'} />
+                ))}
+                <b className="text-[12px] ml-1">{r.name}</b>
+              </div>
+              <p className="text-[12.5px] text-neutral-600 mt-1 leading-relaxed">{r.text}</p>
+              {r.photo && <a href={r.photo} target="_blank"><img src={r.photo} alt={`${r.name}'s Garba look in ${productName}`} loading="lazy" className="mt-1.5 w-20 h-20 object-cover rounded-xl border hover:opacity-90 transition" /></a>}
+            </div>
+          ))}
+        </div>
+      )}
+      {showForm && (
+        <div className="mt-2.5 space-y-2 bg-white border border-black/[.07] rounded-xl p-3">
+          <div className="flex items-center gap-1">
+            <span className="text-[12px] font-bold mr-1">Rating:</span>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <button key={i} onClick={() => setStars(i)} aria-label={`${i} star`} className="p-0.5">
+                <Star size={18} className={i <= stars ? 'fill-[#c9960a] text-[#c9960a]' : 'text-black/20 hover:text-black/40'} />
+              </button>
+            ))}
+          </div>
+          <input value={rName} onChange={(e) => setRName(e.target.value)} placeholder="Your name" maxLength={60} className="w-full border border-black/15 rounded-xl px-3 py-2 text-[13px] outline-none focus:border-black" />
+          <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="How was the fit, look, delivery?" rows={2} maxLength={500} className="w-full border border-black/15 rounded-xl px-3 py-2 text-[13px] outline-none focus:border-black resize-none" />
+          <label className="block text-[12px] font-bold">Your Garba look photo (optional)
+            <input type="file" accept="image/*" onChange={(e) => pickPhoto(e.target.files?.[0])} className="mt-1 w-full text-[13px] file:mr-2 file:rounded-full file:border file:border-black/15 file:bg-black file:text-white file:text-[12px] file:font-bold file:px-3 file:py-1.5" />
+          </label>
+          {photo && <img src={photo} alt="Review photo preview" className="w-20 h-20 object-cover rounded-xl border" />}
+          {msg && <p className="text-[12px] bg-[#faf7ef] border border-[#c9a44a]/40 rounded-xl px-3 py-2">{msg}</p>}
+          <button onClick={submit} disabled={busy} className="btn-primary w-full !py-2.5 !text-[13px] disabled:opacity-50">{busy ? 'Submitting…' : 'Submit review'}</button>
+        </div>
+      )}
+      {!showForm && msg && <p className="text-[12px] bg-[#faf7ef] border border-[#c9a44a]/40 rounded-xl px-3 py-2 mt-2">{msg}</p>}
+    </div>
   );
 }
 

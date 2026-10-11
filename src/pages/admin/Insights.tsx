@@ -2,8 +2,8 @@
 // Sirf ADDITIVE hai: existing views/logic ko haath nahi lagata.
 // Data wahi bookings state se (cloud ya local) — English labels only.
 
-import { useMemo, useState } from 'react';
-import { BellRing, CalendarDays, CheckCircle2, Copy, Download, Search, Users, Wallet } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { BellRing, CalendarDays, CheckCircle2, Copy, Download, Search, Star, Users, Wallet } from 'lucide-react';
 import { updateLocalBooking } from '../../lib/localAdmin';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import type { ChartBooking } from './Charts';
@@ -360,8 +360,125 @@ function Promos({ bookings }: { bookings: B[] }) {
   );
 }
 
+/* ============ 6. Photo reviews moderation ============ */
+interface CloudReview {
+  id: number | string;
+  product_id: string;
+  name: string;
+  rating: number;
+  text: string;
+  photo_url: string;
+  status: string;
+  created_at: string;
+}
+
+function ReviewsAdmin() {
+  const [rows, setRows] = useState<CloudReview[]>([]);
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState<number | string | null>(null);
+  const cloud = isSupabaseConfigured && !!supabase;
+
+  const load = async () => {
+    if (!cloud || !supabase) return;
+    try {
+      const { data } = await supabase.from('reviews').select('*').order('created_at', { ascending: false }).limit(100);
+      if (Array.isArray(data)) setRows(data as any);
+    } catch { /* ignore */ }
+  };
+  useEffect(() => { load(); }, []);
+
+  const setStatus = async (id: number | string, status: 'approved' | 'rejected') => {
+    if (!supabase) return;
+    setBusy(id);
+    try {
+      const { error } = await supabase.from('reviews').update({ status }).eq('id', id);
+      if (error) throw error;
+      setMsg(status === 'approved' ? 'Review approved — live on the website.' : 'Review rejected.');
+      load();
+    } catch (e: any) {
+      setMsg('Could not save: ' + (e?.message || 'unknown error'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const remove = async (id: number | string) => {
+    if (!supabase) return;
+    if (!confirm('Delete this review permanently?')) return;
+    setBusy(id);
+    try {
+      const { error } = await supabase.from('reviews').delete().eq('id', id);
+      if (error) throw error;
+      load();
+    } catch (e: any) {
+      setMsg('Could not delete: ' + (e?.message || 'unknown error'));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (!cloud) {
+    return (
+      <div className="admin-card p-5">
+        <b>Photo reviews</b>
+        <p className="text-[13px] text-[#8a7584] mt-2">Shared reviews need the cloud database. Customers on this device can still save their own reviews (visible on their device only).</p>
+      </div>
+    );
+  }
+
+  const pending = rows.filter((r) => r.status === 'pending');
+  const live = rows.filter((r) => r.status === 'approved');
+  const card = (r: CloudReview) => (
+    <div key={r.id} className="border border-[#1a0f1e]/8 rounded-xl p-3 text-[13px]">
+      <div className="flex items-center gap-1.5">
+        <span className="flex items-center gap-0.5">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Star key={i} size={11} className={i <= Number(r.rating) ? 'fill-[#c9960a] text-[#c9960a]' : 'text-black/20'} />
+          ))}
+        </span>
+        <b>{r.name}</b>
+        <span className="text-[#8a7584] text-[11.5px]">{r.product_id}</span>
+      </div>
+      <p className="text-[#3d2b36] mt-1">{r.text}</p>
+      {r.photo_url && <a href={r.photo_url} target="_blank"><img src={r.photo_url} alt="Customer Garba look" loading="lazy" className="mt-1.5 w-16 h-16 object-cover rounded-xl border hover:opacity-90 transition" /></a>}
+      <div className="flex gap-1.5 mt-2">
+        {r.status === 'pending' && (
+          <button disabled={busy === r.id} onClick={() => setStatus(r.id, 'approved')} className="text-[12px] font-bold bg-emerald-600 text-white rounded-full px-3.5 py-1.5 disabled:opacity-50">Approve</button>
+        )}
+        {r.status === 'pending' && (
+          <button disabled={busy === r.id} onClick={() => setStatus(r.id, 'rejected')} className="text-[12px] font-bold border border-rose-300 text-rose-700 rounded-full px-3.5 py-1.5 disabled:opacity-50">Reject</button>
+        )}
+        <button disabled={busy === r.id} onClick={() => remove(r.id)} className="ml-auto text-[12px] font-bold text-rose-700 underline disabled:opacity-50">Delete</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {msg && <p className="text-[12.5px] bg-white border rounded-xl px-3 py-2">{msg}</p>}
+      <div className="admin-card p-5">
+        <div className="flex items-baseline gap-2">
+          <b>Pending approval</b>
+          <span className="ml-auto text-[12px] font-bold text-amber-700">{pending.length} waiting</span>
+        </div>
+        <div className="mt-3 space-y-2 max-h-[380px] overflow-y-auto">
+          {pending.map(card)}
+          {pending.length === 0 && <p className="text-[13px] text-[#8a7584]">Nothing waiting. 🎉</p>}
+        </div>
+      </div>
+      <div className="admin-card p-5">
+        <b>Live on website ({live.length})</b>
+        <div className="mt-3 space-y-2 max-h-[380px] overflow-y-auto">
+          {live.map(card)}
+          {live.length === 0 && <p className="text-[13px] text-[#8a7584]">No approved reviews yet.</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ============ Reports shell with sub-tabs ============ */
-type Tab = 'dispatch' | 'customers' | 'payments' | 'calendar' | 'promos';
+type Tab = 'dispatch' | 'customers' | 'payments' | 'calendar' | 'promos' | 'reviews';
 
 export default function Reports({ bookings, reload }: { bookings: B[]; reload: () => void }) {
   const [tab, setTab] = useState<Tab>('dispatch');
@@ -372,6 +489,7 @@ export default function Reports({ bookings, reload }: { bookings: B[]; reload: (
     { id: 'payments', label: 'Payments', icon: Wallet, badge: pending || undefined },
     { id: 'calendar', label: 'Calendar', icon: CalendarDays },
     { id: 'promos', label: 'Promos', icon: BellRing },
+    { id: 'reviews', label: 'Reviews', icon: Star },
   ];
   return (
     <div>
@@ -390,6 +508,7 @@ export default function Reports({ bookings, reload }: { bookings: B[]; reload: (
         {tab === 'payments' && <Payments bookings={bookings} reload={reload} />}
         {tab === 'calendar' && <EventCalendar bookings={bookings} />}
         {tab === 'promos' && <Promos bookings={bookings} />}
+        {tab === 'reviews' && <ReviewsAdmin />}
       </div>
       <p className="text-[11.5px] text-[#8a7584] mt-3 flex items-center gap-1.5"><Search size={12} /> Reports only read data — nothing here edits or deletes bookings.</p>
     </div>
