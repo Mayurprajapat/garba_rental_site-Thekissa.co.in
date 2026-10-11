@@ -59,7 +59,8 @@ export function downloadInvoicePDF(o: MyOrder, opts?: {
   doc.setTextColor(255, 255, 255);
   doc.text('TAX INVOICE / RENTAL BILL', M, 92);
 
-  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
   doc.setTextColor(...GOLD_LIGHT);
   doc.text(o.id, W - M, 52, { align: 'right' });
   doc.setFont('helvetica', 'normal');
@@ -84,21 +85,24 @@ export function downloadInvoicePDF(o: MyOrder, opts?: {
   doc.setTextColor(80, 70, 70);
   doc.text(`Mobile: ${o.phone || '-'}`, M, y + 34);
 
-  // Payment box (right)
+  // Payment box (right) — height text lines ke hisaab se (fixed box se text bahar nahi niklega)
   const boxX = W - M - 220;
+  const payLines = doc.splitTextToSize(paymentLabel(o.mode, o.token, o.total), 196).slice(0, 3);
+  const boxH = 34 + payLines.length * 13;
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(1);
-  doc.roundedRect(boxX, y - 12, 220, 52, 6, 6, 'S');
+  doc.roundedRect(boxX, y - 12, 220, boxH, 6, 6, 'S');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(...MUTED);
   doc.text('PAYMENT', boxX + 12, y + 4);
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(...INK);
-  const payLines = doc.splitTextToSize(paymentLabel(o.mode, o.token, o.total), 196);
-  doc.text(payLines.slice(0, 2), boxX + 12, y + 19);
+  doc.text(payLines, boxX + 12, y + 19);
 
-  y += 62;
+  // Items table — Billed-to block aur payment box dono ke neeche se shuru
+  y = Math.max(y + 62, y - 12 + boxH + 14);
 
   // Items table
   autoTable(doc, {
@@ -123,8 +127,13 @@ export function downloadInvoicePDF(o: MyOrder, opts?: {
   });
 
   y = (doc as any).lastAutoTable.finalY + 18;
+  const H = doc.internal.pageSize.getHeight();
+  const FH = 64;
+  // Lambi item list ho to totals naya page par (footer se takrayenge nahi)
+  if (y > H - FH - 150) { doc.addPage(); y = 60; }
 
-  // Totals
+  // Totals — label chhote rakhe hain taaki value se takrayein nahi (pehle lambi
+  // line "Refundable extra 30% (30% of Rs.X rent)" value ke upar chadh jaati thi)
   const labelX = W - M - 220;
   const valX = W - M;
   const row = (label: string, value: string, bold = false, color: [number, number, number] = INK) => {
@@ -136,13 +145,18 @@ export function downloadInvoicePDF(o: MyOrder, opts?: {
     y += bold ? 20 : 17;
   };
   row('Total rent', inr(o.total), true);
-  row(o.mode === 'upi-qr-full' ? 'Paid now (rent + 30% extra)' : 'Paid now', inr(o.token));
+  row(o.mode === 'upi-qr-full' ? 'Paid now (rent + extra)' : 'Paid now', inr(o.token));
   // Full me token me extra bhi hai — rent balance kabhi negative nahi
   const rentBal = o.mode === 'upi-qr-full' ? 0 : Math.max(0, o.total - o.token);
   const extraDue = o.mode === 'upi-qr-full' ? 0 : o.deposit;
   row('Balance on delivery', inr(rentBal + extraDue));
-  row('Refundable extra 30% (30% of ' + inr(o.total) + ' rent)', inr(o.deposit), true, [22, 120, 70]);
-  row('Total collection (rent + deposit)', inr(o.total + o.deposit), true);
+  row('Refundable extra 30%', inr(o.deposit), true, [22, 120, 70]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...MUTED);
+  doc.text(`30% of ${inr(o.total)} rent — back on return`, labelX, y);
+  y += 16;
+  row('Total collection', inr(o.total + o.deposit), true);
   if (opts?.paymentId) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
@@ -156,6 +170,9 @@ export function downloadInvoicePDF(o: MyOrder, opts?: {
   doc.setLineWidth(1);
   doc.line(M, y + 4, W - M, y + 4);
   y += 22;
+
+  // Notes — footer se takrayein to naya page
+  if (y > H - FH - 70) { doc.addPage(); y = 60; }
 
   // Notes
   doc.setFont('helvetica', 'normal');
@@ -172,18 +189,23 @@ export function downloadInvoicePDF(o: MyOrder, opts?: {
     y += lines.length * 12 + 2;
   });
 
-  // Footer band
-  const fh = 64;
+  // Footer band — lamba address/contact wrap hokar center me (kat-ta nahi)
+  const fh = FH;
+  const pageH = doc.internal.pageSize.getHeight();
   doc.setFillColor(...ESPRESSO);
-  doc.rect(0, doc.internal.pageSize.getHeight() - fh, W, fh, 'F');
+  doc.rect(0, pageH - fh, W, fh, 'F');
   doc.setFillColor(...GOLD);
-  doc.rect(0, doc.internal.pageSize.getHeight() - fh, W, 2, 'F');
+  doc.rect(0, pageH - fh, W, 2, 'F');
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
+  const addrLines = doc.splitTextToSize(storeAddr, W - M * 2).slice(0, 2);
+  const contactLines = doc.splitTextToSize(`${storePhone}${storePhone && storeEmail ? '   •   ' : ''}${storeEmail}`, W - M * 2).slice(0, 1);
+  const footCount = addrLines.length + contactLines.length;
+  const footY = pageH - fh + (fh - footCount * 12) / 2 + 9;
   doc.setTextColor(247, 234, 208);
-  const fy = doc.internal.pageSize.getHeight() - fh + 22;
-  doc.text(`${storeAddr}`, W / 2, fy, { align: 'center' });
+  doc.text(addrLines, W / 2, footY, { align: 'center' });
   doc.setTextColor(232, 198, 106);
-  doc.text(`${storePhone}${storePhone && storeEmail ? '   •   ' : ''}${storeEmail}`, W / 2, fy + 15, { align: 'center' });
+  doc.text(contactLines, W / 2, footY + addrLines.length * 12, { align: 'center' });
 
   doc.save(`TheKissa-Invoice-${o.id}.pdf`);
 }
