@@ -57,12 +57,13 @@ const emptyProduct: ProductRow = {
   img: '/images/g-hero.webp', badge: '', desc: '', fabric: 'Cotton', stock: 5, active: true,
 } as ProductRow;
 
-const STATUSES = ['new', 'confirmed', 'delivered', 'returned', 'cancelled'] as const;
+const STATUSES = ['new', 'confirmed', 'onway', 'delivered', 'returned', 'cancelled'] as const;
 const useCloud = isSupabaseConfigured && !!supabase;
 
 const statusStyle: Record<string, string> = {
   new: 'bg-amber-50 text-amber-800 border border-amber-300 ring-1 ring-amber-200/50',
   confirmed: 'bg-blue-50 text-blue-800 border border-blue-200',
+  onway: 'bg-orange-50 text-orange-800 border border-orange-300 ring-1 ring-orange-200/50',
   delivered: 'bg-violet-50 text-violet-800 border border-violet-200',
   returned: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
   cancelled: 'bg-rose-50 text-rose-800 border border-rose-200',
@@ -130,6 +131,7 @@ export function buildNotifyMsg(kind: NotifyKind, b: BookingRow): string {
     return `Hello ${nm}!\n\n✅ Your order ${oid} is READY${when}!${balLine}\n\nThank you for choosing TheKissa.co!`;
   }
   const decision = b.status === 'confirmed' ? 'Confirmed — we will deliver your outfit.'
+    : b.status === 'onway' ? 'Your outfit is ON THE WAY — arriving soon!'
     : b.status === 'cancelled' ? 'We are sorry — we cannot fulfil this order.'
     : b.status === 'delivered' ? 'Your outfit has been delivered. Enjoy!'
     : 'We have received your order and will update you shortly.';

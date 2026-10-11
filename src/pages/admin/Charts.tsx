@@ -83,6 +83,7 @@ export function RevenueCard({ bookings }: { bookings: ChartBooking[] }) {
 const STATUS_META: { key: string; label: string; color: string }[] = [
   { key: 'new', label: 'New', color: '#d97706' },
   { key: 'confirmed', label: 'Confirmed', color: '#2563eb' },
+  { key: 'onway', label: 'On the way', color: '#ea580c' },
   { key: 'delivered', label: 'Delivered', color: '#7c3aed' },
   { key: 'returned', label: 'Returned', color: '#059669' },
   { key: 'cancelled', label: 'Cancelled', color: '#e11d48' },

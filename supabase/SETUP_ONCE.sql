@@ -77,7 +77,7 @@ create table if not exists public.bookings (
   admin_note text default '',
   promo_code text default '',
   payment_proof text default '',
-  status text default 'new' check (status in ('new','confirmed','delivered','returned','cancelled')),
+  status text default 'new' check (status in ('new','confirmed','onway','delivered','returned','cancelled')),
   created_at timestamptz default now()
 );
 
