@@ -220,6 +220,33 @@ export async function fetchOrdersByPhone(phone: string): Promise<{ orders: MyOrd
   return { orders: localByPhone, source: 'local' };
 }
 
+/** UTR pehle kisi order me use hua ya nahi (secure RPC — sirf true/false, koi data leak nahi).
+ *  RPC/column missing ho to false (genuine order kabhi block nahi hoga). */
+export async function isUtrUsed(utr: string): Promise<boolean> {
+  const needle = String(utr || '').trim();
+  if (!/^\d{12}$/.test(needle)) return false;
+  if (!isSupabaseConfigured || !supabase) return false;
+  try {
+    const { data, error } = await supabase.rpc('check_utr_used', { p_utr: needle });
+    if (error) return false;
+    return data === true;
+  } catch {
+    return false;
+  }
+}
+
+/** Is mobile number se aaj kitne orders bheje gaye (spam rokne ke liye). Fail-open. */
+export async function todayOrderCount(phone: string): Promise<number> {
+  const digits = String(phone || '').replace(/\D/g, '').slice(-10);
+  if (digits.length < 10) return 0;
+  try {
+    const { orders } = await fetchOrdersByPhone(digits);
+    const today = new Date().toISOString().slice(0, 10);
+    return orders.filter((o) => String(o.date || '').slice(0, 10) === today).length;
+  } catch {
+    return 0;
+  }
+}
 /** Order ID se ek order dhoondo (local + cloud). */
 export async function fetchOrderById(orderId: string): Promise<MyOrder | null> {
   const needle = String(orderId || '').trim().toUpperCase();

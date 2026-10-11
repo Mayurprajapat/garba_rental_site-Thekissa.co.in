@@ -3,7 +3,8 @@ import { BadgeCheck, Check, CheckCircle2, CreditCard, Download, Heart, Mail, Map
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { addonTotal, lookFor, photosFor, spinFramesFor, STORE, waLink, type Accessory, type Category } from '../data/products';
 import { itemImgFor } from '../lib/items';
-import { fetchOrderById, fetchOrdersByPhone, saveBooking } from '../lib/db';
+import { fetchOrderById, fetchOrdersByPhone, isUtrUsed, saveBooking, todayOrderCount } from '../lib/db';
+import { looksFakeUtr } from '../lib/utr';
 import { formatINR, halfAdvance, isValidIndianPhone, makeOrderId } from '../lib/order';
 import { useProducts } from '../lib/ProductsContext';
 import { QRCodeSVG } from 'qrcode.react';
@@ -620,8 +621,14 @@ export function CartDrawer() {
     if (paying) return;
     // Payment ke bina order confirm nahi — UTR + screenshot dono compulsory, admin hi confirm karega
     if (!/^\d{12}$/.test(utr.trim())) { setErr('Please enter the 12-digit UTR from your UPI app after payment — it is required.'); return; }
+    if (looksFakeUtr(utr.trim())) { setErr('This UTR looks invalid (repeated or sequential digits). Please copy the exact 12-digit UTR from your UPI app.'); return; }
     if (!shot) { setErr('Please attach your payment screenshot — it is required to place the order.'); return; }
     setErr('');
+    // Ek UTR sirf ek order me — reuse turant block (genuine check, fail-open)
+    try {
+      if (await isUtrUsed(utr.trim())) { setErr('This UTR has already been used for another order. Please check the number in your UPI app.'); return; }
+      if (await todayOrderCount(phone.trim()) >= 5) { setErr('You already have 5 orders today from this number. For more, please contact the store on WhatsApp.'); return; }
+    } catch { /* guard fail ho to order mat roko */ }
     setPaying(true);
     const amt = payChoice === 'full' ? total : half;
     const mode = payChoice === 'full' ? 'upi-qr-full' : 'upi-qr-half';
@@ -812,7 +819,7 @@ export function CartDrawer() {
                     </div>
                     <label className="block text-[11px] font-bold tracking-wide">UTR / TRANSACTION ID * (12 digits, you get it after payment)
                       <input value={utr} onChange={(e) => setUtr(e.target.value.replace(/\D/g, '').slice(0, 12))} placeholder="Required — 12-digit UTR from your UPI app" inputMode="numeric" className="mt-1 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm font-normal outline-none focus:border-black" />
-                      <span className="block font-normal text-black/50 mt-1 normal-case tracking-normal">Required — the store confirms your order only after checking it.</span>
+                      <span className="block font-normal text-black/50 mt-1 normal-case tracking-normal">Required — each UTR works only once and is verified by the store.</span>
                     </label>
                     <label className="block text-[11px] font-bold tracking-wide">PAYMENT SCREENSHOT * (required)
                       <input type="file" accept="image/*" onChange={(e) => onShot(e.target.files?.[0])} className="mt-1 w-full text-sm file:mr-3 file:rounded-full file:border file:border-black/15 file:bg-black file:text-white file:text-[12.5px] file:font-bold file:px-4 file:py-2 hover:file:brightness-125 file:transition" />
