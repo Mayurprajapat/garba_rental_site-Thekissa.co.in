@@ -4,6 +4,9 @@
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { getSiteContent, resetSiteContent, saveSiteContent, type SiteContent } from '../../lib/siteContent';
+import { formatAccessories, parseAccessories, type Category } from '../../data/products';
+
+const LOOK_CATS: Category[] = ['women', 'premium', 'men', 'kids', 'combo'];
 
 function Card({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -128,6 +131,24 @@ export default function WebsitePanel() {
           </Field>
         </Card>
 
+        <Card title="Complete look (dress card)" hint="Dress open karne par 'THE MODEL WORE THIS' box — heading, lines aur default items. Kisi ek dress ka alag look ho to Products me us dress ko edit karo.">
+          <Field label="Box heading"><input value={c.completeLook.title} onChange={(e) => setC((p) => ({ ...p, completeLook: { ...p.completeLook, title: e.target.value } }))} className="admin-input" placeholder="THE MODEL WORE THIS" /></Field>
+          <Field label="Subtitle (heading ke neeche)"><input value={c.completeLook.subtitle} onChange={(e) => setC((p) => ({ ...p, completeLook: { ...p.completeLook, subtitle: e.target.value } }))} className="admin-input" placeholder="The complete look is right here…" /></Field>
+          <Field label="Bottom hint (addon wali line)"><input value={c.completeLook.hint} onChange={(e) => setC((p) => ({ ...p, completeLook: { ...p.completeLook, hint: e.target.value } }))} className="admin-input" /></Field>
+          {LOOK_CATS.map((cat) => (
+            <Field key={cat} label={`Default lines — ${cat}${cat === 'women' || cat === 'premium' ? ' (active)' : ''} · one per line: name | included / free / price`}>
+              <textarea
+                value={formatAccessories(c.completeLook.defaults[cat] ?? [])}
+                onChange={(e) => setC((p) => ({ ...p, completeLook: { ...p.completeLook, defaults: { ...p.completeLook.defaults, [cat]: parseAccessories(e.target.value) } } }))}
+                className="admin-input font-mono !text-[12.5px]"
+                rows={Math.max(3, (c.completeLook.defaults[cat] ?? []).length + 1)}
+                placeholder={'Bandhani dupatta | included\nDandiya pair | free\nOxidised jhumka | 99'}
+              />
+            </Field>
+          ))}
+          <p className="text-[11.5px] text-[#8a7584]">included = dress ke saath · free = muft gift · sirf number (jaise 99) = paid add-on. Line delete = item hat jayega, nayi line = naya item jud jayega.</p>
+        </Card>
+
         <Card title="FAQs" hint="Questions and answers — add or delete as many as you like.">
           {c.faqs.map((f, i) => (
             <div key={i} className="border rounded-xl p-2.5 space-y-2 bg-[#faf7ef]">
@@ -152,6 +173,7 @@ export default function WebsitePanel() {
         <Card title="Footer + shop note">
           <Field label="Footer about"><textarea value={c.footer.about} onChange={(e) => setC((p) => ({ ...p, footer: { ...p.footer, about: e.target.value } }))} className="admin-input" rows={2} /></Field>
           <Field label="Delivery line"><input value={c.footer.delivery} onChange={(e) => setC((p) => ({ ...p, footer: { ...p.footer, delivery: e.target.value } }))} className="admin-input" /></Field>
+          <Field label="Bottom credit (e.g. Built by Mayur (TEXOWEB.SOLUTIONS))"><input value={c.footer.credit} onChange={(e) => setC((p) => ({ ...p, footer: { ...p.footer, credit: e.target.value } }))} className="admin-input" /></Field>
           <Field label="Shop bottom note (line under the collection)"><input value={c.shopNote} onChange={(e) => setC((p) => ({ ...p, shopNote: e.target.value }))} className="admin-input" /></Field>
         </Card>
       </div>

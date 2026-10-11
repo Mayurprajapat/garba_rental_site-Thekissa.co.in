@@ -53,9 +53,10 @@ export const PRODUCTS: Product[] = [
 // --- Complete look: model ne photo me kya pehna hai ---
 // Har dress ke saath ye list QuickView me dikhti hai — customer ko
 // scroll/search nahi karna padta. Admin kisi product ka alag list
-// `accessories` me set kar sakta hai, warna category default + desc
-// keywords (dandiya / jewellery / hair accessory) se auto banta hai.
-const DEFAULT_LOOK: Record<Category, Accessory[]> = {
+// `accessories` me set kar sakta hai, warna Website → Complete look
+// wale category defaults + desc keywords (dandiya / jewellery / hair
+// accessory) se auto banta hai.
+export const DEFAULT_LOOK: Record<Category, Accessory[]> = {
   women: [
     { name: 'Bandhani dupatta', tag: 'included' },
     { name: 'Latkan + dori', tag: 'included' },
@@ -90,7 +91,32 @@ const DEFAULT_LOOK: Record<Category, Accessory[]> = {
 };
 
 export function lookFor(p: Pick<Product, 'category' | 'desc' | 'accessories'>): Accessory[] {
-  const base = p.accessories?.length ? [...p.accessories] : [...(DEFAULT_LOOK[p.category] ?? [])];
+  let base: Accessory[];
+  if (p.accessories?.length) {
+    base = [...p.accessories];
+  } else {
+    // Admin → Website → Complete look me badle hue defaults (same browser me live).
+    // Khaali/missing ho to code wale DEFAULT_LOOK fallback.
+    let global: Accessory[] | null = null;
+    try {
+      const raw = typeof localStorage !== 'undefined' ? localStorage.getItem('raasleela-site-content') : null;
+      if (raw) {
+        const d = (JSON.parse(raw) as any)?.completeLook?.defaults?.[p.category];
+        if (Array.isArray(d)) {
+          const clean = (d as any[])
+            .filter((a) => a && typeof a.name === 'string' && a.name.trim())
+            .map((a) => ({
+              name: String(a.name).trim().slice(0, 80),
+              tag: (a.tag === 'free' ? 'free' : a.tag === 'addon' ? 'addon' : 'included') as Accessory['tag'],
+              ...(a.tag === 'addon' ? { price: Math.max(0, Math.round(Number(a.price) || 0)) } : {}),
+              ...(typeof a.x === 'number' && typeof a.y === 'number' ? { x: a.x, y: a.y } : {}),
+            }));
+          global = clean;
+        }
+      }
+    } catch { /* localStorage na mile to fallback */ }
+    base = global ? [...global] : [...(DEFAULT_LOOK[p.category] ?? [])];
+  }
   const has = (kw: string) => base.some((a) => a.name.toLowerCase().includes(kw));
   const d = (p.desc || '').toLowerCase();
   if (/dandiya/.test(d) && !has('dandiya')) base.push({ name: 'Dandiya pair', tag: 'free' });
@@ -107,6 +133,42 @@ export function addonTotal(p: Pick<Product, 'category' | 'desc' | 'accessories'>
     const a = look.find((x) => x.name === name && x.tag === 'addon');
     return sum + (a?.price ?? 0);
   }, 0);
+}
+
+// --- Admin text format: "name | included / free / price @ x,y" ---
+// Dono jagah same format — Product edit + Website → Complete look defaults.
+export function formatAccessories(list: Accessory[] = []): string {
+  return list
+    .map((a) => `${a.name} | ${a.tag === 'addon' ? (a.price ?? 0) : a.tag}${a.x != null && a.y != null ? ` @ ${a.x},${a.y}` : ''}`)
+    .join('\n');
+}
+
+export function parseAccessories(text: string): Accessory[] {
+  const out: Accessory[] = [];
+  for (const line of text.split('\n')) {
+    const l = line.trim();
+    if (!l) continue;
+    const parts = l.split('@').map((s) => s.trim());
+    const left = parts[0] ?? '';
+    const coord = parts[1] ?? '';
+    const lp = left.split('|').map((s) => s.trim());
+    const name = (lp[0] ?? '').slice(0, 80);
+    const raw = (lp[1] ?? '').toLowerCase();
+    if (!name) continue;
+    const m = coord.match(/(\d+)\s*,\s*(\d+)/);
+    const acc: Accessory = /^\d+$/.test(raw)
+      ? { name, tag: 'addon', price: Math.max(0, Math.round(Number(raw))) }
+      : raw === 'free'
+        ? { name, tag: 'free' }
+        : { name, tag: 'included' };
+    if (m) {
+      acc.x = Math.min(95, Number(m[1]));
+      acc.y = Math.min(95, Number(m[2]));
+    }
+    out.push(acc);
+    if (out.length >= 20) break;
+  }
+  return out;
 }
 
 // --- Photo hotspots: model photo par tap karne wale dots ---

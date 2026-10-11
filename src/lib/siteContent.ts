@@ -3,6 +3,7 @@
 // Save karte hi website par live (is browser me). Products/Categories wali tarah localStorage me rehta hai.
 
 import { useEffect, useState } from 'react';
+import type { Accessory, Category } from '../data/products';
 
 export interface StoreInfo {
   brand: string;
@@ -44,9 +45,59 @@ export interface SiteContent {
   looks: { title: string; subtitle: string; note: string; imgs: string[] };
   faqs: Faq[];
   booking: { title: string; subtitle: string; points: string[] };
-  footer: { about: string; delivery: string };
+  footer: { about: string; delivery: string; credit: string };
   shopNote: string;
+  /** Dress QuickView card — "THE MODEL WORE THIS" box. Admin → Website se editable. */
+  completeLook: CompleteLook;
 }
+
+export interface CompleteLook {
+  title: string;
+  subtitle: string;
+  /** Chhoti note — "Tick = joins the dress…" wali line */
+  hint: string;
+  /** Category-wise default lines. Kisi dress me alag `accessories` ho to wahi jeetega. */
+  defaults: Record<Category, Accessory[]>;
+}
+
+export const DEFAULT_COMPLETE_LOOK: CompleteLook = {
+  title: 'THE MODEL WORE THIS',
+  subtitle: 'The complete look is right here — nothing to search for.',
+  hint: 'Tick = joins the dress · Only this = rent the item alone, without the dress.',
+  defaults: {
+    women: [
+      { name: 'Bandhani dupatta', tag: 'included' },
+      { name: 'Latkan + dori', tag: 'included' },
+      { name: 'Oxidised jhumka', tag: 'addon', price: 99 },
+      { name: 'Kamarbandh (tagdi)', tag: 'addon', price: 149 },
+      { name: 'Dandiya pair', tag: 'free' },
+    ],
+    men: [
+      { name: 'Pagdi / safa', tag: 'included' },
+      { name: 'Dupatta', tag: 'included' },
+      { name: 'Mojari', tag: 'addon', price: 149 },
+      { name: 'Brooch set', tag: 'addon', price: 49 },
+      { name: 'Dandiya pair', tag: 'free' },
+    ],
+    kids: [
+      { name: 'Dupatta + hair accessory', tag: 'included' },
+      { name: 'Latkan', tag: 'included' },
+      { name: 'Kids jhumka', tag: 'addon', price: 79 },
+      { name: 'Dandiya (small)', tag: 'free' },
+    ],
+    combo: [
+      { name: 'Her dupatta + his pagdi', tag: 'included' },
+      { name: 'Couple dandiya set', tag: 'free' },
+      { name: 'Jewellery set', tag: 'addon', price: 199 },
+    ],
+    premium: [
+      { name: 'Designer dupatta + latkan', tag: 'included' },
+      { name: 'Jewellery set', tag: 'included' },
+      { name: 'Kamarbandh (tagdi)', tag: 'addon', price: 149 },
+      { name: 'Dandiya pair', tag: 'free' },
+    ],
+  },
+};
 
 export const DEFAULT_CONTENT: SiteContent = {
   store: {
@@ -105,8 +156,10 @@ export const DEFAULT_CONTENT: SiteContent = {
   footer: {
     about: 'Designer Garba outfits on rent — perfect fitting, doorstep delivery, easy return.',
     delivery: 'Online only — no walk-in store',
+    credit: 'Built by Mayur (TEXOWEB.SOLUTIONS)',
   },
   shopNote: '1-day rentals · 100% refundable 30% extra · 100% secure QR payments',
+  completeLook: DEFAULT_COMPLETE_LOOK,
 };
 
 const KEY = 'raasleela-site-content';
@@ -114,6 +167,39 @@ const EVT = 'raasleela-site-updated';
 
 function valid(c: any): c is SiteContent {
   return !!c && typeof c === 'object' && !!c.store && typeof c.store.phone === 'string' && Array.isArray(c.promos) && Array.isArray(c.faqs);
+}
+
+function cleanLookItem(a: any): Accessory | null {
+  if (!a || typeof (a as any).name !== 'string' || !(a as any).name.trim()) return null;
+  const name = (a as any).name.trim().slice(0, 80);
+  const tag = (a as any).tag === 'free' ? 'free' : (a as any).tag === 'addon' ? 'addon' : 'included';
+  const out: Accessory = { name, tag };
+  if (tag === 'addon') out.price = Math.max(0, Math.round(Number((a as any).price) || 0));
+  if (typeof (a as any).x === 'number' && typeof (a as any).y === 'number') {
+    out.x = Math.min(95, Math.max(0, (a as any).x));
+    out.y = Math.min(95, Math.max(0, (a as any).y));
+  }
+  return out;
+}
+
+function normalizeCompleteLook(raw: any): CompleteLook {
+  const d = DEFAULT_COMPLETE_LOOK;
+  const saved = raw && typeof raw === 'object' ? raw : {};
+  const savedDefaults = saved.defaults && typeof saved.defaults === 'object' ? saved.defaults : {};
+  const defaults = {} as Record<Category, Accessory[]>;
+  (Object.keys(d.defaults) as Category[]).forEach((cat) => {
+    const arr = savedDefaults[cat];
+    defaults[cat] = Array.isArray(arr)
+      ? arr.map(cleanLookItem).filter((x): x is Accessory => !!x).slice(0, 20)
+      : [...d.defaults[cat]];
+  });
+  const text = (v: any, fb: string) => (typeof v === 'string' && v.trim() ? v : fb);
+  return {
+    title: text(saved.title, d.title).slice(0, 60),
+    subtitle: text(saved.subtitle, d.subtitle).slice(0, 140),
+    hint: text(saved.hint, d.hint).slice(0, 160),
+    defaults,
+  };
 }
 
 function normalize(c: SiteContent): SiteContent {
@@ -179,7 +265,7 @@ function normalize(c: SiteContent): SiteContent {
             String(t ?? '').replace(/presize available/gi, 'Free size available'))
         : [...DEFAULT_CONTENT.booking.points],
     },
-    footer: { ...DEFAULT_CONTENT.footer, ...(c.footer || {}) },
+    footer: { ...DEFAULT_CONTENT.footer, ...(c.footer || {}), credit: typeof (c as any).footer?.credit === 'string' && (c as any).footer.credit.trim() && (c as any).footer.credit.trim() !== 'Built by Mayur' ? (c as any).footer.credit : DEFAULT_CONTENT.footer.credit },
     // Purani saved FAQ line hata do ("wrong size..." sentence) + deposit answer ko 30% extra par migrate karo
     faqs: Array.isArray(c.faqs)
       ? c.faqs
@@ -193,6 +279,7 @@ function normalize(c: SiteContent): SiteContent {
       : [...DEFAULT_CONTENT.faqs],
     // Purani saved line me "Codes: ..." ho to hata do, purana plan text ho to 1-day kar do
     shopNote,
+    completeLook: normalizeCompleteLook((c as any).completeLook),
   };
 }
 

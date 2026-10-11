@@ -177,7 +177,7 @@ export function Footer() {
             <a href="/refunds" className="hover:text-white underline underline-offset-2">Refunds &amp; Cancellation</a>
           </p>
         </div>
-        <p className="text-center text-[10px] tracking-wide text-white/30 pb-4 -mt-1">built by DAEREK (TEXOWEB.SOLUTIONS)</p>
+        <p className="text-center text-[10px] tracking-wide text-white/30 pb-4 -mt-1">{foot.credit || 'Built by Mayur (TEXOWEB.SOLUTIONS)'}</p>
       </div>
     </footer>
   );

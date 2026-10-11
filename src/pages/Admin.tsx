@@ -38,6 +38,7 @@ import {
   type LocalBooking,
 } from '../lib/localAdmin';
 import { getCategories, resetCategories, saveCategories, type ShopCategory } from '../lib/categories';
+import { formatAccessories, parseAccessories } from '../data/products';
 import type { LiveProduct } from '../lib/ProductsContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import DeliveriesPanel from './admin/DeliveriesPanel';
@@ -1118,24 +1119,16 @@ export default function Admin() {
               <label className="label-pro block">Description<textarea value={editing.desc} onChange={(e) => setEditing({ ...editing, desc: e.target.value })} className="admin-input mt-1.5" rows={3} /></label>
               <label className="label-pro block">Complete look — what the model wore (one per line: name | included / free / price · photo dot with @ x,y)
                 <textarea
-                  value={(editing.accessories ?? []).map((a) => `${a.name} | ${a.tag === 'addon' ? (a.price ?? 0) : a.tag}${a.x != null && a.y != null ? ` @ ${a.x},${a.y}` : ''}`).join('\n')}
+                  value={formatAccessories(editing.accessories ?? [])}
                   onChange={(e) => setEditing({
                     ...editing,
-                    accessories: e.target.value.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
-                      const [left, coord] = l.split('@').map((s) => s.trim());
-                      const [name, raw] = left.split('|').map((s) => s.trim());
-                      const m = (coord ?? '').match(/(\d+)\s*,\s*(\d+)/);
-                      const pos = m ? { x: Math.min(95, Number(m[1])), y: Math.min(95, Number(m[2])) } : {};
-                      if (/^\d+$/.test(raw ?? '')) return { name, tag: 'addon' as const, price: Number(raw), ...pos };
-                      if (raw === 'free') return { name, tag: 'free' as const, ...pos };
-                      return { name, tag: 'included' as const, ...pos };
-                    }),
+                    accessories: parseAccessories(e.target.value),
                   })}
                   className="admin-input mt-1.5" rows={4}
                   placeholder={'Oxidised jhumka | 99 @ 67,24\nBandhani dupatta | included\nDandiya pair | free'}
                 />
               </label>
-              <p className="text-[11.5px] text-[#8a7584] -mt-2">Leave empty to use the category default look.</p>
+              <p className="text-[11.5px] text-[#8a7584] -mt-2">Leave empty to use Website → Complete look defaults. Nayi line jodo = naya item, line hatao = item hat jayega.</p>
               <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={editing.active} onChange={(e) => setEditing({ ...editing, active: e.target.checked })} className="w-4 h-4 accent-[#3d0a26]" /> Show on website</label>
               <div className="flex gap-2 pt-2">
                 <button className="flex-1 bg-[#1a0f1e] text-white font-semibold rounded-full py-3 text-sm">Save product</button>

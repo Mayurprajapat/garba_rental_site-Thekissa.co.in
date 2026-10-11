@@ -135,7 +135,7 @@ function SingleCard({ item }: { item: SingleItem }) {
 
 export default function Shop() {
   const { products: PRODUCTS, loading, live } = useProducts();
-  useSiteVersion();
+  const siteV = useSiteVersion();
   const search = useStore((s) => s.search);
   const setSearch = useStore((s) => s.setSearch);
   const sort = useStore((s) => s.sort);
@@ -207,7 +207,8 @@ export default function Shop() {
     if (sort === 'rating') l = [...l].sort((a, b) => b.rating - a.rating);
     if (wishOnly) l = l.filter((p) => wishlist.includes(p.id));
     return l;
-  }, [PRODUCTS, activeCat, search, sort, maxPrice, wishOnly, wishlist]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [PRODUCTS, activeCat, search, sort, maxPrice, wishOnly, wishlist, siteV]);
 
   // Item mode — SIRF single-rent items (dress mix nahi). Comma = OR, space = AND.
   const itemList = useMemo(() => {
@@ -221,7 +222,8 @@ export default function Shop() {
     if (sort === 'low') items = [...items].sort((a, b) => a.price - b.price);
     if (sort === 'high') items = [...items].sort((a, b) => b.price - a.price);
     return items;
-  }, [PRODUCTS, activeCat, maxPrice, sort, isItemMode, wishOnly, wishlist]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [PRODUCTS, activeCat, maxPrice, sort, isItemMode, wishOnly, wishlist, siteV]);
 
   const activeFilters = (maxPrice < 4000 ? 1 : 0) + (sort !== 'pop' ? 1 : 0) + (wishOnly ? 1 : 0);
 

@@ -24,6 +24,7 @@ import SpinViewer from './SpinViewer';
 
 export function QuickView() {
   const { products } = useProducts();
+  const siteV = useSiteVersion();
   const id = useStore((s) => s.quickView);
   const setQuickView = useStore((s) => s.setQuickView);
   const addToCart = useStore((s) => s.addToCart);
@@ -47,7 +48,11 @@ export function QuickView() {
     window.addEventListener('keydown', onKey);
     return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
   }, [p]);
-  const look = useMemo(() => (p ? lookFor(p) : []), [p]);
+  const completeLook = getSiteContent().completeLook;
+  const lookTitle = completeLook?.title?.trim() || 'THE MODEL WORE THIS';
+  const lookSubtitle = completeLook?.subtitle?.trim() || 'The complete look is right here — nothing to search for.';
+  const lookHint = completeLook?.hint?.trim() || 'Tick = joins the dress · Only this = rent the item alone, without the dress.';
+  const look = useMemo(() => (p ? lookFor(p) : []), [p, siteV]);
   const photos = useMemo(() => (p ? photosFor(p) : []), [p]);
   const frames = useMemo(() => (p ? spinFramesFor(p) : []), [p]);
   const canSpin = frames.length > 1;
@@ -122,8 +127,8 @@ export function QuickView() {
               <p className="text-[13.5px] mt-3 leading-relaxed text-neutral-600">{p.desc}</p>
               {!!look.length && (
                 <div className="mt-4 rounded-2xl border border-black/[.07] bg-[#fafafa] p-3.5">
-                  <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] text-black"><Sparkles size={13} className="text-[#c9a44a]" /> THE MODEL WORE THIS</p>
-                  <p className="text-[11.5px] text-neutral-500 mt-0.5">The complete look is right here — nothing to search for.</p>
+                  <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] text-black"><Sparkles size={13} className="text-[#c9a44a]" /> {lookTitle}</p>
+                  <p className="text-[11.5px] text-neutral-500 mt-0.5">{lookSubtitle}</p>
                   <div className="mt-2.5 space-y-1.5">
                     {look.filter((a) => a.tag !== 'addon').map((a) => (
                       <div key={a.name} className="flex items-center gap-2 text-[12.5px] bg-white border border-black/[.07] rounded-xl px-3 py-2 transition">
@@ -157,7 +162,7 @@ export function QuickView() {
                     })}
                   </div>
                   {!!paidAddons.length && (
-                    <p className="text-[11px] text-[#6f5b6a] mt-2">Tick = joins the dress · <b>Only this</b> = rent the item alone, without the dress.</p>
+                    <p className="text-[11px] text-[#6f5b6a] mt-2">{lookHint}</p>
                   )}
                 </div>
               )}
