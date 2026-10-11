@@ -27,7 +27,8 @@ export interface MyOrder {
   deposit: number;
   token: number;
   mode: string;
-  /** Order status — QR payment par auto 'confirmed'. Admin baad me cancel/delivered kar sakta hai. */
+  /** Order status — naya order 'new' (pending). Admin confirm/cancel/onway/delivered
+   *  kare to wahi customer ko dikhta hai (downgrade-guard ke saath). */
   status?: string;
   note?: string;
   /** UPI payment verification: verified / rejected / unverified (admin panel se) */
@@ -53,22 +54,12 @@ function parseList(raw: string | null): MyOrder[] {
   return [];
 }
 
-/** Purane 'new' + QR-payment wale snapshots ko confirmed mano (auto-confirm migration). */
-function normalizeStatus(o: MyOrder): MyOrder {
-  try {
-    if (o && o.status === 'new' && String(o.mode || '').startsWith('upi-qr') && Number(o.token || 0) > 0) {
-      return { ...o, status: 'confirmed' };
-    }
-  } catch { /* ignore */ }
-  return o;
-}
-
 export function getMyOrders(): MyOrder[] {
   try {
-    const primary = parseList(localStorage.getItem(KEY)).map(normalizeStatus);
+    const primary = parseList(localStorage.getItem(KEY));
     if (primary.length) return primary;
     // Primary khaali ho to backup se restore (data loss se bachao)
-    const backup = parseList(localStorage.getItem(BACKUP_KEY)).map(normalizeStatus);
+    const backup = parseList(localStorage.getItem(BACKUP_KEY));
     if (backup.length) {
       try { localStorage.setItem(KEY, JSON.stringify(backup)); } catch { /* ignore */ }
       return backup;
@@ -121,8 +112,8 @@ export function mergeMyOrders(incoming: MyOrder[]) {
         byId.set(o.id, {
           ...prev,
           items,
-          // AUTO-CONFIRM guard: cloud ka purana 'new' local 'confirmed' ko downgrade na kare.
-          // Admin ka explicit decision (cancelled/delivered/returned/confirmed) hamesha jeetega.
+          // Downgrade guard: cloud ka purana 'new' local confirmed/onway/delivered/
+          // returned/cancelled ko overwrite na kare. Admin ka naya decision hamesha jeetega.
           status: (() => {
             const incoming = o.status;
             const prevS = prev.status;

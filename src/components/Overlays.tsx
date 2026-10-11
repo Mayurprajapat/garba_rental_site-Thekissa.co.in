@@ -430,7 +430,8 @@ export function CartDrawer() {
     const refreshOrders = () => {
       const list = getMyOrders();
       // Admin ne decision / ready date di ho to booking record se lao (same device par turant dikhega)
-      // AUTO-CONFIRM guard: confirmed order ko wapas 'new' mat karo (purana booking record).
+      // Downgrade guard: confirmed/onway/delivered/returned/cancelled order ko
+      // wapas 'new' mat karo (purana booking record).
       try {
         const byId = new Map(getLocalBookings().map((b) => [b.order_id, b]));
         list.forEach((o) => {
@@ -506,10 +507,29 @@ export function CartDrawer() {
     else setLookupMsg('✓ Already up to date — no new update from the store.');
     setTab('orders');
   };
+  // Admin ka decision (confirm/onway/delivered/returned/cancelled/note/ready-date)
+  // turant lao — ek halki phone-RPC call me saare orders. Badle hue orders wapas.
+  const fastSyncPhones = async (): Promise<MyOrder[]> => {
+    try {
+      const mine = getMyOrders();
+      if (!mine.length) return [];
+      const before = new Map(mine.map((o) => [o.id, `${o.status || ''}|${o.note || ''}|${o.readyDate || ''}|${o.payStatus || ''}`]));
+      const phones = [...new Set(mine.map((o) => String(o.phone || '').replace(/\D/g, '').slice(-10)).filter((d) => d.length >= 10))].slice(0, 3);
+      if (phones.length) {
+        await Promise.allSettled(phones.map((p) => fetchOrdersByPhone(p)));
+      } else {
+        await syncCloudStatuses(true);
+      }
+      return getMyOrders().filter((o) => {
+        const p = before.get(o.id);
+        return p !== undefined && p !== `${o.status || ''}|${o.note || ''}|${o.readyDate || ''}|${o.payStatus || ''}`;
+      });
+    } catch { return []; }
+  };
   useEffect(() => {
     if (open) {
       try {
-        if (getMyOrders().length > 0) syncCloudStatuses(true);
+        if (getMyOrders().length > 0) { syncCloudStatuses(true); fastSyncPhones(); }
       } catch { /* ignore */ }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -531,24 +551,11 @@ export function CartDrawer() {
     const fastTick = async () => {
       try {
         if (stop || document.visibilityState === 'hidden') return;
-        const mine = getMyOrders();
-        if (!mine.length) return;
-        const before = new Map(mine.map((o) => [o.id, `${o.status || ''}|${o.note || ''}|${o.readyDate || ''}|${o.payStatus || ''}`]));
-        // Ek hi RPC me is device ke numbers ka taza status (note/ready-date samet)
-        const phones = [...new Set(mine.map((o) => String(o.phone || '').replace(/\D/g, '').slice(-10)).filter((d) => d.length >= 10))].slice(0, 3);
-        if (phones.length) {
-          await Promise.allSettled(phones.map((p) => fetchOrdersByPhone(p)));
-        } else {
-          await syncCloudStatuses(true);
+        if (!getMyOrders().length) return;
+        const changed = await fastSyncPhones();
+        if (changed.length && !stop) {
+          changed.slice(0, 2).forEach((o) => pushToast(`Order ${o.id}: ${statusText(o.status)}`));
         }
-        if (stop) return;
-        getMyOrders()
-          .filter((o) => {
-            const p = before.get(o.id);
-            return p !== undefined && p !== `${o.status || ''}|${o.note || ''}|${o.readyDate || ''}|${o.payStatus || ''}`;
-          })
-          .slice(0, 2)
-          .forEach((o) => pushToast(`Order ${o.id}: ${statusText(o.status)}`));
       } catch { /* offline ho to agli tick */ }
     };
     const onVisible = () => {
@@ -655,9 +662,8 @@ export function CartDrawer() {
   };
 
   // Website par order hamesha rahe — My Orders snapshot.
-  // AUTO-CONFIRM: QR payment (UTR + screenshot OK) hote hi status 'confirmed' —
-  // admin ko confirm karne ke liye wait nahi karna padta. Admin panel se
-  // cancel / delivered / payment-verify options vaise hi available rahenge.
+  // MANUAL CONFIRM: status 'new' = payment bheja, admin confirmation baaki.
+  // Admin genuine payment dekhkar confirm karega, nakli UTR wala cancel.
   const snapOrder = (orderId: string, token: number, mode: string, proof?: string) => saveMyOrder({
     id: orderId,
     date: new Date().toISOString(),
@@ -676,12 +682,12 @@ export function CartDrawer() {
     deposit,
     token,
     mode,
-    status: 'confirmed',
+    status: 'new',
     proof,
   });
 
   const buildCustomerMsg = (o: { id: string; total: number; deposit: number; token: number; mode: string }) =>
-    `Your order ${o.id} is CONFIRMED! ✅\n\nName: ${name}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\nPaid now: ${formatINR(o.token)}${o.mode === 'upi-qr-full' ? ' (rent + 30% extra — nothing due on delivery)' : ''}\nRefundable extra 30%: ${formatINR(o.deposit)} — you will get this back when you return the outfit.\n\nThank you for renting with TheKissa.co! Delivery updates will be shared with you on WhatsApp/SMS.`;
+    `Your order has been placed successfully!\n\nOrder ID: ${o.id}\nName: ${name}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\nPaid now: ${formatINR(o.token)}${o.mode === 'upi-qr-full' ? ' (rent + 30% extra — nothing due on delivery)' : ''}\nRefundable extra 30%: ${formatINR(o.deposit)} — you will get this back when you return the outfit.\n\nThank you for renting with TheKissa.co! Delivery updates will be shared with you on WhatsApp/SMS.`;
 
   const orderLines = () => rows.map((r, i) => r.single
     ? `${i + 1}. ${r.single.name} (accessory only — ${r.p.id} look) x${r.qty} = ${formatINR(r.single.price * r.qty)}`
@@ -690,9 +696,9 @@ export function CartDrawer() {
   // Store notification — ALWAYS goes to the client's number/email.
   // Earning (rent) vs refundable deposit vs total collection — teeno alag line me,
   // taaki store ko ek nazar me samajh aaye kitna rakhna hai, kitna wapas dena hai.
-  // Order auto-confirmed hota hai — payment jab time mile tab Reports → Payments me verify kar lena.
+  // Order 'new' hai — UTR + screenshot check karke admin confirm/cancel kare.
   const buildStoreMsg = (o: { id: string; mode: string; token: number; total: number; deposit: number; lines: string[]; paymentId: string }) =>
-    `New order ${o.id} — TheKissa.co (AUTO-CONFIRMED ✅)\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\n\nRent (your earning): ${formatINR(o.total)}\n${o.mode === 'upi-qr-full' ? `Payment: Full ${formatINR(o.token)} (rent + 30% extra) received via QR (UTR ${o.paymentId}) — auto-confirmed, verify when free in Reports → Payments` : o.mode === 'upi-qr-half' ? `Payment: Half ${formatINR(o.token)} received via QR (UTR ${o.paymentId}), balance ${formatINR(o.total - o.token)} + 30% extra ${formatINR(o.deposit)} on delivery — auto-confirmed, verify when free in Reports → Payments` : `Payment: Token ${formatINR(o.token)} received via QR (UTR ${o.paymentId}) — auto-confirmed, verify when free in Reports → Payments`}\nRefundable extra 30%: ${formatINR(o.deposit)}${o.mode === 'upi-qr-full' ? ' (already received — return on outfit return)' : ' — collect on delivery, return on outfit return'}\nTotal collection: ${formatINR(o.total + o.deposit)} (${formatINR(o.token)} received + ${formatINR(Math.max(0, o.total - o.token + (o.mode === 'upi-qr-full' ? 0 : o.deposit)))} on delivery)`;
+    `New order ${o.id} — TheKissa.co\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\n\nRent (your earning): ${formatINR(o.total)}\n${o.mode === 'upi-qr-full' ? `Payment: Full ${formatINR(o.token)} (rent + 30% extra) received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments, then confirm` : o.mode === 'upi-qr-half' ? `Payment: Half ${formatINR(o.token)} received via QR (UTR ${o.paymentId}), balance ${formatINR(o.total - o.token)} + 30% extra ${formatINR(o.deposit)} on delivery — VERIFY in Reports → Payments, then confirm` : `Payment: Token ${formatINR(o.token)} received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments, then confirm`}\nRefundable extra 30%: ${formatINR(o.deposit)}${o.mode === 'upi-qr-full' ? ' (already received — return on outfit return)' : ' — collect on delivery, return on outfit return'}\nTotal collection: ${formatINR(o.total + o.deposit)} (${formatINR(o.token)} received + ${formatINR(Math.max(0, o.total - o.token + (o.mode === 'upi-qr-full' ? 0 : o.deposit)))} on delivery)`;
 
   const goQr = () => {
     const v = validateDetails();
@@ -724,14 +730,14 @@ export function CartDrawer() {
 
   const confirmQrPaid = async () => {
     if (paying) return;
-    // Payment ke bina order confirm nahi — UTR + screenshot dono compulsory.
-    // Valid payment aate hi order AUTO-CONFIRMED (admin ko wait nahi karna padta).
+    // Payment ke bina order save nahi — UTR + screenshot dono compulsory.
+    // Order 'new' (pending) save hoga — admin UTR/screenshot dekhkar confirm ya cancel karega.
     if (!/^\d{12}$/.test(utr.trim())) { setErr('Please enter the 12-digit UTR from your UPI app after payment — it is required.'); return; }
     if (looksFakeUtr(utr.trim())) { setErr('This UTR looks invalid (repeated or sequential digits). Please copy the exact 12-digit UTR from your UPI app.'); return; }
     if (!shot) { setErr('Please attach your payment screenshot — it is required to place the order.'); return; }
     setErr('');
     // Ek UTR sirf ek order me — reuse turant block (genuine check, fail-open).
-    // Order count ki koi limit nahi — har payment wala order auto-confirm hota hai.
+    // Order count ki koi limit nahi — har payment wala order 'new' save hota hai, admin confirm/cancel karega.
     try {
       if (await isUtrUsed(utr.trim())) { setErr('This UTR has already been used for another order. Please check the number in your UPI app.'); return; }
     } catch { /* guard fail ho to order mat roko */ }
@@ -783,7 +789,6 @@ export function CartDrawer() {
         payment_status: 'unverified',
         payment_proof: proof,
         promo_code: promo.trim() ? promo.trim().toUpperCase() : null,
-        status: 'confirmed',
       });
       setOrder({ id: orderId, paymentId: ref, mode, token: amt, total, deposit, lines: orderLines(), items: rows.map((r) => ({ name: r.single ? r.single.name : r.p.name, detail: r.single ? `${r.p.id} look · without dress` : rowLabel(r), qty: r.qty, price: rowPrice(r) * r.qty, img: r.single?.img ?? r.p.img, pid: r.p.id })) });
       setStep('done');
@@ -825,9 +830,9 @@ export function CartDrawer() {
               <div className="flex-1 overflow-y-auto p-5">
                 <div className="text-center py-2">
                   <CheckCircle2 size={44} className="mx-auto text-emerald-600" />
-                  <h4 className="font-semibold text-xl mt-3">Order confirmed! ✅</h4>
-                  <p className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1.5">✓ Confirmed</p>
-                  <p className="text-[12.5px] text-black/55 mt-2">Your payment is received and your outfit is booked. You will see it in My Orders.</p>
+                  <h4 className="font-semibold text-xl mt-3">Payment sent successfully!</h4>
+                  <p className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-3 py-1.5">⏳ Waiting for store confirmation</p>
+                  <p className="text-[12.5px] text-black/55 mt-2">The store will check your UTR + screenshot and confirm your order. You will see it in My Orders.</p>
                   <p className="text-sm text-black/55 mt-2">Order ID: <b className="text-black">{order.id}</b></p>
                 </div>
                 <div className="mt-4 border border-black/10 rounded-2xl overflow-hidden">

@@ -15,13 +15,12 @@ function noteRpcError(e: any) {
 // Booking save — hamesha local me (admin panel me dikhega),
 // Supabase laga ho to waha bhi.
 //
-// AUTO-CONFIRM: QR payment (UTR + screenshot validated) aate hi order
-// turant 'confirmed' save hota hai — admin ko laptop ke saamne baithkar
-// confirm nahi karna padta. Admin panel ke saare options (confirm /
-// cancel / delivered / payment verify) vaise hi rahenge — galat payment
-// ho to admin baad me cancel / flag kar sakta hai.
-// payment_status alag rehta hai ('unverified') — Reports → Payments me
-// jab time mile tab verify kar sakte ho, order pehle se confirmed rahega.
+// MANUAL CONFIRM: naya order hamesha 'new' (pending) save hota hai —
+// admin genuine payment dekhkar 1 tap me confirm karta hai, nakli UTR /
+// galat screenshot wala 1 tap me cancel. Typed UTR ko 100% auto-verify
+// koi system nahi kar sakta (UTR me checksum nahi hota), isliye
+// confirmation admin ke haath me hai. payment_status alag rehta hai
+// ('unverified') — Reports → Payments me jab time mile tab verify karo.
 //
 // Resilient: agar cloud schema purana ho (migration pending) to
 // pehle full row try karo, column error aaye to legacy minimal row retry.
@@ -56,21 +55,9 @@ export async function saveBooking(payload: {
   address?: string | null;
   /** Bot-trap — bhara ho to booking silently drop (spam se bachao) */
   honeypot?: string;
-  /** Order status override — nahi diya to payment dekhkar auto-decide (QR payment = confirmed) */
-  status?: string;
 }) {
   // Honeypot bhara = bot. Success jaisa response, par save mat karo.
   if (payload.honeypot && payload.honeypot.trim()) return { ok: true as const, mode: 'local' as const };
-  // Auto-confirm: valid QR payment (mode upi-qr-* + 12-digit UTR) = turant confirmed.
-  // Caller explicit status de to wahi jeetega (admin panel flow untouched).
-  const autoStatus = (() => {
-    if (payload.status) return payload.status;
-    const mode = String(payload.payment_mode || '');
-    const utr = String(payload.payment_id || '').trim();
-    if (mode.startsWith('upi-qr') && /^\d{12}$/.test(utr)) return 'confirmed';
-    if (mode.startsWith('upi-qr') && utr) return 'confirmed';
-    return 'new';
-  })();
   try {
     addLocalBooking({
       order_id: payload.order_id,
@@ -95,7 +82,7 @@ export async function saveBooking(payload: {
       address: payload.address ?? null,
       promo_code: payload.promo_code ?? null,
       payment_proof: payload.payment_proof ?? null,
-      status: autoStatus,
+      status: 'new',
     });
   } catch { /* ignore */ }
 
@@ -123,7 +110,7 @@ export async function saveBooking(payload: {
     address: payload.address ?? null,
     promo_code: payload.promo_code ?? null,
     payment_proof: payload.payment_proof ?? null,
-    status: autoStatus,
+    status: 'new',
   };
   let { error } = await supabase.from('bookings').insert(row);
   if (error && isMissingColumnError(error.message)) {
@@ -141,7 +128,7 @@ export async function saveBooking(payload: {
       event_date: row.event_date,
       plan: row.plan,
       note: row.note,
-      status: autoStatus,
+      status: 'new',
     };
     ({ error } = await supabase.from('bookings').insert(legacy));
   }
@@ -183,15 +170,9 @@ function bookingRowToMyOrder(r: any): MyOrder | null {
       qty: 1,
       price: Number(r.total || r.subtotal || 0),
     }];
-    // AUTO-CONFIRM migration: purane 'new' orders jinme QR payment ho chuki hai,
-    // ve bhi confirmed dikhenge — admin ko peeche se confirm nahi karna padega.
-    // (cancelled / delivered / returned ko haath nahi lagate.)
-    let status = String(r.status || 'new');
-    try {
-      const mode = String(r.payment_mode || '');
-      const hasPay = Number(r.token_amount || 0) > 0 || String(r.payment_id || '').trim() !== '';
-      if (status === 'new' && mode.startsWith('upi-qr') && hasPay) status = 'confirmed';
-    } catch { /* ignore */ }
+    // Cloud/admin ka status jaisa hai waisa — customer ko wahi dikhega
+    // (confirmed / onway / delivered / returned / cancelled).
+    const status = String(r.status || 'new');
     return {
       id: orderId,
       date: String(r.created_at || new Date().toISOString()),
