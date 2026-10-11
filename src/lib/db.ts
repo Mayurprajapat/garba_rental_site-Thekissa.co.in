@@ -2,6 +2,16 @@ import { addLocalBooking, getLocalBookings } from './localAdmin';
 import { getMyOrders, mergeMyOrders, type MyOrder } from './myOrders';
 import { isSupabaseConfigured, supabase } from './supabase';
 
+/** Cloud lookup health — RPC functions (SETUP_ONCE) missing hon to 'missing'. */
+let lookupDiag: 'ok' | 'missing' | 'unknown' = 'unknown';
+export function cloudLookupDiag(): 'ok' | 'missing' | 'unknown' {
+  return lookupDiag;
+}
+function noteRpcError(e: any) {
+  const m = `${String(e?.message || '')} ${String(e?.code || '')}`;
+  if (/could not find the function|PGRST202|does not exist/i.test(m)) lookupDiag = 'missing';
+}
+
 // Booking save — hamesha local me (admin panel me dikhega),
 // Supabase laga ho to waha bhi.
 //
@@ -193,6 +203,7 @@ export async function fetchOrdersByPhone(phone: string): Promise<{ orders: MyOrd
     // 1) Secure function (migration_customer_orders_lookup.sql) — sirf apne number ke orders
     const rpc = await supabase.rpc('get_my_orders_by_phone', { p_phone: digits });
     if (!rpc.error && Array.isArray(rpc.data)) {
+      lookupDiag = 'ok';
       const cloud = (rpc.data as any[]).map(bookingRowToMyOrder).filter((x): x is MyOrder => !!x);
       if (cloud.length) {
         mergeMyOrders(cloud);
@@ -202,6 +213,7 @@ export async function fetchOrdersByPhone(phone: string): Promise<{ orders: MyOrd
       }
       return { orders: localByPhone, source: localByPhone.length ? 'local' : 'cloud' };
     }
+    if (rpc.error) noteRpcError(rpc.error);
     // 2) Fallback — purana setup (RLS allow kare to hi chalega)
     const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false }).limit(100);
     if (!error && Array.isArray(data)) {
@@ -228,9 +240,11 @@ export async function isUtrUsed(utr: string): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) return false;
   try {
     const { data, error } = await supabase.rpc('check_utr_used', { p_utr: needle });
-    if (error) return false;
+    if (error) { noteRpcError(error); return false; }
+    lookupDiag = 'ok';
     return data === true;
-  } catch {
+  } catch (e) {
+    noteRpcError(e);
     return false;
   }
 }
@@ -247,22 +261,30 @@ export async function todayOrderCount(phone: string): Promise<number> {
     return 0;
   }
 }
-/** Order ID se ek order dhoondo (local + cloud). */
-export async function fetchOrderById(orderId: string): Promise<MyOrder | null> {
+/** Order ID se ek order dhoondo (local + cloud).
+ *  refresh:true ho to local milne par bhi cloud se taza status lao (sync ke liye). */
+export async function fetchOrderById(orderId: string, opts?: { refresh?: boolean }): Promise<MyOrder | null> {
   const needle = String(orderId || '').trim().toUpperCase();
   if (!needle) return null;
-  const local = getMyOrders().find((o) => String(o.id || '').toUpperCase() === needle);
-  if (local) return local;
+  if (!opts?.refresh) {
+    const local = getMyOrders().find((o) => String(o.id || '').toUpperCase() === needle);
+    if (local) return local;
+  }
   if (!isSupabaseConfigured || !supabase) return null;
   try {
     const rpc = await supabase.rpc('get_my_order_by_id', { p_order_id: needle });
     if (!rpc.error && rpc.data) {
+      lookupDiag = 'ok';
       const row = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
       if (row) {
         const converted = bookingRowToMyOrder(row);
         if (converted) { mergeMyOrders([converted]); return converted; }
       }
+    } else if (rpc.error) {
+      noteRpcError(rpc.error);
     }
-  } catch { /* ignore */ }
-  return null;
+  } catch (e) {
+    noteRpcError(e);
+  }
+  return getMyOrders().find((o) => String(o.id || '').toUpperCase() === needle) ?? null;
 }

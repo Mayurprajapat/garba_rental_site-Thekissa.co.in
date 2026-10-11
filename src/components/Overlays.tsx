@@ -3,7 +3,7 @@ import { BadgeCheck, Check, CheckCircle2, CreditCard, Download, Heart, Mail, Map
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { addonTotal, lookFor, photosFor, spinFramesFor, STORE, waLink, type Accessory, type Category } from '../data/products';
 import { itemImgFor } from '../lib/items';
-import { fetchOrderById, fetchOrdersByPhone, isUtrUsed, saveBooking, todayOrderCount } from '../lib/db';
+import { fetchOrderById, fetchOrdersByPhone, cloudLookupDiag, isUtrUsed, saveBooking, todayOrderCount } from '../lib/db';
 import { looksFakeUtr } from '../lib/utr';
 import { formatINR, halfAdvance, isValidIndianPhone, makeOrderId, refundableExtra } from '../lib/order';
 import { useProducts } from '../lib/ProductsContext';
@@ -443,7 +443,7 @@ export function CartDrawer() {
     syncing.current = true;
     if (!silent) setSyncingUi(true);
     try {
-      await Promise.allSettled(mine.slice(0, 20).map((o) => fetchOrderById(o.id)));
+      await Promise.allSettled(mine.slice(0, 20).map((o) => fetchOrderById(o.id, { refresh: true })));
     } catch { /* offline ho to local hi sahi */ }
     syncing.current = false;
     if (!silent) setSyncingUi(false);
@@ -460,6 +460,7 @@ export function CartDrawer() {
   const refreshStatuses = async () => {
     const n = await syncCloudStatuses(false);
     if (n > 0) setLookupMsg(`✓ ${n} order${n === 1 ? '' : 's'} updated — latest status is shown below.`);
+    else if (isSupabaseConfigured && cloudLookupDiag() === 'missing') setLookupMsg('Store sync setup is pending (one-time) — ask the store to enable it, then try again.');
     else setLookupMsg('✓ Already up to date — no new update from the store.');
     setTab('orders');
   };

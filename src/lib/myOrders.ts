@@ -85,13 +85,15 @@ export function mergeMyOrders(incoming: MyOrder[]) {
       if (!o || !o.id) continue;
       if (!byId.has(o.id)) byId.set(o.id, o);
       else {
-        // Cloud me naya status/note ho to update kar do, items/total same rehne do
+        // Cloud me naya status/note/payment ho to update kar do, items/total same rehne do
         const prev = byId.get(o.id)!;
         byId.set(o.id, {
           ...prev,
           status: o.status ?? prev.status,
           note: o.note ?? prev.note,
           readyDate: (o as MyOrder).readyDate ?? prev.readyDate,
+          payStatus: (o as MyOrder).payStatus ?? prev.payStatus,
+          proof: (o as MyOrder).proof ?? prev.proof,
         });
       }
     }
