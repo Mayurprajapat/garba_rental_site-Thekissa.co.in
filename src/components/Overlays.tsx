@@ -522,7 +522,7 @@ export function CartDrawer() {
   useEffect(() => {
     let stop = false;
     const statusToast = (s?: string) =>
-      s === 'confirmed' ? 'Confirmed ✓ — will be delivered'
+      s === 'confirmed' ? 'Confirmed ✓'
       : s === 'onway' ? 'On the way 🚚 — arriving soon'
       : s === 'delivered' ? 'Delivered ✓ — enjoy!'
       : s === 'returned' ? 'Returned ✓'
@@ -817,7 +817,7 @@ export function CartDrawer() {
                 <div className="text-center py-2">
                   <CheckCircle2 size={44} className="mx-auto text-emerald-600" />
                   <h4 className="font-semibold text-xl mt-3">Order confirmed! ✅</h4>
-                  <p className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1.5">✓ Confirmed — will be delivered</p>
+                  <p className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1.5">✓ Confirmed</p>
                   <p className="text-[12.5px] text-black/55 mt-2">Your payment is received and your outfit is booked. You will see it in My Orders.</p>
                   <p className="text-sm text-black/55 mt-2">Order ID: <b className="text-black">{order.id}</b></p>
                 </div>
@@ -999,7 +999,7 @@ export function CartDrawer() {
                       <div className="border-t border-black/10 mt-2 pt-2 flex justify-between text-[13px]"><span>Total rent</span><b>{formatINR(o.total)}</b></div>
                       <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)} (rent + 30% extra) claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} + 30% extra ${formatINR(o.deposit)} on delivery${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : 'Pay on delivery'} · Refundable extra 30% {formatINR(o.deposit)} — you get it back on return</p>
                       <span className={`inline-block mt-1 text-[10.5px] font-bold rounded-full px-2 py-0.5 border ${o.status === 'cancelled' ? 'text-white bg-rose-600 border-rose-600' : o.status === 'delivered' || o.status === 'returned' ? 'text-violet-800 bg-violet-50 border-violet-200' : o.status === 'confirmed' ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : o.status === 'onway' ? 'text-orange-800 bg-orange-50 border-orange-200' : 'text-amber-800 bg-amber-50 border-amber-200'}`}>
-                        {o.status === 'cancelled' ? '✕ Cancelled' : o.status === 'delivered' ? '✓ Delivered' : o.status === 'returned' ? '✓ Returned' : o.status === 'confirmed' ? '✓ Confirmed — will be delivered' : o.status === 'onway' ? '🚚 On the way — arriving soon' : '⏳ Payment sent — awaiting store confirmation'}
+                        {o.status === 'cancelled' ? '✕ Cancelled' : o.status === 'delivered' ? '✓ Delivered' : o.status === 'returned' ? '✓ Returned' : o.status === 'confirmed' ? '✓ Confirmed' : o.status === 'onway' ? '🚚 On the way — arriving soon' : '⏳ Payment sent — awaiting store confirmation'}
                       </span>
                       {o.readyDate && o.status !== 'cancelled' && <span className="inline-block mt-1 ml-1.5 text-[10.5px] font-bold text-[#641629] bg-[#faf3ea] border border-[#c9a44a]/50 rounded-full px-2 py-0.5">📦 Available by {new Date(o.readyDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
                       {o.note && o.status !== 'cancelled' && <p className="text-[12px] mt-1.5 bg-[#faf7ef] border border-[#c9a44a]/40 rounded-xl px-3 py-2"><b>Store message:</b> {o.note}</p>}
