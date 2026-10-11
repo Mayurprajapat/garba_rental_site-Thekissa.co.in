@@ -515,6 +515,49 @@ export function CartDrawer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, tab]);
 
+  // Background status sync — drawer band ho tab bhi admin ka decision
+  // (confirmed / onway / delivered / returned / cancelled) customer tak pahuche.
+  // Change mile to toast — customer ko khud pata chal jayega uske order ka kya hua.
+  const pushToast = useStore((s) => s.pushToast);
+  useEffect(() => {
+    let stop = false;
+    const statusToast = (s?: string) =>
+      s === 'confirmed' ? 'Confirmed ✓ — will be delivered'
+      : s === 'onway' ? 'On the way 🚚 — arriving soon'
+      : s === 'delivered' ? 'Delivered ✓ — enjoy!'
+      : s === 'returned' ? 'Returned ✓'
+      : s === 'cancelled' ? 'Update from store — tap My Orders' : 'Order update — tap My Orders';
+    const tick = async () => {
+      try {
+        if (stop || document.visibilityState === 'hidden') return;
+        const mine = getMyOrders();
+        if (!mine.length) return;
+        const before = new Map(mine.map((o) => [o.id, o.status || '']));
+        const n = await syncCloudStatuses(true);
+        if (n > 0 && !stop) {
+          getMyOrders()
+            .filter((o) => before.get(o.id) !== undefined && before.get(o.id) !== (o.status || ''))
+            .slice(0, 2)
+            .forEach((o) => pushToast(`Order ${o.id}: ${statusToast(o.status)}`));
+        }
+      } catch { /* offline ho to agli baar */ }
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') tick();
+    };
+    tick();
+    const t = setInterval(tick, 45000);
+    window.addEventListener('focus', tick);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      stop = true;
+      clearInterval(t);
+      window.removeEventListener('focus', tick);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const rows = useMemo(() => cart.map((c) => ({ ...c, p: products.find((x) => x.id === c.id)! })).filter((r) => r.p), [cart, products]);
   const subtotal = rows.reduce((a, r) => a + rowPrice(r) * r.qty, 0);
   const deposit = rows.reduce((a, r) => a + (r.single ? 0 : refundableExtra(rowPrice(r) * r.qty)), 0);
