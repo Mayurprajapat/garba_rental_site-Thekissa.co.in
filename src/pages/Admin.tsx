@@ -38,6 +38,7 @@ import { getCategories, resetCategories, saveCategories, type ShopCategory } fro
 import type { LiveProduct } from '../lib/ProductsContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import DeliveriesPanel from './admin/DeliveriesPanel';
+import { RevenueCard, StatusDonutCard, TopProductsCard } from './admin/Charts';
 import WebsitePanel from './admin/WebsitePanel';
 import Logo from '../components/Logo';
 
@@ -500,6 +501,11 @@ export default function Admin() {
                     </div>
                   ))}
                 </div>
+                <div className="grid lg:grid-cols-3 gap-4 mt-4">
+                  <div className="lg:col-span-2 min-w-0"><RevenueCard bookings={bookings} /></div>
+                  <div className="min-w-0"><StatusDonutCard bookings={bookings} /></div>
+                </div>
+                <div className="mt-4"><TopProductsCard bookings={bookings} /></div>
                 <div className="grid lg:grid-cols-2 gap-4 mt-4">
                   <div className="admin-card p-5">
                     <b>Quick actions</b>
