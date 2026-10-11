@@ -3,7 +3,7 @@ import { BadgeCheck, Check, CheckCircle2, CreditCard, Download, Heart, Mail, Map
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { addonTotal, lookFor, photosFor, spinFramesFor, STORE, waLink, type Accessory, type Category } from '../data/products';
 import { itemImgFor } from '../lib/items';
-import { fetchOrderById, fetchOrdersByPhone, cloudLookupDiag, isUtrUsed, saveBooking, todayOrderCount } from '../lib/db';
+import { fetchOrderById, fetchOrdersByPhone, cloudLookupDiag, isUtrUsed, saveBooking } from '../lib/db';
 import { looksFakeUtr } from '../lib/utr';
 import { formatINR, halfAdvance, isValidIndianPhone, makeOrderId, refundableExtra } from '../lib/order';
 import { useProducts } from '../lib/ProductsContext';
@@ -185,7 +185,7 @@ export function QuickView() {
                 <span className="flex items-center gap-2">
                   <button onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={qty <= 1} aria-label="Decrease quantity" className="w-9 h-9 grid place-items-center rounded-full border border-black/15 hover:bg-black hover:text-white transition disabled:opacity-30"><Minus size={15} /></button>
                   <b className="w-6 text-center text-[15px] tabular-nums">{qty}</b>
-                  <button onClick={() => setQty((q) => Math.min(10, q + 1))} disabled={qty >= 10} aria-label="Increase quantity" className="w-9 h-9 grid place-items-center rounded-full border border-black/15 hover:bg-black hover:text-white transition disabled:opacity-30"><Plus size={15} /></button>
+                  <button onClick={() => setQty((q) => q + 1)} aria-label="Increase quantity" className="w-9 h-9 grid place-items-center rounded-full border border-black/15 hover:bg-black hover:text-white transition disabled:opacity-30"><Plus size={15} /></button>
                 </span>
               </div>
               <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-2 mt-3">
@@ -678,10 +678,10 @@ export function CartDrawer() {
     if (looksFakeUtr(utr.trim())) { setErr('This UTR looks invalid (repeated or sequential digits). Please copy the exact 12-digit UTR from your UPI app.'); return; }
     if (!shot) { setErr('Please attach your payment screenshot — it is required to place the order.'); return; }
     setErr('');
-    // Ek UTR sirf ek order me — reuse turant block (genuine check, fail-open)
+    // Ek UTR sirf ek order me — reuse turant block (genuine check, fail-open).
+    // Order count ki koi limit nahi — har payment wala order auto-confirm hota hai.
     try {
       if (await isUtrUsed(utr.trim())) { setErr('This UTR has already been used for another order. Please check the number in your UPI app.'); return; }
-      if (await todayOrderCount(phone.trim()) >= 5) { setErr('You already have 5 orders today from this number. For more, please contact the store on WhatsApp.'); return; }
     } catch { /* guard fail ho to order mat roko */ }
     setPaying(true);
     const amt = payChoice === 'full' ? total + deposit : half;
@@ -1016,7 +1016,7 @@ export function CartDrawer() {
                           <span className="flex items-center gap-1.5 border border-black/10 rounded-full px-1 py-0.5">
                             <button onClick={() => setQty(r.id, r.size, r.plan, r.addons, r.single?.name, r.qty - 1)} disabled={r.qty <= 1} aria-label="Decrease quantity" className="w-8 h-8 grid place-items-center rounded-full hover:bg-black hover:text-white transition disabled:opacity-30"><Minus size={13} /></button>
                             <b className="w-5 text-center text-[13px] tabular-nums">{r.qty}</b>
-                            <button onClick={() => setQty(r.id, r.size, r.plan, r.addons, r.single?.name, r.qty + 1)} disabled={r.qty >= 10} aria-label="Increase quantity" className="w-8 h-8 grid place-items-center rounded-full hover:bg-black hover:text-white transition disabled:opacity-30"><Plus size={13} /></button>
+                            <button onClick={() => setQty(r.id, r.size, r.plan, r.addons, r.single?.name, r.qty + 1)} aria-label="Increase quantity" className="w-8 h-8 grid place-items-center rounded-full hover:bg-black hover:text-white transition disabled:opacity-30"><Plus size={13} /></button>
                           </span>
                         </div>
                       </div>

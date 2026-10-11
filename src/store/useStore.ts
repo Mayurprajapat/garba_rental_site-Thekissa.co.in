@@ -95,16 +95,17 @@ export const useStore = create<Store>()(
         if (dedupeKey === lastAddKey && now - lastAddAt < 800) return;
         lastAddKey = dedupeKey;
         lastAddAt = now;
-        const want = Math.max(1, Math.min(10, Math.round(qty) || 1));
+        // Quantity ki koi upper limit nahi — jitne chahiye utne (min 1)
+        const want = Math.max(1, Math.round(qty) || 1);
         const found = cart.find((c) => c.id === id && c.size === size && c.plan === plan && (c.addons ?? []).join('|') === key && (c.single?.name ?? '') === sName);
         const next = found
-          ? cart.map((c) => (c === found ? { ...c, qty: Math.min(10, c.qty + want) } : c))
+          ? cart.map((c) => (c === found ? { ...c, qty: c.qty + want } : c))
           : [...cart, { id, size, plan, qty: want, addons: addons?.length ? [...addons] : undefined, single: single ? { ...single } : undefined }];
         set({ cart: next, cartOpen: true });
         get().pushToast(single ? `Only ${single.name} added to the list!` : addons?.length ? 'Dress + accessories added!' : 'Added to your booking list!');
       },
       setQty: (id, size, plan, addons, singleName, qty) => {
-        const q = Math.max(1, Math.min(10, Math.round(qty) || 1));
+        const q = Math.max(1, Math.round(qty) || 1);
         const key = (addons ?? []).join('|');
         set({
           cart: get().cart.map((c) =>
