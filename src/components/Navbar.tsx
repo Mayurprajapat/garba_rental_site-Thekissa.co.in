@@ -1,7 +1,8 @@
-import { Heart, MessageCircle, Phone, Search, ShoppingBasket } from 'lucide-react';
+import { Heart, MessageCircle, PackageSearch, Phone, Search, ShoppingBasket } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { waLink } from '../data/products';
 import { STORE } from '../data/store';
+import { getMyOrders, OPEN_ORDERS_EVENT, subscribeMyOrders } from '../lib/myOrders';
 import { getSiteContent, useSiteVersion } from '../lib/siteContent';
 import { useStore } from '../store/useStore';
 import Logo from './Logo';
@@ -19,6 +20,19 @@ export default function Navbar() {
   const count = cart.reduce((a, c) => a + c.qty, 0);
   useSiteVersion();
   const site = getSiteContent();
+  const [orderCount, setOrderCount] = useState(() => {
+    try { return getMyOrders().length; } catch { return 0; }
+  });
+
+  useEffect(() => {
+    const refresh = () => {
+      try { setOrderCount(getMyOrders().length); } catch { /* ignore */ }
+    };
+    refresh();
+    return subscribeMyOrders(refresh);
+  }, []);
+
+  const openOrders = () => window.dispatchEvent(new Event(OPEN_ORDERS_EVENT));
 
   useEffect(() => {
     const f = () => setScrolled(window.scrollY > 16);
@@ -100,6 +114,11 @@ export default function Navbar() {
               <ShoppingBasket size={15} />
               <span className="hidden sm:inline">Booking list</span>
               <span className="bg-white text-black text-xs font-bold min-w-7 h-7 px-1.5 grid place-items-center rounded-full">{count}</span>
+            </button>
+            <button onClick={openOrders} title="Apne orders dekho" aria-label="My Orders"
+              className="relative w-10 h-10 grid place-items-center rounded-full border border-black/10 bg-white hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)] transition">
+              <PackageSearch size={16} />
+              {orderCount > 0 && <span className="absolute -top-1 -right-1 text-[10px] font-bold min-w-5 h-5 px-1 grid place-items-center rounded-full bg-emerald-600 text-white">{orderCount}</span>}
             </button>
           </div>
         </div>

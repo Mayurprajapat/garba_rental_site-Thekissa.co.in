@@ -3,13 +3,13 @@ import { BadgeCheck, Check, CheckCircle2, CreditCard, Heart, Mail, MapPin, Messa
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { addonTotal, lookFor, photosFor, spinFramesFor, STORE, waLink, type Accessory, type Category } from '../data/products';
 import { itemImgFor } from '../lib/items';
-import { saveBooking } from '../lib/db';
+import { fetchOrderById, fetchOrdersByPhone, saveBooking } from '../lib/db';
 import { formatINR, halfAdvance, isValidIndianPhone, makeOrderId } from '../lib/order';
 import { useProducts } from '../lib/ProductsContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { getSiteContent, useSiteVersion } from '../lib/siteContent';
 import { isValidVpa, merchantUpi, upiUrl } from '../lib/upi';
-import { clearMyOrders, getMyOrders, saveMyOrder, type MyOrder } from '../lib/myOrders';
+import { OPEN_ORDERS_EVENT, clearMyOrdersFully, getMyOrders, saveMyOrder, subscribeMyOrders, type MyOrder } from '../lib/myOrders';
 import { promoDiscount } from '../store/useStore';
 import { getLocalBookings } from '../lib/localAdmin';
 import { useStore } from '../store/useStore';
@@ -198,19 +198,39 @@ export function CartDrawer() {
   const [err, setErr] = useState('');
   const [tab, setTab] = useState<'list' | 'orders'>('list');
   const [orders, setOrders] = useState<MyOrder[]>([]);
+  // Dusre phone/browser se order wapas lane ke liye (mobile number / Order ID)
+  const [lookupPhone, setLookupPhone] = useState('');
+  const [lookupId, setLookupId] = useState('');
+  const [lookupBusy, setLookupBusy] = useState(false);
+  const [lookupMsg, setLookupMsg] = useState('');
+  const [order, setOrder] = useState<{ id: string; paymentId: string; mode: string; token: number; total: number; deposit: number; lines: string[] } | null>(null);
+  const [payChoice, setPayChoice] = useState<'half' | 'full'>('full');
+  const [promo, setPromo] = useState('');
   const wasOpen = useRef(false);
+  const resetAndClose = () => {
+    setOpen(false);
+    setTimeout(() => { setStep('cart'); setOrder(null); setErr(''); setUtr(''); setPayChoice('full'); setPromo(''); setName(''); setPhone(''); setEmail(''); setAddress(''); setLookupMsg(''); }, 400);
+  };
   // Drawer khule aur list khaali ho par orders hon — seedha My Orders dikhao (user ko View order dhoondhna na pade)
   useEffect(() => {
     if (open && !wasOpen.current) {
       try {
+        setStep('cart');
         if (cart.length === 0 && getMyOrders().length > 0) setTab('orders');
       } catch { /* ignore */ }
     }
     wasOpen.current = open;
   }, [open, cart.length]);
-  const [order, setOrder] = useState<{ id: string; paymentId: string; mode: string; token: number; total: number; deposit: number; lines: string[] } | null>(null);
-  const [payChoice, setPayChoice] = useState<'half' | 'full'>('full');
-  const [promo, setPromo] = useState('');
+  // Navbar "My Orders" button se seedha orders tab kholo
+  useEffect(() => {
+    const openOrders = () => {
+      setStep('cart');
+      setTab('orders');
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_ORDERS_EVENT, openOrders);
+    return () => window.removeEventListener(OPEN_ORDERS_EVENT, openOrders);
+  }, [setOpen]);
 
   const rowPrice = (r: { p: { rent1: number; category: Category; desc: string; accessories?: Accessory[] }; plan: '1day'; addons?: string[]; single?: { price: number } }) =>
     r.single ? r.single.price : (r.p.rent1 + addonTotal(r.p, r.addons));
@@ -242,8 +262,8 @@ export function CartDrawer() {
       setOrders(list);
     };
     refreshOrders();
-    window.addEventListener('raasleela-orders-updated', refreshOrders);
-    return () => window.removeEventListener('raasleela-orders-updated', refreshOrders);
+    const unsub = subscribeMyOrders(refreshOrders);
+    return unsub;
   }, []);
 
   const rows = useMemo(() => cart.map((c) => ({ ...c, p: products.find((x) => x.id === c.id)! })).filter((r) => r.p), [cart, products]);
@@ -255,9 +275,45 @@ export function CartDrawer() {
   const payAmount = payChoice === 'full' ? total : half;
   const balance = total - payAmount;
 
-  const resetAndClose = () => {
-    setOpen(false);
-    setTimeout(() => { setStep('cart'); setOrder(null); setErr(''); setUtr(''); setPayChoice('full'); setPromo(''); setName(''); setPhone(''); setEmail(''); setAddress(''); }, 400);
+  // Dusre phone / cache-clear ke baad order wapas lao (same mobile number ya Order ID se)
+  const runLookupByPhone = async () => {
+    const digits = lookupPhone.replace(/\D/g, '').slice(-10);
+    if (digits.length < 10) { setLookupMsg('Please enter your 10-digit mobile number.'); return; }
+    setLookupBusy(true);
+    setLookupMsg('');
+    try {
+      const { orders: found } = await fetchOrdersByPhone(digits);
+      if (found.length) {
+        setLookupMsg(`✓ ${found.length} order${found.length === 1 ? '' : 's'} found — neeche dikh raha hai.`);
+        setTab('orders');
+      } else {
+        setLookupMsg('No order found for this number on this device yet. Order wale mobile number se check karo, ya Order ID try karo.');
+      }
+    } catch {
+      setLookupMsg('Could not search right now — please try again.');
+    } finally {
+      setLookupBusy(false);
+    }
+  };
+
+  const runLookupById = async () => {
+    const needle = lookupId.trim().toUpperCase();
+    if (!needle) { setLookupMsg('Please enter your Order ID (e.g. RL-2026-1234).'); return; }
+    setLookupBusy(true);
+    setLookupMsg('');
+    try {
+      const found = await fetchOrderById(needle);
+      if (found) {
+        setLookupMsg(`✓ Order ${found.id} found — neeche dikh raha hai.`);
+        setTab('orders');
+      } else {
+        setLookupMsg('Order ID not found on this device. Spelling check karo (e.g. RL-2026-1234).');
+      }
+    } catch {
+      setLookupMsg('Could not search right now — please try again.');
+    } finally {
+      setLookupBusy(false);
+    }
   };
 
   const validateDetails = () => {
@@ -517,7 +573,21 @@ export function CartDrawer() {
             ) : tab === 'orders' ? (
               <>
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#fafafa]">
-                  {orders.length === 0 && <p className="text-center text-black/50 py-16">No orders yet on this device.<br />Your confirmed orders will appear here.</p>}
+                  {/* Order wapas lao — dusra phone / cache clear ke baad */}
+                  <div className="bg-white rounded-2xl p-3.5 border border-[#c9a44a]/50">
+                    <b className="text-[13px]">Order nahi dikh raha?</b>
+                    <p className="text-[11.5px] text-black/55 mt-0.5">Order wale mobile number ya Order ID se wapas lao:</p>
+                    <div className="flex gap-2 mt-2">
+                      <input value={lookupPhone} onChange={(e) => setLookupPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile" inputMode="numeric" className="flex-1 min-w-0 border border-black/15 rounded-xl px-3 py-2 text-[13px] outline-none focus:border-black" />
+                      <button onClick={runLookupByPhone} disabled={lookupBusy} className="shrink-0 bg-[#221114] text-white text-[12.5px] font-bold rounded-xl px-4 py-2 disabled:opacity-50">{lookupBusy ? '…' : 'Find'}</button>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <input value={lookupId} onChange={(e) => setLookupId(e.target.value.toUpperCase())} placeholder="Order ID e.g. RL-2026-1234" className="flex-1 min-w-0 border border-black/15 rounded-xl px-3 py-2 text-[13px] outline-none focus:border-black uppercase" />
+                      <button onClick={runLookupById} disabled={lookupBusy} className="shrink-0 border border-black/15 text-[12.5px] font-bold rounded-xl px-4 py-2 hover:bg-black hover:text-white transition disabled:opacity-50">{lookupBusy ? '…' : 'Get'}</button>
+                    </div>
+                    {lookupMsg && <p className="text-[12px] mt-2 bg-[#faf7ef] border border-[#c9a44a]/40 rounded-xl px-3 py-2">{lookupMsg}</p>}
+                  </div>
+                  {orders.length === 0 && !lookupMsg && <p className="text-center text-black/50 py-8">No orders yet on this device.<br />Your confirmed orders will appear here.</p>}
                   {orders.map((o) => (
                     <div key={o.id} className="bg-white rounded-2xl p-3.5 border border-black/10">
                       <div className="flex items-center gap-2">
@@ -544,8 +614,8 @@ export function CartDrawer() {
                   ))}
                 </div>
                 <div className="p-4 border-t border-black/10 bg-white" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-                  <p className="text-[11px] text-black/50 text-center">Orders stay saved on this device.</p>
-                  {orders.length > 0 && <button onClick={() => { clearMyOrders(); setOrders([]); }} className="w-full text-xs text-black/50 underline mt-1">Clear history</button>}
+                  <p className="text-[11px] text-black/50 text-center">Orders isi device/browser me save rehte hain + store ko WhatsApp par bhi jaate hain.<br />Dusre phone par dekhna ho to upar mobile number se Find karo.</p>
+                  {orders.length > 0 && <button onClick={() => { if (confirm('Saare orders is device se hata dein? (Store ke paas WhatsApp wala record rahega.)')) { clearMyOrdersFully(); setOrders([]); } }} className="w-full text-xs text-black/50 underline mt-1">Clear history</button>}
                 </div>
               </>
             ) : (
