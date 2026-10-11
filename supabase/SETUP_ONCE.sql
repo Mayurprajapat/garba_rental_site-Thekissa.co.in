@@ -13,6 +13,7 @@
 --      bina poori table public kiye — alag phone par order dekhne ke liye)
 --   5. product-images bucket + current 11 ladies products seed (sirf khaali ho to)
 --   6. purani bookings me order_id khaali ho to auto-backfill
+--   7. Realtime on (products + bookings) — live sync dusre device par bhi
 --
 -- Purani migration_*.sql / schema*.sql files ab chhune ki zaroorat NAHI —
 -- ye file un sabko cover karti hai. Koi booking/product DELETE nahi hota.
@@ -338,6 +339,27 @@ on conflict (id) do nothing;
 update public.bookings
 set order_id = 'RL-2026-' || lpad((id % 9000 + 1000)::text, 4, '0')
 where order_id is null or order_id = '';
+
+-- ============ 9. Live sync (Realtime) — admin change → website turant, naya order → admin turant ============
+-- products + bookings ko Realtime publication me jodo (dobara safe).
+-- RLS follow hota hai: products public (live sabko), bookings anon-read band
+-- (customer leak zero; login admin ko live updates milenge).
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'products'
+  ) then
+    alter publication supabase_realtime add table public.products;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'bookings'
+  ) then
+    alter publication supabase_realtime add table public.bookings;
+  end if;
+end
+$$;
 
 -- ============ DONE — dobara Run karne ki zaroorat nahi ============
 -- Handover checklist (sirf ek baar, 2 min):

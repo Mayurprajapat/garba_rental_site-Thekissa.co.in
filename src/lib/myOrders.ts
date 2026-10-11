@@ -10,6 +10,10 @@ export interface MyOrderItem {
   detail: string;
   qty: number;
   price: number;
+  /** Dress / accessory ki photo (catalog img URL) — booking list me thumbnail + full view ke liye */
+  img?: string;
+  /** Catalog product id (purane orders ke liye photo fallback match karne me kaam aata hai) */
+  pid?: string;
 }
 
 export interface MyOrder {
@@ -23,7 +27,7 @@ export interface MyOrder {
   deposit: number;
   token: number;
   mode: string;
-  /** Admin ka reply — order milega ya nahi + wajah */
+  /** Order status — QR payment par auto 'confirmed'. Admin baad me cancel/delivered kar sakta hai. */
   status?: string;
   note?: string;
   /** UPI payment verification: verified / rejected / unverified (admin panel se) */
@@ -49,12 +53,22 @@ function parseList(raw: string | null): MyOrder[] {
   return [];
 }
 
+/** Purane 'new' + QR-payment wale snapshots ko confirmed mano (auto-confirm migration). */
+function normalizeStatus(o: MyOrder): MyOrder {
+  try {
+    if (o && o.status === 'new' && String(o.mode || '').startsWith('upi-qr') && Number(o.token || 0) > 0) {
+      return { ...o, status: 'confirmed' };
+    }
+  } catch { /* ignore */ }
+  return o;
+}
+
 export function getMyOrders(): MyOrder[] {
   try {
-    const primary = parseList(localStorage.getItem(KEY));
+    const primary = parseList(localStorage.getItem(KEY)).map(normalizeStatus);
     if (primary.length) return primary;
     // Primary khaali ho to backup se restore (data loss se bachao)
-    const backup = parseList(localStorage.getItem(BACKUP_KEY));
+    const backup = parseList(localStorage.getItem(BACKUP_KEY)).map(normalizeStatus);
     if (backup.length) {
       try { localStorage.setItem(KEY, JSON.stringify(backup)); } catch { /* ignore */ }
       return backup;
@@ -87,9 +101,34 @@ export function mergeMyOrders(incoming: MyOrder[]) {
       else {
         // Cloud me naya status/note/payment ho to update kar do, items/total same rehne do
         const prev = byId.get(o.id)!;
+        // Photo merge — purane snapshot me img na ho to cloud wali img laga do (same name/position match)
+        let items = prev.items;
+        try {
+          const incomingItems = Array.isArray((o as MyOrder).items) ? (o as MyOrder).items : [];
+          if (Array.isArray(items) && incomingItems.length === items.length) {
+            const needsPhoto = items.some((it) => !it.img);
+            if (needsPhoto && incomingItems.some((it) => it.img)) {
+              items = items.map((it, i) => ({
+                ...it,
+                img: it.img || incomingItems[i]?.img || undefined,
+                pid: (it as MyOrderItem).pid || incomingItems[i]?.pid || undefined,
+              }));
+            }
+          } else if ((!items || !items.length) && incomingItems.length) {
+            items = incomingItems;
+          }
+        } catch { /* ignore */ }
         byId.set(o.id, {
           ...prev,
-          status: o.status ?? prev.status,
+          items,
+          // AUTO-CONFIRM guard: cloud ka purana 'new' local 'confirmed' ko downgrade na kare.
+          // Admin ka explicit decision (cancelled/delivered/returned/confirmed) hamesha jeetega.
+          status: (() => {
+            const incoming = o.status;
+            const prevS = prev.status;
+            if (incoming === 'new' && prevS && prevS !== 'new') return prevS;
+            return incoming ?? prevS;
+          })(),
           note: o.note ?? prev.note,
           readyDate: (o as MyOrder).readyDate ?? prev.readyDate,
           payStatus: (o as MyOrder).payStatus ?? prev.payStatus,

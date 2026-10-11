@@ -228,6 +228,26 @@ export default function Admin() {
   const [pwConfirm, setPwConfirm] = useState('');
   const [pwMsg, setPwMsg] = useState('');
   const [pwCustom, setPwCustom] = useState(() => hasCustomPassword());
+  // Order photo preview (Bookings list me thumbnail tap par badi photo)
+  const [preview, setPreview] = useState<{ src: string; name: string } | null>(null);
+  // Booking item → photo: saved img → single img → catalog lookup (id/pid/name)
+  const bookingImgFor = (it: any): string | undefined => {
+    try {
+      if (it?.img) return String(it.img);
+      if (it?.single?.img) return String(it.single.img);
+      const pid = String(it?.id || it?.pid || '').trim();
+      if (pid) {
+        const byId = products.find((p) => p.id === pid);
+        if (byId?.img) return byId.img;
+      }
+      const nm = String(it?.name || '').trim();
+      if (nm) {
+        const byName = products.find((p) => p.name === nm);
+        if (byName?.img) return byName.img;
+      }
+    } catch { /* ignore */ }
+    return undefined;
+  };
   // New-booking alert — naya order aate hi sound + banner (sirf additive, purana flow same)
   const [alertsOn, setAlertsOn] = useState(true);
   const [newCount, setNewCount] = useState(0);
@@ -272,11 +292,42 @@ export default function Admin() {
 
   useEffect(() => { if (loggedIn) { loadProducts(); loadBookings(); setCats(getCategories()); } }, [loggedIn]);
 
-  // Silent refresh har 45s — naya order turant pakadne ke liye (display-only, edits safe)
+  // Live bookings — customer ka naya order / status change turant dikhe.
+  // Same-tab event → turant, dusra tab → storage event, tab-switch → focus refresh.
+  // 45s poll sirf fallback hai (edits safe, display-only).
   useEffect(() => {
     if (!loggedIn) return;
+    const onLive = () => { loadBookings(); };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadBookings();
+    };
     const t = setInterval(() => { loadBookings(); }, 45000);
-    return () => clearInterval(t);
+    window.addEventListener('raasleela-bookings-updated', onLive);
+    window.addEventListener('storage', onLive);
+    window.addEventListener('focus', onLive);
+    document.addEventListener('visibilitychange', onVisible);
+    // Cloud mode: naye bookings / status turant (Supabase Realtime)
+    let cleanupRealtime: (() => void) | undefined;
+    const sb = supabase;
+    if (useCloud && sb) {
+      try {
+        const ch = sb
+          .channel('bookings-live')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => loadBookings())
+          .subscribe();
+        cleanupRealtime = () => {
+          try { sb.removeChannel(ch); } catch { /* ignore */ }
+        };
+      } catch { /* realtime na mile to event+poll fallback kaafi */ }
+    }
+    return () => {
+      clearInterval(t);
+      window.removeEventListener('raasleela-bookings-updated', onLive);
+      window.removeEventListener('storage', onLive);
+      window.removeEventListener('focus', onLive);
+      document.removeEventListener('visibilitychange', onVisible);
+      cleanupRealtime?.();
+    };
   }, [loggedIn]);
 
   // Naye bookings aate hi gin + sound (pehli load ko baseline maano)
@@ -311,6 +362,14 @@ export default function Admin() {
     document.head.appendChild(m);
     return () => { document.head.removeChild(m); };
   }, []);
+
+  // Photo preview Escape se band
+  useEffect(() => {
+    if (!preview) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPreview(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [preview]);
 
   const persistCats = (list: ShopCategory[]) => {
     setCats(list);
@@ -375,9 +434,17 @@ export default function Admin() {
   const persistProducts = (list: ProductRow[]) => {
     setProducts(list);
     if (!useCloud) {
+      // saveLocalProducts khud live event bhejta hai (same-tab + dusre tab)
       saveLocalProducts(list);
-      window.dispatchEvent(new Event('raasleela-products-updated'));
     }
+  };
+
+  // Cloud mode me product badalte hi website ko turant khabar (same browser).
+  // Dusre device ke liye website par Supabase Realtime laga hai (ProductsContext).
+  const emitProductsLive = () => {
+    try {
+      window.dispatchEvent(new Event('raasleela-products-updated'));
+    } catch { /* ignore */ }
   };
 
   const saveProduct = async (e: React.FormEvent) => {
@@ -390,12 +457,12 @@ export default function Admin() {
         // Purana cloud schema (bina accessories/images column) — unke bina retry
         const { accessories: _a, images: _i, ...legacy } = editing as any;
         const { error: err2 } = await supabase.from('products').upsert({ ...legacy, badge: editing.badge || null }, { onConflict: 'id' });
-        setMsg(err2 ? 'Error: ' + err2.message : 'Product saved. (Note: Run migration_accessories.sql for photos/look columns.)');
-        if (!err2) { setEditing(null); loadProducts(); }
+        setMsg(err2 ? 'Error: ' + err2.message : 'Product saved — live on website.');
+        if (!err2) { setEditing(null); loadProducts(); emitProductsLive(); }
         return;
       }
-      setMsg(error ? 'Error: ' + error.message : 'Product saved.');
-      if (!error) { setEditing(null); loadProducts(); }
+      setMsg(error ? 'Error: ' + error.message : 'Product saved — live on website.');
+      if (!error) { setEditing(null); loadProducts(); emitProductsLive(); }
     } else {
       const i = products.findIndex((p) => p.id === editing.id);
       const next = [...products];
@@ -631,11 +698,11 @@ export default function Admin() {
                               <button onClick={() => setEditing(p)} title="Edit" className="w-8 h-8 grid place-items-center rounded-lg border hover:bg-[#1a0f1e] hover:text-white transition"><Pencil size={13} /></button>
                               <button onClick={async () => {
                                 const nextStock = (p.stock ?? 0) > 0 ? 0 : 5;
-                                if (useCloud && supabase) { await supabase.from('products').update({ stock: nextStock }).eq('id', p.id); loadProducts(); }
+                                if (useCloud && supabase) { await supabase.from('products').update({ stock: nextStock }).eq('id', p.id); loadProducts(); emitProductsLive(); }
                                 else persistProducts(products.map((x) => (x.id === p.id ? { ...x, stock: nextStock } : x)));
                               }} title={(p.stock ?? 0) > 0 ? 'Mark out of stock (stock → 0)' : 'Restock (stock → 5)'} className={`h-8 px-2 flex items-center gap-1 rounded-lg border text-[10.5px] font-bold transition ${(p.stock ?? 0) > 0 ? 'border-rose-200 text-rose-700 hover:bg-rose-600 hover:text-white' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white'}`}>{(p.stock ?? 0) > 0 ? 'OOS' : '+5'}</button>
                               <button onClick={async () => {
-                                if (useCloud && supabase) { await supabase.from('products').update({ active: !p.active }).eq('id', p.id); loadProducts(); }
+                                if (useCloud && supabase) { await supabase.from('products').update({ active: !p.active }).eq('id', p.id); loadProducts(); emitProductsLive(); }
                                 else persistProducts(products.map((x) => (x.id === p.id ? { ...x, active: !x.active } : x)));
                               }} title="Show/Hide" className="w-8 h-8 grid place-items-center rounded-lg border hover:bg-[#1a0f1e] hover:text-white transition">{p.active ? <EyeOff size={13} /> : <Eye size={13} />}</button>
                               <button onClick={async () => {
@@ -643,7 +710,7 @@ export default function Admin() {
                                 if (useCloud && supabase) {
                                   const { error } = await supabase.from('products').delete().eq('id', p.id);
                                   setMsg(error ? 'Error: ' + error.message : 'Product deleted.');
-                                  if (!error) loadProducts();
+                                  if (!error) { loadProducts(); emitProductsLive(); }
                                 } else {
                                   persistProducts(products.filter((x) => x.id !== p.id));
                                 }
@@ -751,16 +818,39 @@ export default function Admin() {
                           <td className="admin-td !px-2.5 !py-2 font-bold text-[#4d0f1f] max-w-[230px]">{b.order_id || `#${String(b.id).slice(-6)}`}<span className="block text-[11px] font-normal text-[#8a7584]">#{String(b.id).slice(-6)}</span>
                             {Array.isArray(b.items) && b.items.length > 0 && (
                               <>
+                                {/* Order photos — kya buy/rent kiya, ek nazar me */}
+                                <span className="flex gap-1 mt-1.5 flex-wrap">
+                                  {b.items.slice(0, 4).map((it: any, i: number) => {
+                                    const src = bookingImgFor(it);
+                                    if (!src) return null;
+                                    return (
+                                      <button key={i} onClick={() => setPreview({ src, name: String(it?.name || it?.id || 'Outfit') })} title={`${String(it?.name || it?.id || 'Outfit')} — tap to view`}
+                                        className="relative group shrink-0">
+                                        <img src={src} alt={String(it?.name || '')} loading="lazy" className="w-9 h-11 object-cover rounded-lg border border-black/10 group-hover:opacity-85 transition" />
+                                        {Number(it?.qty) > 1 && <span className="absolute -bottom-1 -right-1 text-[9px] font-black bg-black text-white rounded-full px-1.5 py-px">×{it.qty}</span>}
+                                      </button>
+                                    );
+                                  })}
+                                  {b.items.length > 4 && <span className="self-center text-[10px] font-bold text-[#8a7584]">+{b.items.length - 4}</span>}
+                                </span>
                                 <span className="block text-[11.5px] font-semibold text-[#3d2b36] mt-1 leading-snug">
                                   {b.items.slice(0, 2).map((it: any) => `${it?.name || it?.id || 'Outfit'}${it?.qty > 1 ? ` ×${it.qty}` : ''}`).join(' · ')}
                                   {b.items.length > 2 ? ` +${b.items.length - 2} more` : ''}
                                 </span>
                                 <details className="mt-1">
                                   <summary className="text-[11px] font-bold text-[#8e1a4f] cursor-pointer hover:underline">All {b.items.length} items ⌄</summary>
-                                  <ul className="mt-1 space-y-0.5 text-[11.5px] font-normal text-[#3d2b36]">
-                                    {b.items.map((it: any, i: number) => (
-                                      <li key={i} className="leading-snug">• {it?.name || it?.id || 'Outfit'}{it?.qty > 1 ? ` ×${it.qty}` : ''}{Array.isArray(it?.addons) && it.addons.length ? ` (+${it.addons.join(', ')})` : ''}{it?.size ? ` · ${it.size}` : ''}</li>
-                                    ))}
+                                  <ul className="mt-1 space-y-1 text-[11.5px] font-normal text-[#3d2b36]">
+                                    {b.items.map((it: any, i: number) => {
+                                      const src = bookingImgFor(it);
+                                      return (
+                                      <li key={i} className="leading-snug flex gap-1.5 items-center">
+                                        {src
+                                          ? <button onClick={() => setPreview({ src, name: String(it?.name || it?.id || 'Outfit') })} title="Tap to view" className="shrink-0"><img src={src} alt="" loading="lazy" className="w-7 h-9 object-cover rounded-md border border-black/10 hover:opacity-85 transition" /></button>
+                                          : null}
+                                        <span>• {it?.name || it?.id || 'Outfit'}{it?.qty > 1 ? ` ×${it.qty}` : ''}{Array.isArray(it?.addons) && it.addons.length ? ` (+${it.addons.join(', ')})` : ''}{it?.size ? ` · ${it.size}` : ''}</span>
+                                      </li>
+                                      );
+                                    })}
                                   </ul>
                                 </details>
                               </>
@@ -1052,6 +1142,19 @@ export default function Admin() {
             </div>
           </div>
         </form>
+      )}
+      {/* Order photo full-view — Bookings list thumbnail tap par */}
+      {preview && (
+        <div className="fixed inset-0 z-50 grid place-items-center p-4" onClick={() => setPreview(null)}>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div className="relative bg-white rounded-2xl overflow-hidden max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <img src={preview.src} alt={preview.name} className="w-full max-h-[70vh] object-contain bg-black" />
+            <div className="flex items-center gap-2 p-3">
+              <b className="text-[13px] flex-1 min-w-0 truncate">{preview.name}</b>
+              <button onClick={() => setPreview(null)} aria-label="Close photo" className="w-9 h-9 grid place-items-center rounded-full bg-black/5 hover:bg-black hover:text-white transition shrink-0">✕</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

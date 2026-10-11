@@ -59,11 +59,34 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refresh();
     const onUpdate = () => refresh();
+    const onFocus = () => refresh();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
     window.addEventListener('raasleela-products-updated', onUpdate);
     window.addEventListener('storage', onUpdate);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+    // Cloud mode: Supabase Realtime — admin kahi se bhi badle, website live update
+    let cleanupRealtime: (() => void) | undefined;
+    const sb = supabase;
+    if (isSupabaseConfigured && sb) {
+      try {
+        const ch = sb
+          .channel('products-live')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => refresh())
+          .subscribe();
+        cleanupRealtime = () => {
+          try { sb.removeChannel(ch); } catch { /* ignore */ }
+        };
+      } catch { /* realtime na mile to focus/storage fallback kaafi */ }
+    }
     return () => {
       window.removeEventListener('raasleela-products-updated', onUpdate);
       window.removeEventListener('storage', onUpdate);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
+      cleanupRealtime?.();
     };
   }, []);
 

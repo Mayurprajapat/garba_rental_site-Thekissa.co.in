@@ -14,7 +14,7 @@ import { bookedQtyFor } from '../lib/slots';
 import { isPickableDate } from '../lib/availability';
 import { fetchApprovedReviews, getLocalReviews, submitReview, type Review } from '../lib/reviews';
 import { validReview } from '../lib/reviewForm';
-import { OPEN_ORDERS_EVENT, clearMyOrdersFully, getMyOrders, saveMyOrder, subscribeMyOrders, type MyOrder } from '../lib/myOrders';
+import { OPEN_ORDERS_EVENT, clearMyOrdersFully, getMyOrders, saveMyOrder, subscribeMyOrders, type MyOrder, type MyOrderItem } from '../lib/myOrders';
 import { dataUrlToBlob, fileToCompressedDataUrl } from '../lib/proof';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { promoDiscount } from '../store/useStore';
@@ -353,8 +353,26 @@ export function CartDrawer() {
   const [order, setOrder] = useState<{ id: string; paymentId: string; mode: string; token: number; total: number; deposit: number; lines: string[]; items: MyOrder['items'] } | null>(null);
   const [payChoice, setPayChoice] = useState<'half' | 'full'>('full');
   const [promo, setPromo] = useState('');
+  // Booking list me order photo full-view (lightbox)
+  const [viewPhoto, setViewPhoto] = useState<{ src: string; name: string } | null>(null);
+  // Purane orders me img save nahi thi — catalog se fallback photo dhoondo (pid → name → detail me id)
+  const orderImgFor = (it: MyOrderItem): string | undefined => {
+    if (it.img) return it.img;
+    try {
+      if (it.pid) {
+        const byId = products.find((p) => p.id === it.pid);
+        if (byId?.img) return byId.img;
+      }
+      const byName = products.find((p) => p.name === it.name);
+      if (byName?.img) return byName.img;
+      const idInDetail = products.find((p) => it.detail && it.detail.includes(p.id));
+      if (idInDetail?.img) return idInDetail.img;
+    } catch { /* ignore */ }
+    return undefined;
+  };
   const wasOpen = useRef(false);
   const resetAndClose = () => {
+    setViewPhoto(null);
     setOpen(false);
     setTimeout(() => { setStep('cart'); setOrder(null); setErr(''); setUtr(''); setShot(null); setPayChoice('full'); setPromo(''); setName(''); setPhone(''); setEmail(''); setAddress(''); setLookupMsg(''); }, 400);
   };
@@ -403,24 +421,48 @@ export function CartDrawer() {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') resetAndClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { if (viewPhoto) setViewPhoto(null); else resetAndClose(); } };
     window.addEventListener('keydown', onKey);
     return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
-  }, [open]);
+  }, [open, viewPhoto]);
 
   useEffect(() => {
     const refreshOrders = () => {
       const list = getMyOrders();
       // Admin ne decision / ready date di ho to booking record se lao (same device par turant dikhega)
+      // AUTO-CONFIRM guard: confirmed order ko wapas 'new' mat karo (purana booking record).
       try {
         const byId = new Map(getLocalBookings().map((b) => [b.order_id, b]));
         list.forEach((o) => {
           const b = byId.get(o.id);
           if (!b) return;
           if (b.ready_date) (o as MyOrder).readyDate = b.ready_date;
-          if (b.status) (o as MyOrder).status = b.status;
+          if (b.status) {
+            const incoming = String(b.status);
+            const prev = String(o.status || '');
+            // 'new' kabhi confirmed/delivered/returned/cancelled ko overwrite nahi karega
+            if (!(incoming === 'new' && prev && prev !== 'new')) {
+              (o as MyOrder).status = b.status;
+            }
+          }
           if (b.admin_note) (o as MyOrder).note = b.admin_note;
           if ((b as any).payment_status) (o as MyOrder).payStatus = (b as any).payment_status;
+          // Purane snapshot me photo na ho to booking record wali photo laga do
+          try {
+            const bItems: any[] = Array.isArray((b as any).items) ? (b as any).items : [];
+            if (bItems.length === o.items.length) {
+              o.items.forEach((it, i) => {
+                if (!it.img) {
+                  const src = bItems[i]?.img || bItems[i]?.single?.img;
+                  if (src) it.img = String(src);
+                }
+                if (!it.pid) {
+                  const pid = bItems[i]?.id || bItems[i]?.pid;
+                  if (pid) it.pid = String(pid);
+                }
+              });
+            }
+          } catch { /* ignore */ }
         });
       } catch { /* ignore */ }
       setOrders(list);
@@ -560,8 +602,10 @@ export function CartDrawer() {
     return r.addons?.length ? `${base} + ${r.addons.join(', ')}` : base;
   };
 
-  // Website par order hamesha rahe — My Orders snapshot (confirm se pehle banao).
-  // status 'new' = payment bheja, admin confirmation baaki (customer ko confirmed tabhi dikhega jab admin confirm kare).
+  // Website par order hamesha rahe — My Orders snapshot.
+  // AUTO-CONFIRM: QR payment (UTR + screenshot OK) hote hi status 'confirmed' —
+  // admin ko confirm karne ke liye wait nahi karna padta. Admin panel se
+  // cancel / delivered / payment-verify options vaise hi available rahenge.
   const snapOrder = (orderId: string, token: number, mode: string, proof?: string) => saveMyOrder({
     id: orderId,
     date: new Date().toISOString(),
@@ -573,17 +617,19 @@ export function CartDrawer() {
       detail: r.single ? `${r.p.id} look · without dress` : rowLabel(r),
       qty: r.qty,
       price: rowPrice(r) * r.qty,
+      img: r.single?.img ?? r.p.img,
+      pid: r.p.id,
     })),
     total,
     deposit,
     token,
     mode,
-    status: 'new',
+    status: 'confirmed',
     proof,
   });
 
   const buildCustomerMsg = (o: { id: string; total: number; deposit: number; token: number; mode: string }) =>
-    `Your order has been placed successfully!\n\nOrder ID: ${o.id}\nName: ${name}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\nPaid now: ${formatINR(o.token)}${o.mode === 'upi-qr-full' ? ' (rent + 30% extra — nothing due on delivery)' : ''}\nRefundable extra 30%: ${formatINR(o.deposit)} — you will get this back when you return the outfit.\n\nThank you for renting with TheKissa.co! Delivery updates will be shared with you on WhatsApp/SMS.`;
+    `Your order ${o.id} is CONFIRMED! ✅\n\nName: ${name}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\nPaid now: ${formatINR(o.token)}${o.mode === 'upi-qr-full' ? ' (rent + 30% extra — nothing due on delivery)' : ''}\nRefundable extra 30%: ${formatINR(o.deposit)} — you will get this back when you return the outfit.\n\nThank you for renting with TheKissa.co! Delivery updates will be shared with you on WhatsApp/SMS.`;
 
   const orderLines = () => rows.map((r, i) => r.single
     ? `${i + 1}. ${r.single.name} (accessory only — ${r.p.id} look) x${r.qty} = ${formatINR(r.single.price * r.qty)}`
@@ -592,8 +638,9 @@ export function CartDrawer() {
   // Store notification — ALWAYS goes to the client's number/email.
   // Earning (rent) vs refundable deposit vs total collection — teeno alag line me,
   // taaki store ko ek nazar me samajh aaye kitna rakhna hai, kitna wapas dena hai.
+  // Order auto-confirmed hota hai — payment jab time mile tab Reports → Payments me verify kar lena.
   const buildStoreMsg = (o: { id: string; mode: string; token: number; total: number; deposit: number; lines: string[]; paymentId: string }) =>
-    `New order ${o.id} — TheKissa.co\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\n\nRent (your earning): ${formatINR(o.total)}\n${o.mode === 'upi-qr-full' ? `Payment: Full ${formatINR(o.token)} (rent + 30% extra) received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments` : o.mode === 'upi-qr-half' ? `Payment: Half ${formatINR(o.token)} received via QR (UTR ${o.paymentId}), balance ${formatINR(o.total - o.token)} + 30% extra ${formatINR(o.deposit)} on delivery — VERIFY in Reports → Payments` : `Payment: Token ${formatINR(o.token)} received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments`}\nRefundable extra 30%: ${formatINR(o.deposit)}${o.mode === 'upi-qr-full' ? ' (already received — return on outfit return)' : ' — collect on delivery, return on outfit return'}\nTotal collection: ${formatINR(o.total + o.deposit)} (${formatINR(o.token)} received + ${formatINR(Math.max(0, o.total - o.token + (o.mode === 'upi-qr-full' ? 0 : o.deposit)))} on delivery)`;
+    `New order ${o.id} — TheKissa.co (AUTO-CONFIRMED ✅)\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\n\nRent (your earning): ${formatINR(o.total)}\n${o.mode === 'upi-qr-full' ? `Payment: Full ${formatINR(o.token)} (rent + 30% extra) received via QR (UTR ${o.paymentId}) — auto-confirmed, verify when free in Reports → Payments` : o.mode === 'upi-qr-half' ? `Payment: Half ${formatINR(o.token)} received via QR (UTR ${o.paymentId}), balance ${formatINR(o.total - o.token)} + 30% extra ${formatINR(o.deposit)} on delivery — auto-confirmed, verify when free in Reports → Payments` : `Payment: Token ${formatINR(o.token)} received via QR (UTR ${o.paymentId}) — auto-confirmed, verify when free in Reports → Payments`}\nRefundable extra 30%: ${formatINR(o.deposit)}${o.mode === 'upi-qr-full' ? ' (already received — return on outfit return)' : ' — collect on delivery, return on outfit return'}\nTotal collection: ${formatINR(o.total + o.deposit)} (${formatINR(o.token)} received + ${formatINR(Math.max(0, o.total - o.token + (o.mode === 'upi-qr-full' ? 0 : o.deposit)))} on delivery)`;
 
   const goQr = () => {
     const v = validateDetails();
@@ -625,7 +672,8 @@ export function CartDrawer() {
 
   const confirmQrPaid = async () => {
     if (paying) return;
-    // Payment ke bina order confirm nahi — UTR + screenshot dono compulsory, admin hi confirm karega
+    // Payment ke bina order confirm nahi — UTR + screenshot dono compulsory.
+    // Valid payment aate hi order AUTO-CONFIRMED (admin ko wait nahi karna padta).
     if (!/^\d{12}$/.test(utr.trim())) { setErr('Please enter the 12-digit UTR from your UPI app after payment — it is required.'); return; }
     if (looksFakeUtr(utr.trim())) { setErr('This UTR looks invalid (repeated or sequential digits). Please copy the exact 12-digit UTR from your UPI app.'); return; }
     if (!shot) { setErr('Please attach your payment screenshot — it is required to place the order.'); return; }
@@ -672,7 +720,7 @@ export function CartDrawer() {
         honeypot: company,
         address: address.trim() || null,
         note: rows.map((r2) => r2.single ? `${r2.p.id} SINGLE:${r2.single.name} x${r2.qty}` : `${r2.p.id} ${r2.size} ${r2.plan} x${r2.qty}${r2.addons?.length ? ` +${r2.addons.join('+')}` : ''}`).join(' | ').slice(0, 500),
-        items: rows.map((r2) => ({ id: r2.p.id, name: r2.single ? `${r2.single.name} (accessory only)` : r2.p.name, size: r2.size, plan: r2.plan, qty: r2.qty, addons: r2.addons ?? [], single: r2.single ?? null })),
+        items: rows.map((r2) => ({ id: r2.p.id, pid: r2.p.id, name: r2.single ? `${r2.single.name} (accessory only)` : r2.p.name, size: r2.size, plan: r2.plan, qty: r2.qty, addons: r2.addons ?? [], single: r2.single ?? null, img: r2.single?.img ?? r2.p.img })),
         subtotal,
         total,
         token_amount: amt,
@@ -683,8 +731,9 @@ export function CartDrawer() {
         payment_status: 'unverified',
         payment_proof: proof,
         promo_code: promo.trim() ? promo.trim().toUpperCase() : null,
+        status: 'confirmed',
       });
-      setOrder({ id: orderId, paymentId: ref, mode, token: amt, total, deposit, lines: orderLines(), items: rows.map((r) => ({ name: r.single ? r.single.name : r.p.name, detail: r.single ? `${r.p.id} look · without dress` : rowLabel(r), qty: r.qty, price: rowPrice(r) * r.qty })) });
+      setOrder({ id: orderId, paymentId: ref, mode, token: amt, total, deposit, lines: orderLines(), items: rows.map((r) => ({ name: r.single ? r.single.name : r.p.name, detail: r.single ? `${r.p.id} look · without dress` : rowLabel(r), qty: r.qty, price: rowPrice(r) * r.qty, img: r.single?.img ?? r.p.img, pid: r.p.id })) });
       setStep('done');
       snapOrder(orderId, amt, mode, proof || undefined);
       clear();
@@ -724,9 +773,9 @@ export function CartDrawer() {
               <div className="flex-1 overflow-y-auto p-5">
                 <div className="text-center py-2">
                   <CheckCircle2 size={44} className="mx-auto text-emerald-600" />
-                  <h4 className="font-semibold text-xl mt-3">Payment sent successfully!</h4>
-                  <p className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-3 py-1.5">⏳ Waiting for store confirmation</p>
-                  <p className="text-[12.5px] text-black/55 mt-2">The store will check your UTR + screenshot and confirm your order. You will see it in My Orders.</p>
+                  <h4 className="font-semibold text-xl mt-3">Order confirmed! ✅</h4>
+                  <p className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1.5">✓ Confirmed — will be delivered</p>
+                  <p className="text-[12.5px] text-black/55 mt-2">Your payment is received and your outfit is booked. You will see it in My Orders.</p>
                   <p className="text-sm text-black/55 mt-2">Order ID: <b className="text-black">{order.id}</b></p>
                 </div>
                 <div className="mt-4 border border-black/10 rounded-2xl overflow-hidden">
@@ -881,13 +930,26 @@ export function CartDrawer() {
                         <b className="text-[13.5px]">{o.id}</b>
                         <span className="ml-auto text-[11px] text-black/50">{new Date(o.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
                       </div>
-                      <div className="mt-2 space-y-1">
-                        {o.items.map((it, i) => (
-                          <div key={i} className="flex justify-between gap-2 text-[12px]">
-                            <span className="text-black/70 min-w-0">{it.name} x{it.qty}<span className="block text-[10.5px] text-black/45">{it.detail}</span></span>
-                            <b className="shrink-0">{formatINR(it.price)}</b>
+                      <div className="mt-2 space-y-1.5">
+                        {o.items.map((it, i) => {
+                          const src = orderImgFor(it);
+                          return (
+                          <div key={i} className="flex gap-2.5 items-center text-[12px] bg-black/[.02] border border-black/[.06] rounded-xl p-1.5">
+                            {src ? (
+                              <button onClick={() => setViewPhoto({ src, name: it.name })} title="Tap to view photo" className="relative shrink-0 group">
+                                <img src={src} alt={it.name} loading="lazy" className="w-12 h-14 object-cover rounded-lg border border-black/10 group-hover:opacity-90 transition" />
+                                <span className="absolute inset-0 grid place-items-center bg-black/0 group-hover:bg-black/25 rounded-lg transition text-white text-[10px] font-bold opacity-0 group-hover:opacity-100">⤢</span>
+                              </button>
+                            ) : (
+                              <span className="w-12 h-14 grid place-items-center rounded-lg border border-black/10 bg-black/5 text-black/30 text-[10px] font-bold shrink-0">No<br />photo</span>
+                            )}
+                            <span className="text-black/70 min-w-0 flex-1">{it.name} x{it.qty}<span className="block text-[10.5px] text-black/45">{it.detail}</span>
+                              {src && <button onClick={() => setViewPhoto({ src, name: it.name })} className="text-[11px] font-bold text-[#641629] underline underline-offset-2 mt-0.5">View photo</button>}
+                            </span>
+                            <b className="shrink-0 self-start">{formatINR(it.price)}</b>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       <div className="border-t border-black/10 mt-2 pt-2 flex justify-between text-[13px]"><span>Total rent</span><b>{formatINR(o.total)}</b></div>
                       <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)} (rent + 30% extra) claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} + 30% extra ${formatINR(o.deposit)} on delivery${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : 'Pay on delivery'} · Refundable extra 30% {formatINR(o.deposit)} — you get it back on return</p>
@@ -973,6 +1035,22 @@ export function CartDrawer() {
               </>
             )}
           </motion.aside>
+          {/* Order photo full-view — thumbnail tap par badi photo */}
+          <AnimatePresence>
+            {viewPhoto && (
+              <motion.div className="absolute inset-0 z-[60] flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setViewPhoto(null)} />
+                <motion.div initial={{ scale: 0.92, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 16 }} transition={{ duration: 0.22 }}
+                  className="relative bg-white rounded-2xl overflow-hidden max-w-sm w-full shadow-2xl">
+                  <img src={viewPhoto.src} alt={viewPhoto.name} className="w-full max-h-[70vh] object-contain bg-black" />
+                  <div className="flex items-center gap-2 p-3">
+                    <b className="text-[13px] flex-1 min-w-0 truncate">{viewPhoto.name}</b>
+                    <button onClick={() => setViewPhoto(null)} aria-label="Close photo" className="w-9 h-9 grid place-items-center rounded-full bg-black/5 hover:bg-[#641629] hover:text-white transition shrink-0"><X size={15} /></button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
     </AnimatePresence>

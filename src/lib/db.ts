@@ -15,6 +15,14 @@ function noteRpcError(e: any) {
 // Booking save — hamesha local me (admin panel me dikhega),
 // Supabase laga ho to waha bhi.
 //
+// AUTO-CONFIRM: QR payment (UTR + screenshot validated) aate hi order
+// turant 'confirmed' save hota hai — admin ko laptop ke saamne baithkar
+// confirm nahi karna padta. Admin panel ke saare options (confirm /
+// cancel / delivered / payment verify) vaise hi rahenge — galat payment
+// ho to admin baad me cancel / flag kar sakta hai.
+// payment_status alag rehta hai ('unverified') — Reports → Payments me
+// jab time mile tab verify kar sakte ho, order pehle se confirmed rahega.
+//
 // Resilient: agar cloud schema purana ho (migration pending) to
 // pehle full row try karo, column error aaye to legacy minimal row retry.
 // Isse migration run kiye bina bhi booking kabhi fail nahi hoti.
@@ -48,9 +56,21 @@ export async function saveBooking(payload: {
   address?: string | null;
   /** Bot-trap — bhara ho to booking silently drop (spam se bachao) */
   honeypot?: string;
+  /** Order status override — nahi diya to payment dekhkar auto-decide (QR payment = confirmed) */
+  status?: string;
 }) {
   // Honeypot bhara = bot. Success jaisa response, par save mat karo.
   if (payload.honeypot && payload.honeypot.trim()) return { ok: true as const, mode: 'local' as const };
+  // Auto-confirm: valid QR payment (mode upi-qr-* + 12-digit UTR) = turant confirmed.
+  // Caller explicit status de to wahi jeetega (admin panel flow untouched).
+  const autoStatus = (() => {
+    if (payload.status) return payload.status;
+    const mode = String(payload.payment_mode || '');
+    const utr = String(payload.payment_id || '').trim();
+    if (mode.startsWith('upi-qr') && /^\d{12}$/.test(utr)) return 'confirmed';
+    if (mode.startsWith('upi-qr') && utr) return 'confirmed';
+    return 'new';
+  })();
   try {
     addLocalBooking({
       order_id: payload.order_id,
@@ -75,6 +95,7 @@ export async function saveBooking(payload: {
       address: payload.address ?? null,
       promo_code: payload.promo_code ?? null,
       payment_proof: payload.payment_proof ?? null,
+      status: autoStatus,
     });
   } catch { /* ignore */ }
 
@@ -102,7 +123,7 @@ export async function saveBooking(payload: {
     address: payload.address ?? null,
     promo_code: payload.promo_code ?? null,
     payment_proof: payload.payment_proof ?? null,
-    status: 'new',
+    status: autoStatus,
   };
   let { error } = await supabase.from('bookings').insert(row);
   if (error && isMissingColumnError(error.message)) {
@@ -120,7 +141,7 @@ export async function saveBooking(payload: {
       event_date: row.event_date,
       plan: row.plan,
       note: row.note,
-      status: 'new',
+      status: autoStatus,
     };
     ({ error } = await supabase.from('bookings').insert(legacy));
   }
@@ -141,13 +162,20 @@ function bookingRowToMyOrder(r: any): MyOrder | null {
     const orderId = String(r.order_id || '').trim() || `#${String(r.id ?? '').slice(-6)}`;
     if (!orderId || orderId === '#') return null;
     const rawItems = Array.isArray(r.items) ? r.items : [];
-    const items = rawItems.map((it: any, i: number) => ({
-      name: String(it?.name || it?.id || `Item ${i + 1}`),
-      detail: [it?.size, it?.plan, Array.isArray(it?.addons) && it.addons.length ? `+ ${it.addons.join(', ')}` : '']
-        .filter(Boolean).join(' · ') || '1-day rental',
-      qty: Number(it?.qty || 1),
-      price: Number(it?.price ?? it?.rent ?? 0) || 0,
-    }));
+    const items = rawItems.map((it: any, i: number) => {
+      const imgRaw = String(it?.img || it?.single?.img || '').trim();
+      const pidRaw = String(it?.id || it?.pid || '').trim();
+      return {
+        name: String(it?.name || it?.id || `Item ${i + 1}`),
+        detail: [it?.size, it?.plan, Array.isArray(it?.addons) && it.addons.length ? `+ ${it.addons.join(', ')}` : '']
+          .filter(Boolean).join(' · ') || '1-day rental',
+        qty: Number(it?.qty || 1),
+        price: Number(it?.price ?? it?.rent ?? 0) || 0,
+        // Photo — checkout par save hui img, warna single accessory ki img
+        img: imgRaw || undefined,
+        pid: pidRaw || undefined,
+      };
+    });
     // Purane rows me items khaali ho sakte hain — tab note se ek line banao taaki order khaali na lage
     const safeItems = items.length ? items : [{
       name: 'Festive outfit rental',
@@ -155,6 +183,15 @@ function bookingRowToMyOrder(r: any): MyOrder | null {
       qty: 1,
       price: Number(r.total || r.subtotal || 0),
     }];
+    // AUTO-CONFIRM migration: purane 'new' orders jinme QR payment ho chuki hai,
+    // ve bhi confirmed dikhenge — admin ko peeche se confirm nahi karna padega.
+    // (cancelled / delivered / returned ko haath nahi lagate.)
+    let status = String(r.status || 'new');
+    try {
+      const mode = String(r.payment_mode || '');
+      const hasPay = Number(r.token_amount || 0) > 0 || String(r.payment_id || '').trim() !== '';
+      if (status === 'new' && mode.startsWith('upi-qr') && hasPay) status = 'confirmed';
+    } catch { /* ignore */ }
     return {
       id: orderId,
       date: String(r.created_at || new Date().toISOString()),
@@ -166,7 +203,7 @@ function bookingRowToMyOrder(r: any): MyOrder | null {
       deposit: Number(r.deposit ?? 0),
       token: Number(r.token_amount ?? 0),
       mode: String(r.payment_mode || 'pay-on-delivery'),
-      status: String(r.status || 'new'),
+      status,
       payStatus: String(r.payment_status || 'unverified'),
       proof: r.payment_proof ? String(r.payment_proof) : undefined,
       note: r.admin_note ? String(r.admin_note) : undefined,

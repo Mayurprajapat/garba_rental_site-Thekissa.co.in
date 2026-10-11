@@ -123,7 +123,7 @@ function SingleCard({ item }: { item: SingleItem }) {
           <b className="font-display text-[19px] sm:text-[20px] text-[#641629] tabular-nums leading-none">₹{item.price.toLocaleString('en-IN')}</b>
           <span className="text-[11.5px] font-semibold text-neutral-500">rent</span>
         </div>
-        <button onClick={() => addToCart(item.productId, 'One-size', '1day', undefined, { name: item.name, price: item.price })}
+        <button onClick={() => addToCart(item.productId, 'One-size', '1day', undefined, { name: item.name, price: item.price, img: item.img })}
           className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-[#221114] shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 hover:-translate-y-px active:translate-y-0 transition">
           <ShoppingBasket size={14} /> Rent Only This
         </button>
@@ -152,12 +152,19 @@ export default function Shop() {
 
   useEffect(() => {
     const refresh = () => setCats(getCategories());
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
     const evt = categoriesEvent();
     window.addEventListener(evt, refresh);
     window.addEventListener('storage', refresh);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       window.removeEventListener(evt, refresh);
       window.removeEventListener('storage', refresh);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 

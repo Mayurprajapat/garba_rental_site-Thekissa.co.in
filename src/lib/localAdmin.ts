@@ -141,6 +141,21 @@ export function getLocalProducts(): LiveProduct[] {
 
 export function saveLocalProducts(list: LiveProduct[]) {
   localStorage.setItem(P_KEY, JSON.stringify(list));
+  // Website (Shop/QuickView) turant live update — same tab event + dusre tab storage event
+  try {
+    window.dispatchEvent(new Event('raasleela-products-updated'));
+  } catch { /* ignore */ }
+}
+
+export const BOOKINGS_EVENT = 'raasleela-bookings-updated';
+
+function emitBookings() {
+  // Admin panel (Bookings) + customer My Orders — dono turant refresh
+  try {
+    window.dispatchEvent(new Event(BOOKINGS_EVENT));
+    // My Orders isi booking se status/photo merge karta hai
+    window.dispatchEvent(new Event('raasleela-orders-updated'));
+  } catch { /* ignore */ }
 }
 
 export interface LocalBooking {
@@ -193,16 +208,19 @@ export function addLocalBooking(b: Omit<LocalBooking, 'id' | 'created_at' | 'sta
     created_at: new Date().toISOString(),
   };
   localStorage.setItem(B_KEY, JSON.stringify([row, ...all].slice(0, 200)));
+  emitBookings();
   return row;
 }
 
 export function updateLocalBooking(id: number, patch: Partial<LocalBooking>) {
   const all = getLocalBookings().map((b) => (b.id === id ? { ...b, ...patch } : b));
   localStorage.setItem(B_KEY, JSON.stringify(all));
+  emitBookings();
 }
 
 export function deleteLocalBooking(id: number) {
   localStorage.setItem(B_KEY, JSON.stringify(getLocalBookings().filter((b) => b.id !== id)));
+  emitBookings();
 }
 
 export function isLocalAdmin(): boolean {

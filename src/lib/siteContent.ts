@@ -229,12 +229,19 @@ export function useSiteVersion(): number {
   const [v, setV] = useState(0);
   useEffect(() => {
     const bump = () => setV((x) => x + 1);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') bump();
+    };
     const evt = siteEvent();
     window.addEventListener(evt, bump);
     window.addEventListener('storage', bump);
+    window.addEventListener('focus', bump);
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
       window.removeEventListener(evt, bump);
       window.removeEventListener('storage', bump);
+      window.removeEventListener('focus', bump);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
   return v;
