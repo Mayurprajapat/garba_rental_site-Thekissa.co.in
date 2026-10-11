@@ -413,7 +413,7 @@ export function CartDrawer() {
   });
 
   const buildCustomerMsg = (o: { id: string; total: number; deposit: number }) =>
-    `Your order has been placed successfully!\n\nOrder ID: ${o.id}\nName: ${name}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\nDeposit (refundable): ${formatINR(o.deposit)}\n\nThank you for renting with TheKissa.co! Delivery updates will be shared with you on WhatsApp/SMS.`;
+    `Your order has been placed successfully!\n\nOrder ID: ${o.id}\nName: ${name}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\nRefundable deposit: ${formatINR(o.deposit)} — you will get this back when you return the outfit.\n\nThank you for renting with TheKissa.co! Delivery updates will be shared with you on WhatsApp/SMS.`;
 
   const orderLines = () => rows.map((r, i) => r.single
     ? `${i + 1}. ${r.single.name} (accessory only — ${r.p.id} look) x${r.qty} = ${formatINR(r.single.price * r.qty)}`
@@ -421,7 +421,7 @@ export function CartDrawer() {
 
   // Store notification — ALWAYS goes to the client's number/email
   const buildStoreMsg = (o: { id: string; mode: string; token: number; total: number; deposit: number; lines: string[] }) =>
-    `New order ${o.id} — TheKissa.co\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\n${o.mode === 'upi-qr-full' ? `Full payment: ${formatINR(o.token)} paid via QR` : o.mode === 'upi-qr-half' ? `Half payment: ${formatINR(o.token)} paid via QR, balance ${formatINR(o.total - o.token)} on delivery` : o.mode === 'upi-qr' ? `Token: ${formatINR(o.token)} paid via QR` : 'Token: Pay on delivery'}\nDeposit (refundable): ${formatINR(o.deposit)}`;
+    `New order ${o.id} — TheKissa.co\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\n${o.mode === 'upi-qr-full' ? `Full payment: ${formatINR(o.token)} paid via QR` : o.mode === 'upi-qr-half' ? `Half payment: ${formatINR(o.token)} paid via QR, balance ${formatINR(o.total - o.token)} on delivery` : o.mode === 'upi-qr' ? `Token: ${formatINR(o.token)} paid via QR` : 'Token: Pay on delivery'}\nRefundable deposit: ${formatINR(o.deposit)} (return to customer on outfit return)`;
 
   const goQr = () => {
     const v = validateDetails();
@@ -494,7 +494,7 @@ export function CartDrawer() {
       clear();
       // QR payment par bhi store ko WhatsApp notice (block ho to done-step buttons se resend)
       try {
-        window.open(waLink(`New order ${orderId} — TheKissa.co\n\nName: ${name.trim()}\nMobile: ${phone.trim()}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(total)}\n${mode === 'upi-qr-full' ? `Full payment: ${formatINR(amt)} paid via QR` : `Half payment: ${formatINR(amt)} paid via QR, balance ${formatINR(total - amt)} on delivery`}${ref ? ` (UTR ${ref})` : ''}\nDeposit (refundable): ${formatINR(deposit)}`), '_blank');
+        window.open(waLink(`New order ${orderId} — TheKissa.co\n\nName: ${name.trim()}\nMobile: ${phone.trim()}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(total)}\n${mode === 'upi-qr-full' ? `Full payment: ${formatINR(amt)} paid via QR` : `Half payment: ${formatINR(amt)} paid via QR, balance ${formatINR(total - amt)} on delivery`}${ref ? ` (UTR ${ref})` : ''}\nRefundable deposit: ${formatINR(deposit)} (return to customer on outfit return)`), '_blank');
       } catch { /* popup blocked — resend buttons below */ }
     } catch (e: any) {
       setErr(e?.message || 'Could not confirm order');
@@ -541,8 +541,8 @@ export function CartDrawer() {
                     <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Payment</span><b className="text-right break-words min-w-0">{order.mode === 'upi-qr-full' ? `Full claimed via QR ${formatINR(order.token)} · verification pending` : order.mode === 'upi-qr-half' ? `Half claimed via QR ${formatINR(order.token)} · Balance ${formatINR(order.total - order.token)} on delivery · verification pending` : order.mode === 'upi-qr' ? `Token claimed via QR ${formatINR(order.token)} · verification pending` : 'Pay on delivery'}</b></div>
                     {order.paymentId && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Txn ID</span><b className="text-[12px] text-right break-all">{order.paymentId}</b></div>}
                     <div className="border-t border-black/10 my-2 pt-2 flex justify-between"><span>Total rent</span><b>{formatINR(order.total)}</b></div>
-                    <div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Security deposit (on delivery, refundable)</span><b>{formatINR(order.deposit)}</b></div>
-                    <p className="text-[11px] text-black/50 pt-1">Deposit is 100% refundable — returned via UPI/cash within 24h of return.</p>
+                    <div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Refundable deposit (you get back on return)</span><b>{formatINR(order.deposit)}</b></div>
+                    <p className="text-[11px] text-black/50 pt-1">You will get {formatINR(order.deposit)} back via UPI/cash within 24h of return.</p>
                   </div>
                 </div>
                 <p className="text-[12px] font-bold mt-4 text-center">Send this order to the store:</p>
@@ -581,8 +581,8 @@ export function CartDrawer() {
                   </div>
                   {promo.trim() && disc <= 0 && <p className="text-[11.5px] text-rose-700 font-medium">This code is not valid for this order.</p>}
                   <div className="flex justify-between text-[15px]"><span>Total rent</span><b>{formatINR(total)}</b></div>
-                  <div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Security deposit (on delivery, refundable)</span><b>{formatINR(deposit)}</b></div>
-                  <p className="text-[11px] text-black/50">Deposit is 100% refunded via UPI/cash within 24h of return · QR scan & pay via any UPI app</p>
+                  <div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Refundable deposit (you get back on return)</span><b>{formatINR(deposit)}</b></div>
+                  <p className="text-[11px] text-black/50">You will get {formatINR(deposit)} back via UPI/cash within 24h of return · QR scan & pay via any UPI app</p>
                 </div>
                 <p className="text-xs font-bold">PAYMENT OPTION *</p>
                 <div className="grid gap-2">
@@ -681,7 +681,7 @@ export function CartDrawer() {
                         ))}
                       </div>
                       <div className="border-t border-black/10 mt-2 pt-2 flex justify-between text-[13px]"><span>Total rent</span><b>{formatINR(o.total)}</b></div>
-                      <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} on delivery${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : 'Pay on delivery'} · Deposit {formatINR(o.deposit)} (refundable)</p>
+                      <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} on delivery${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : 'Pay on delivery'} · Refundable deposit {formatINR(o.deposit)} — you get it back on return</p>
                       <span className={`inline-block mt-1 text-[10.5px] font-bold rounded-full px-2 py-0.5 border ${o.status === 'cancelled' ? 'text-white bg-rose-600 border-rose-600' : o.status === 'delivered' || o.status === 'returned' ? 'text-violet-800 bg-violet-50 border-violet-200' : 'text-emerald-800 bg-emerald-50 border-emerald-200'}`}>
                         {o.status === 'cancelled' ? '✕ Cancelled' : o.status === 'delivered' ? '✓ Delivered' : o.status === 'returned' ? '✓ Returned' : o.status === 'confirmed' ? '✓ Confirmed — will be delivered' : '✓ Order confirmed'}
                       </span>
@@ -755,8 +755,8 @@ export function CartDrawer() {
                   <div className="text-sm space-y-1">
                     <div className="flex justify-between"><span>Subtotal</span><b>{formatINR(subtotal)}</b></div>
                     <div className="flex justify-between text-[17px]"><span>Total rent</span><b>{formatINR(total)}</b></div>
-                    <div className="flex justify-between text-emerald-700"><span>Security deposit</span><b>{formatINR(deposit)}</b></div>
-                    <p className="text-[11px] text-black/50">Deposit is 100% refundable — returned via UPI/cash within 24h of return. It is paid separately on delivery, over and above the rent.</p>
+                    <div className="flex justify-between text-emerald-700"><span>Refundable deposit (you get back)</span><b>{formatINR(deposit)}</b></div>
+                    <p className="text-[11px] text-black/50">You will get {formatINR(deposit)} back via UPI/cash within 24h of return. It is paid separately on delivery, over and above the rent.</p>
                   </div>
                   <button disabled={rows.length === 0} onClick={() => setStep('details')} className="w-full bg-[#221114] text-white font-semibold rounded-full py-3.5 text-sm disabled:opacity-40 flex items-center justify-center gap-2"><ShoppingBasket size={15} /> Proceed to Checkout →</button>
                   <button onClick={clear} className="w-full text-xs text-black/50 underline">Clear list</button>
