@@ -930,23 +930,25 @@ export function CartDrawer() {
                         <b className="text-[13.5px]">{o.id}</b>
                         <span className="ml-auto text-[11px] text-black/50">{new Date(o.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
                       </div>
-                      <div className="mt-2 space-y-1.5">
+                      <div className="mt-2 space-y-2">
                         {o.items.map((it, i) => {
                           const src = orderImgFor(it);
                           return (
-                          <div key={i} className="flex gap-2.5 items-center text-[12px] bg-black/[.02] border border-black/[.06] rounded-xl p-1.5">
+                          <div key={i} className="flex gap-3 text-[12px] bg-white border border-black/10 rounded-2xl p-2 overflow-hidden">
                             {src ? (
-                              <button onClick={() => setViewPhoto({ src, name: it.name })} title="Tap to view photo" className="relative shrink-0 group">
-                                <img src={src} alt={it.name} loading="lazy" className="w-12 h-14 object-cover rounded-lg border border-black/10 group-hover:opacity-90 transition" />
-                                <span className="absolute inset-0 grid place-items-center bg-black/0 group-hover:bg-black/25 rounded-lg transition text-white text-[10px] font-bold opacity-0 group-hover:opacity-100">⤢</span>
+                              <button onClick={() => setViewPhoto({ src, name: it.name })} title="Tap to view full photo" className="relative shrink-0 group">
+                                <img src={src} alt={it.name} loading="lazy" className="w-20 h-24 object-cover rounded-xl border border-black/10 group-hover:opacity-90 transition" />
+                                <span className="absolute bottom-1 right-1 bg-black/65 text-white text-[9px] font-bold rounded-full px-2 py-0.5">View ⤢</span>
                               </button>
                             ) : (
-                              <span className="w-12 h-14 grid place-items-center rounded-lg border border-black/10 bg-black/5 text-black/30 text-[10px] font-bold shrink-0">No<br />photo</span>
+                              <span className="w-20 h-24 grid place-items-center rounded-xl border border-black/10 bg-black/5 text-black/30 text-[10px] font-bold shrink-0">No<br />photo</span>
                             )}
-                            <span className="text-black/70 min-w-0 flex-1">{it.name} x{it.qty}<span className="block text-[10.5px] text-black/45">{it.detail}</span>
-                              {src && <button onClick={() => setViewPhoto({ src, name: it.name })} className="text-[11px] font-bold text-[#641629] underline underline-offset-2 mt-0.5">View photo</button>}
+                            <span className="text-black/70 min-w-0 flex-1 py-0.5">
+                              <b className="block text-[13px] leading-snug text-black">{it.name}</b>
+                              <span className="block text-[10.5px] text-black/45 mt-0.5">{it.detail}</span>
+                              <span className="block text-[11px] text-black/55 mt-0.5">Qty: <b>{it.qty}</b></span>
+                              <b className="block text-[14px] mt-0.5">{formatINR(it.price)}</b>
                             </span>
-                            <b className="shrink-0 self-start">{formatINR(it.price)}</b>
                           </div>
                           );
                         })}
