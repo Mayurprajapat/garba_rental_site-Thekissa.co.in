@@ -794,7 +794,7 @@ export default function Admin() {
                           <td className="admin-td !px-2.5 !py-2">
                             <b className="block text-[14px]">₹{(b.total || b.subtotal || 0).toLocaleString('en-IN')}</b>
                             {!!b.token_amount && <span className="block text-[11px] font-normal text-emerald-700">{b.payment_mode === 'upi-qr-full' ? `full ₹${Number(b.token_amount).toLocaleString('en-IN')}` : (b.payment_mode === 'upi-qr-half' ? `half ₹${Number(b.token_amount).toLocaleString('en-IN')}` : `token ₹${Number(b.token_amount).toLocaleString('en-IN')}`)}</span>}
-                            <span className="block text-[11.5px] mt-1">Deposit <b>₹{Number(b.deposit || 0).toLocaleString('en-IN')}</b></span>
+                            <span className="block text-[11.5px] mt-1">Extra 30% <b>₹{Number(b.deposit || 0).toLocaleString('en-IN')}</b></span>
                             <button
                               title="Change deposit status (tap)"
                               onClick={async () => {

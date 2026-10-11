@@ -138,7 +138,7 @@ export function downloadInvoicePDF(o: MyOrder, opts?: {
   row('Total rent', inr(o.total), true);
   row('Paid now', inr(o.token));
   row('Balance on delivery', inr(Math.max(0, o.total - o.token)));
-  row('Refundable deposit (you get back)', inr(o.deposit), true, [22, 120, 70]);
+  row('Refundable extra 30% (you get back)', inr(o.deposit), true, [22, 120, 70]);
   row('Total collection (rent + deposit)', inr(o.total + o.deposit), true);
   if (opts?.paymentId) {
     doc.setFont('helvetica', 'normal');

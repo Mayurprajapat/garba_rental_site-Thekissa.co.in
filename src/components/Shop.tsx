@@ -5,6 +5,7 @@ import { lookFor, spinFramesFor, type Product } from '../data/products';
 import type { LiveProduct } from '../lib/ProductsContext';
 import { categoriesEvent, getCategories, matchesCategory, type ShopCategory } from '../lib/categories';
 import { itemImgFor } from '../lib/items';
+import { refundableExtra } from '../lib/order';
 import { useProducts } from '../lib/ProductsContext';
 import { getSiteContent, useSiteVersion } from '../lib/siteContent';
 import { useStore } from '../store/useStore';
@@ -87,7 +88,7 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
           <b className="font-display text-[19px] sm:text-[20px] text-[#4d0f1f] tabular-nums leading-none">₹{price.toLocaleString('en-IN')}</b>
           <span className="text-[11.5px] font-semibold text-neutral-500">/ 1-day rent</span>
         </div>
-        <p className="text-[12px] font-bold text-[#8a6d1f] mt-1">+ ₹{p.deposit.toLocaleString('en-IN')} Deposit</p>
+        <p className="text-[12px] font-bold text-[#8a6d1f] mt-1">+ ₹{refundableExtra(price).toLocaleString('en-IN')} Refundable (30%)</p>
         {freeDandiya && <p className="text-[11.5px] font-black text-emerald-700 mt-0.5">✓ FREE Dandiya pair included</p>}
         <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id); }}
           disabled={soldOut}

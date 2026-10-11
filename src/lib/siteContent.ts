@@ -67,7 +67,7 @@ export const DEFAULT_CONTENT: SiteContent = {
     subtitle: 'Designer Chaniya Choli, bridal couture and jewellery — on rent from {price}. Sanitised, steam-pressed, same-day delivery.',
     minPrice: '₹299',
   },
-  features: ['Dry-cleaned & Sanitized', '100% Refundable Security Deposit', '100% Secure QR Payments', 'Live Availability Tracking'],
+  features: ['Dry-cleaned & Sanitized', '100% Refundable Extra (30%)', '100% Secure QR Payments', 'Live Availability Tracking'],
   promos: [
     { code: 'NAVRATRI20', percent: 20 },
     { code: 'GROUP25', percent: 25 },
@@ -93,20 +93,20 @@ export const DEFAULT_CONTENT: SiteContent = {
   faqs: [
     { q: 'How long is the rental period?', a: 'Every rental is 1 day — pickup, event and return. Need it longer? Just re-book for the next day.' },
     { q: 'What if the size doesn’t fit?', a: 'We keep large sizes in stock — get the fitting done from us, and we also provide pins for minor adjustments. Share your size on email or WhatsApp and we confirm fit before dispatch.' },
-    { q: 'Is the deposit refundable?', a: 'Yes, 100%. Refunded via UPI/cash within 24 hours of return and quality check. Normal wear is never charged.' },
+    { q: 'Is the deposit refundable?', a: 'Yes, 100%. Every dress has a 30% refundable extra over the rent — refunded via UPI/cash within 24 hours of return and quality check. Normal wear is never charged.' },
     { q: 'What about stains or minor damage?', a: 'Light dry-cleanable stains are on us. Major damage is charged at repair cost only — optional ₹199 damage cover removes the worry.' },
     { q: 'Where do you deliver?', a: '1-2 hours delivery in Indore. Free delivery on bulk orders.' },
   ],
   booking: {
     title: 'Reserve your outfit in two minutes',
     subtitle: 'Fill the form — it opens your email app with everything pre-written. Send it and your outfit enquiry is locked.',
-    points: ['Free size available', 'Same-day slots in Indore', 'Refundable deposit, no hidden fees'],
+    points: ['Free size available', 'Same-day slots in Indore', 'Refundable extra 30%, no hidden fees'],
   },
   footer: {
     about: 'Designer Garba outfits on rent — perfect fitting, doorstep delivery, easy return.',
     delivery: 'Online only — no walk-in store',
   },
-  shopNote: '1-day rentals · 100% refundable deposit · 100% secure QR payments',
+  shopNote: '1-day rentals · 100% refundable 30% extra · 100% secure QR payments',
 };
 
 const KEY = 'raasleela-site-content';
@@ -135,7 +135,7 @@ function normalize(c: SiteContent): SiteContent {
     : [...DEFAULT_CONTENT.looks.imgs];
   // Purani saved content ko naye defaults par migrate karo (client ka likha hua safe)
   const savedFeatures: string[] = Array.isArray((c as any).features)
-    ? (c as any).features.map((t: any) => String(t ?? ''))
+    ? (c as any).features.map((t: any) => String(t ?? '').replace(/100% Refundable Security Deposit/gi, '100% Refundable Extra (30%)'))
     : [...DEFAULT_CONTENT.features];
   if (!savedFeatures.some((t) => /secure/i.test(t))) savedFeatures.push('100% Secure QR Payments');
   const savedAnn = (c as any).announcement || {};
@@ -145,7 +145,7 @@ function normalize(c: SiteContent): SiteContent {
   const savedMinPrice = (c as any).hero?.minPrice;
   const minPrice = savedMinPrice === '₹799' ? DEFAULT_CONTENT.hero.minPrice : (savedMinPrice ?? DEFAULT_CONTENT.hero.minPrice);
   const rawNote = typeof (c as any).shopNote === 'string' && (c as any).shopNote.trim()
-    ? (c as any).shopNote.replace(/\s*[·•|]\s*Codes:.*$/i, '').replace(/1-day, 3-day or 9-day rentals/i, '1-day rentals').trim()
+    ? (c as any).shopNote.replace(/\s*[·•|]\s*Codes:.*$/i, '').replace(/1-day, 3-day or 9-day rentals/i, '1-day rentals').replace(/100% refundable deposit/i, '100% refundable 30% extra').trim()
     : '';
   const shopNote = rawNote || DEFAULT_CONTENT.shopNote;
   return {
@@ -180,13 +180,15 @@ function normalize(c: SiteContent): SiteContent {
         : [...DEFAULT_CONTENT.booking.points],
     },
     footer: { ...DEFAULT_CONTENT.footer, ...(c.footer || {}) },
-    // Purani saved FAQ line hata do ("wrong size..." sentence) + "buy instead of renting" hatao
+    // Purani saved FAQ line hata do ("wrong size..." sentence) + deposit answer ko 30% extra par migrate karo
     faqs: Array.isArray(c.faqs)
       ? c.faqs
         .filter((f: any) => !/buy instead of renting/i.test(String(f?.q ?? '')))
         .map((f: any) => ({
           q: String(f?.q ?? ''),
-          a: String(f?.a ?? '').replace(/ — a wrong size gets exchanged at your doorstep\./g, ''),
+          a: String(f?.a ?? '')
+            .replace(/ — a wrong size gets exchanged at your doorstep\./g, '')
+            .replace(/^Yes, 100%\. Refunded via UPI\/cash within 24 hours of return and quality check\. Normal wear is never charged\.$/, 'Yes, 100%. Every dress has a 30% refundable extra over the rent — refunded via UPI/cash within 24 hours of return and quality check. Normal wear is never charged.'),
         }))
       : [...DEFAULT_CONTENT.faqs],
     // Purani saved line me "Codes: ..." ho to hata do, purana plan text ho to 1-day kar do

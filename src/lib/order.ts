@@ -20,6 +20,14 @@ export function halfAdvance(total: number): number {
   return Math.round(total / 2);
 }
 
+/** Refundable extra — har dress par rent ka 30%, return par wapas. */
+export const REFUNDABLE_PCT = 30;
+
+export function refundableExtra(rent: number): number {
+  if (!(rent > 0)) return 0;
+  return Math.round((rent * REFUNDABLE_PCT) / 100);
+}
+
 export function formatINR(n: number): string {
   return `₹${(n || 0).toLocaleString('en-IN')}`;
 }
