@@ -748,7 +748,23 @@ export default function Admin() {
                     <tbody>
                       {filteredBookings.map((b, bi) => (
                         <tr key={b.id} className={`transition hover:bg-[#faf3e2] ${bi % 2 === 1 ? 'bg-[#fffdf6]' : ''}`}>
-                          <td className="admin-td !px-2.5 !py-2 font-bold text-[#4d0f1f]">{b.order_id || `#${String(b.id).slice(-6)}`}<span className="block text-[11px] font-normal text-[#8a7584]">#{String(b.id).slice(-6)}</span></td>
+                          <td className="admin-td !px-2.5 !py-2 font-bold text-[#4d0f1f] max-w-[230px]">{b.order_id || `#${String(b.id).slice(-6)}`}<span className="block text-[11px] font-normal text-[#8a7584]">#{String(b.id).slice(-6)}</span>
+                            {Array.isArray(b.items) && b.items.length > 0 && (
+                              <>
+                                <span className="block text-[11.5px] font-semibold text-[#3d2b36] mt-1 leading-snug">
+                                  {b.items.slice(0, 2).map((it: any) => `${it?.name || it?.id || 'Outfit'}${it?.qty > 1 ? ` ×${it.qty}` : ''}`).join(' · ')}
+                                  {b.items.length > 2 ? ` +${b.items.length - 2} more` : ''}
+                                </span>
+                                <details className="mt-1">
+                                  <summary className="text-[11px] font-bold text-[#8e1a4f] cursor-pointer hover:underline">All {b.items.length} items ⌄</summary>
+                                  <ul className="mt-1 space-y-0.5 text-[11.5px] font-normal text-[#3d2b36]">
+                                    {b.items.map((it: any, i: number) => (
+                                      <li key={i} className="leading-snug">• {it?.name || it?.id || 'Outfit'}{it?.qty > 1 ? ` ×${it.qty}` : ''}{Array.isArray(it?.addons) && it.addons.length ? ` (+${it.addons.join(', ')})` : ''}{it?.size ? ` · ${it.size}` : ''}</li>
+                                    ))}
+                                  </ul>
+                                </details>
+                              </>
+                            )}</td>
                           <td className="admin-td !px-2.5 !py-2"><b className="block text-[13px]">{b.name}</b><a href={`tel:${b.phone}`} className="text-[12px] text-blue-700 hover:underline">{b.phone}</a>{b.address && <span className="block text-[11.5px] text-[#3d2b36] mt-0.5 max-w-[180px]">📍 {String(b.address)}</span>}</td>
                           <td className="admin-td !px-2.5 !py-2 text-[12.5px] text-[#3d2b36]">
                             <b>{b.event_date || '—'}</b>
