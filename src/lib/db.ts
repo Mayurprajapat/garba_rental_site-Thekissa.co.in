@@ -26,6 +26,8 @@ export async function saveBooking(payload: {
   payment_mode?: string;
   payment_id?: string;
   payment_status?: string;
+  /** Checkout me laga promo code (uppercase, optional) */
+  promo_code?: string | null;
   /** Admin sets the date by which the order will be ready (YYYY-MM-DD) */
   ready_date?: string | null;
   /** Admin's message for the customer (Out of stock / Available etc.) */
@@ -59,6 +61,7 @@ export async function saveBooking(payload: {
       ready_date: payload.ready_date ?? null,
       admin_note: payload.admin_note ?? null,
       address: payload.address ?? null,
+      promo_code: payload.promo_code ?? null,
     });
   } catch { /* ignore */ }
 
@@ -84,12 +87,13 @@ export async function saveBooking(payload: {
     ready_date: payload.ready_date ?? null,
     admin_note: payload.admin_note ?? null,
     address: payload.address ?? null,
+    promo_code: payload.promo_code ?? null,
     status: 'new',
   };
   let { error } = await supabase.from('bookings').insert(row);
   if (error && isMissingColumnError(error.message)) {
     // Cloud me naye columns nahi hain (migration pending) — unke bina retry
-    const { ready_date: _r, admin_note: _n, address: _a, ...withoutNew } = row;
+    const { ready_date: _r, admin_note: _n, address: _a, promo_code: _p, ...withoutNew } = row;
     ({ error } = await supabase.from('bookings').insert(withoutNew));
   }
   if (error && isMissingColumnError(error.message)) {

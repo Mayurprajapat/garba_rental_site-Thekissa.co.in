@@ -74,6 +74,7 @@ create table if not exists public.bookings (
   payment_status text default 'pending',
   ready_date date,
   admin_note text default '',
+  promo_code text default '',
   status text default 'new' check (status in ('new','confirmed','delivered','returned','cancelled')),
   created_at timestamptz default now()
 );
@@ -97,6 +98,7 @@ alter table public.bookings add column if not exists payment_id text default '';
 alter table public.bookings add column if not exists payment_status text default 'pending';
 alter table public.bookings add column if not exists ready_date date;
 alter table public.bookings add column if not exists admin_note text default '';
+alter table public.bookings add column if not exists promo_code text default '';
 alter table public.bookings add column if not exists status text default 'new';
 
 -- ============ 3. Deliveries table (live tracking) ============

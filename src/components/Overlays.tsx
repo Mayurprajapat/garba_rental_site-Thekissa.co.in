@@ -443,6 +443,7 @@ export function CartDrawer() {
         payment_mode: mode,
         payment_id: ref,
         payment_status: 'unverified',
+        promo_code: promo.trim() ? promo.trim().toUpperCase() : null,
       });
       setOrder({ id: orderId, paymentId: ref, mode, token: amt, total, deposit, lines: orderLines(), items: rows.map((r) => ({ name: r.single ? r.single.name : r.p.name, detail: r.single ? `${r.p.id} look · without dress` : rowLabel(r), qty: r.qty, price: rowPrice(r) * r.qty })) });
       setStep('done');

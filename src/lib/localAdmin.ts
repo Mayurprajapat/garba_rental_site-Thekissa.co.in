@@ -162,6 +162,8 @@ export interface LocalBooking {
   payment_mode?: string;
   payment_id?: string;
   payment_status?: string;
+  /** Checkout me laga promo code (uppercase) — report ke liye, optional */
+  promo_code?: string | null;
   /** Admin batata hai order kis date tak ready/mil jayega (YYYY-MM-DD) */
   ready_date?: string | null;
   /** Admin ka customer ke liye message — Out of stock / Available etc. */

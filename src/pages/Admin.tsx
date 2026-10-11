@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  BellRing,
   CalendarDays,
   Eye,
   EyeOff,
@@ -17,6 +18,7 @@ import {
   Settings,
   Store,
   Trash2,
+  TrendingUp,
   Users,
 } from 'lucide-react';
 import {
@@ -38,6 +40,7 @@ import { getCategories, resetCategories, saveCategories, type ShopCategory } fro
 import type { LiveProduct } from '../lib/ProductsContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import DeliveriesPanel from './admin/DeliveriesPanel';
+import Reports from './admin/Insights';
 import { RevenueCard, StatusDonutCard, TopProductsCard } from './admin/Charts';
 import WebsitePanel from './admin/WebsitePanel';
 import Logo from '../components/Logo';
@@ -208,7 +211,7 @@ export default function Admin() {
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [msg, setMsg] = useState('');
-  const [view, setView] = useState<'overview' | 'products' | 'categories' | 'website' | 'bookings' | 'deliveries' | 'settings'>('overview');
+  const [view, setView] = useState<'overview' | 'products' | 'categories' | 'website' | 'bookings' | 'deliveries' | 'reports' | 'settings'>('overview');
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [cats, setCats] = useState<ShopCategory[]>([]);
   const [bookings, setBookings] = useState<BookingRow[]>([]);
@@ -224,6 +227,10 @@ export default function Admin() {
   const [pwConfirm, setPwConfirm] = useState('');
   const [pwMsg, setPwMsg] = useState('');
   const [pwCustom, setPwCustom] = useState(() => hasCustomPassword());
+  // New-booking alert — naya order aate hi sound + banner (sirf additive, purana flow same)
+  const [alertsOn, setAlertsOn] = useState(true);
+  const [newCount, setNewCount] = useState(0);
+  const knownIds = useRef<Set<string> | null>(null);
 
   const changePw = async () => {
     setPwMsg('');
@@ -263,6 +270,37 @@ export default function Admin() {
   };
 
   useEffect(() => { if (loggedIn) { loadProducts(); loadBookings(); setCats(getCategories()); } }, [loggedIn]);
+
+  // Silent refresh har 45s — naya order turant pakadne ke liye (display-only, edits safe)
+  useEffect(() => {
+    if (!loggedIn) return;
+    const t = setInterval(() => { loadBookings(); }, 45000);
+    return () => clearInterval(t);
+  }, [loggedIn]);
+
+  // Naye bookings aate hi gin + sound (pehli load ko baseline maano)
+  useEffect(() => {
+    const ids = new Set(bookings.map((b) => String(b.id)));
+    if (knownIds.current === null) { knownIds.current = ids; return; }
+    let fresh = 0;
+    ids.forEach((id) => { if (!knownIds.current!.has(id)) fresh++; });
+    knownIds.current = ids;
+    if (fresh > 0 && alertsOn) {
+      setNewCount((c) => c + fresh);
+      try {
+        const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+        if (Ctx) {
+          const ctx = new Ctx();
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination);
+          o.frequency.value = 880; g.gain.value = 0.07;
+          o.start(); o.stop(ctx.currentTime + 0.3);
+          setTimeout(() => { try { ctx.close(); } catch { /* ignore */ } }, 500);
+        }
+      } catch { /* audio blocked hone par sirf banner dikhega */ }
+    }
+  }, [bookings, alertsOn]);
 
   // Admin route kabhi search me index na ho
   useEffect(() => {
@@ -426,6 +464,7 @@ export default function Admin() {
     { id: 'categories', label: 'Categories', icon: LayoutGrid },
     { id: 'website', label: 'Website', icon: Globe },
     { id: 'bookings', label: 'Bookings', icon: CalendarDays },
+    { id: 'reports', label: 'Reports', icon: TrendingUp },
     { id: 'deliveries', label: 'Deliveries · Map', icon: MapPin },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -484,6 +523,22 @@ export default function Admin() {
 
             {view === 'overview' && (
               <div>
+                {newCount > 0 && (
+                  <div className="admin-card p-4 mb-4 flex flex-wrap items-center gap-2 border-emerald-300 bg-emerald-50/60">
+                    <BellRing size={17} className="text-emerald-700" />
+                    <b className="text-[14px] text-emerald-900">🔔 {newCount} new booking{newCount === 1 ? '' : 's'} arrived</b>
+                    <span className="flex gap-2 ml-auto">
+                      <button onClick={() => { setNewCount(0); setView('bookings'); }} className="text-[12.5px] font-bold bg-emerald-600 text-white rounded-full px-4 py-1.5">Review now</button>
+                      <button onClick={() => setNewCount(0)} className="text-[12.5px] font-bold border rounded-full px-4 py-1.5 bg-white">Dismiss</button>
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 mb-3">
+                  <button onClick={() => setAlertsOn((v) => !v)} title="Naye order par sound + banner"
+                    className={`flex items-center gap-1.5 text-[12px] font-bold rounded-full px-3.5 py-1.5 border transition ${alertsOn ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-black/60'}`}>
+                    <BellRing size={13} /> New-order alert {alertsOn ? 'ON' : 'OFF'}
+                  </button>
+                </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {[
                     { l: 'Live products', v: stats.live, icon: Package, s: `${products.length} total · atelier pressed`, d: '▲ curated' },
@@ -801,6 +856,8 @@ export default function Admin() {
             )}
 
             {view === 'deliveries' && <DeliveriesPanel bookings={bookings} />}
+
+            {view === 'reports' && <Reports bookings={bookings} reload={loadBookings} />}
 
             {view === 'website' && <WebsitePanel />}
 
