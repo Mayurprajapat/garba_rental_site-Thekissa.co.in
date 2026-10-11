@@ -24,6 +24,7 @@ import {
 import {
   adminLockRemaining,
   clearAdminFails,
+  deleteLocalBooking,
   getLocalBookings,
   getLocalProducts,
   hasCustomPassword,
@@ -844,6 +845,22 @@ export default function Admin() {
                                   else { updateLocalBooking(b.id, { status: s }); loadBookings(); }
                                 }} className={`text-[10.5px] font-bold rounded-full px-2 py-1 border capitalize ${b.status === s ? 'bg-[#1a0f1e] text-white' : 'hover:border-black'}`}>{s}</button>
                               ))}
+                              <button onClick={async () => {
+                                if (!confirm(`Delete ${b.order_id || 'this booking'} (${b.name || 'customer'}) permanently? This cannot be undone.`)) return;
+                                if (useCloud && supabase) {
+                                  try {
+                                    const { error } = await supabase.from('bookings').delete().eq('id', b.id);
+                                    if (error) throw error;
+                                  } catch (e: any) {
+                                    setMsg('Could not delete: ' + (e?.message || 'unknown error'));
+                                    setTimeout(() => setMsg(''), 4000);
+                                    return;
+                                  }
+                                  loadBookings();
+                                  setMsg('Booking deleted permanently.');
+                                  setTimeout(() => setMsg(''), 3000);
+                                } else { deleteLocalBooking(b.id); loadBookings(); }
+                              }} title="Delete this booking permanently" className="w-7 h-7 grid place-items-center rounded-full border border-rose-200 text-rose-700 hover:bg-rose-600 hover:text-white hover:border-rose-600 transition"><Trash2 size={12} /></button>
                             </div>
                           </td>
                         </tr>
