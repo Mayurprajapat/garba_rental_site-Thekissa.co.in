@@ -96,7 +96,6 @@ export const DEFAULT_CONTENT: SiteContent = {
     { q: 'Is the deposit refundable?', a: 'Yes, 100%. Refunded via UPI/cash within 24 hours of return and quality check. Normal wear is never charged.' },
     { q: 'What about stains or minor damage?', a: 'Light dry-cleanable stains are on us. Major damage is charged at repair cost only — optional ₹199 damage cover removes the worry.' },
     { q: 'Where do you deliver?', a: '1-2 hours delivery in Indore. Free delivery on bulk orders.' },
-    { q: 'Can I buy instead of renting?', a: 'Yes — every design is available for purchase at roughly 2.5× the rental price. Message “BUY” with the product ID on WhatsApp.' },
   ],
   booking: {
     title: 'Reserve your outfit in two minutes',
@@ -181,9 +180,11 @@ function normalize(c: SiteContent): SiteContent {
         : [...DEFAULT_CONTENT.booking.points],
     },
     footer: { ...DEFAULT_CONTENT.footer, ...(c.footer || {}) },
-    // Purani saved FAQ line hata do ("wrong size..." sentence)
+    // Purani saved FAQ line hata do ("wrong size..." sentence) + "buy instead of renting" hatao
     faqs: Array.isArray(c.faqs)
-      ? c.faqs.map((f: any) => ({
+      ? c.faqs
+        .filter((f: any) => !/buy instead of renting/i.test(String(f?.q ?? '')))
+        .map((f: any) => ({
           q: String(f?.q ?? ''),
           a: String(f?.a ?? '').replace(/ — a wrong size gets exchanged at your doorstep\./g, ''),
         }))

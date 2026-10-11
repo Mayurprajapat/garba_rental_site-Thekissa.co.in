@@ -1,10 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, Clock, Mail, MapPin, Navigation, Quote, Ruler, ShieldCheck, Sparkles } from 'lucide-react';
+import { ChevronDown, MapPin, Navigation, Quote, ShieldCheck, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { waLink } from '../data/products';
 import { STORE } from '../data/store';
-import { isValidIndianPhone } from '../lib/order';
-import { saveBooking } from '../lib/db';
 import { getSiteContent, DEFAULT_CONTENT, useSiteVersion } from '../lib/siteContent';
 import Logo from './Logo';
 
@@ -38,7 +36,7 @@ export function Process() {
       <div className="container-x py-5">
       <div className="flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
         <h2 className="premium-heading font-display font-black text-lg sm:text-xl">{proc.title}</h2>
-        <a href="#book" className="text-[13px] font-semibold text-[#641629] underline underline-offset-2 decoration-[#c9a44a] sm:ml-auto shrink-0">Book now →</a>
+        <a href="#shop" className="text-[13px] font-semibold text-[#641629] underline underline-offset-2 decoration-[#c9a44a] sm:ml-auto shrink-0">Book now →</a>
       </div>
       <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2.5 mt-3">
         {proc.steps.map((s, i) => (
@@ -136,78 +134,6 @@ export function Faq() {
   );
 }
 
-export function Booking() {
-  const [f, setF] = useState({ name: '', phone: '', cat: 'Women Chaniya Choli', date: '', days: '1 day', note: '', web: '' });
-  const [saving, setSaving] = useState(false);
-  const [done, setDone] = useState(false);
-  const [err, setErr] = useState('');
-  useSiteVersion();
-  const booking = getSiteContent().booking;
-  const pointIcons = [Ruler, Clock, ShieldCheck];
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (saving) return;
-    if (!isValidIndianPhone(f.phone)) { setErr('Please enter a valid 10-digit mobile number'); return; }
-    setErr('');
-    setSaving(true);
-    await saveBooking({
-      name: f.name, phone: f.phone, category: f.cat, size: '',
-      event_date: f.date || null, plan: f.days, note: f.note,
-      items: [], subtotal: 0, total: 0, honeypot: f.web,
-    });
-    setSaving(false);
-    setDone(true);
-    const subject = `New Booking — ${f.name} (${f.date || 'date TBD'})`;
-    const body = `Hi TheKissa.co! New booking:\nName: ${f.name}\nMobile: ${f.phone}\nCategory: ${f.cat}\nEvent: ${f.date}\nPlan: ${f.days}\nNote: ${f.note}`;
-    window.location.href = `mailto:${STORE.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  };
-  return (
-    <section id="book" className="container-x pb-6">
-      <div className="grid lg:grid-cols-[1fr_1.05fr] gap-0 card overflow-hidden card-shadow ring-1 ring-[#c9a44a]/25">
-        <div className="bg-gradient-to-br from-[#2b070e] via-[#4d0f1f] to-[#5e1628] text-white p-5 sm:p-6 relative overflow-hidden">
-          <div className="absolute inset-0 bg-bandhani opacity-10" />
-          <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e8c66a]/70 to-transparent" />
-          <div className="relative">
-            <p className="eyebrow eyebrow-light">Instant booking</p>
-            <h2 className="premium-heading font-display font-black text-xl sm:text-2xl mt-2 leading-tight">{booking.title}</h2>
-            <p className="text-white/60 text-[13px] mt-2 leading-relaxed">{booking.subtitle}</p>
-            <ul className="text-[13px] mt-4 space-y-2">
-              {booking.points.map((t, i) => {
-                const Icon = pointIcons[i % pointIcons.length];
-                return (
-                  <li key={`${i}-${t}`} className="flex items-center gap-2.5 text-white/75">
-                    <Icon size={15} className="text-[#e8c66a]" />{t}
-                  </li>
-                );
-              })}
-            </ul>
-            <div className="mt-5 bg-white/[.05] ring-1 ring-white/10 backdrop-blur rounded-2xl p-4 text-[13px] leading-relaxed">
-              <b className="flex items-center gap-1.5"><Mail size={14} className="text-[#e8c66a]" /> 100% online — no shop visit</b>
-              <p className="text-white/65 mt-1">Doorstep delivery & pickup across Indore<br />{STORE.hoursShort} · <a href={STORE.phoneHref} className="text-white underline">{STORE.phoneShort}</a> · <span className="break-all">{STORE.email}</span></p>
-            </div>
-          </div>
-        </div>
-        <form onSubmit={submit} className="bg-white p-4 sm:p-5 space-y-3">
-          <div className="grid sm:grid-cols-2 gap-3 [&>*]:min-w-0">
-            <label className="label-pro">Full name *<input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Priya Sharma" className="input-pro mt-1.5 normal-case tracking-normal" /></label>
-            <label className="label-pro">Mobile *<input required pattern="[0-9]{10}" maxLength={10} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="10-digit mobile" className="input-pro mt-1.5" /></label>
-          </div>
-          <label className="label-pro">Category<select value={f.cat} onChange={(e) => setF({ ...f, cat: e.target.value })} className="input-pro mt-1.5 font-normal">{['Women Chaniya Choli', 'Choli / Blouse', 'Ghaghra / Lehenga', 'Jewellery / Accessories', 'Dupatta / Dandiya'].map((o) => <option key={o}>{o}</option>)}</select></label>
-          <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3 [&>*]:min-w-0">
-            <label className="label-pro">Event date *<input type="date" required value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} className="input-pro mt-1.5" /></label>
-            <label className="label-pro">Plan<div className="input-pro mt-1.5 font-semibold bg-[#faf7ef]">1 day (fixed)</div></label>
-          </div>
-          <label className="label-pro block">Notes<input value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="Preferred colour, size and product ID e.g. RL-01" className="input-pro mt-1.5" /></label>
-          <label aria-hidden className="hp-trap">Website<input value={f.web} onChange={(e) => setF({ ...f, web: e.target.value })} tabIndex={-1} autoComplete="off" className="input-pro mt-1.5" /></label>
-          <button disabled={saving} className="btn-primary w-full !py-3 disabled:opacity-60"><Mail size={15} /> {saving ? 'Reserving…' : done ? 'Reserved — send the email' : 'Confirm on Email'} </button>
-          {err && <p className="text-[12.5px] text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-center">{err}</p>}
-          <p className="text-[11px] text-[#8a7584] text-center flex items-center justify-center gap-1.5"><Sparkles size={12} /> No advance needed to enquire · Reply within 30 minutes, 10 AM–9 PM</p>
-        </form>
-      </div>
-    </section>
-  );
-}
-
 export function MobileBar() {
   return (
     <div className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-black/10 px-4 pt-2.5" style={{ paddingBottom: 'calc(0.65rem + env(safe-area-inset-bottom))' }}>
@@ -237,7 +163,7 @@ export function Footer() {
             💬 <a href={waLink('Hi TheKissa.co!')} target="_blank" className="text-white font-semibold">WhatsApp us</a><br />✉️ <span className="break-all">{STORE.email}</span></p>
         </div>
         <div><h4 className="text-white font-semibold mb-4 text-[13px] tracking-wide">SHOP</h4><div className="space-y-2.5 flex flex-col text-[13.5px]">{[['Women Chaniya Choli', '#shop'], ['Ghaghra & Lehenga', '#shop'], ['Premium Bridal', '#shop'], ['Jewellery', '#shop']].map(([l, h]) => <a key={l as string} href={h as string} className="hover:text-white w-fit">{l as string}</a>)}</div></div>
-        <div><h4 className="text-white font-semibold mb-4 text-[13px] tracking-wide">SUPPORT</h4><div className="space-y-2.5 flex flex-col text-[13.5px]">{[['How it works', '#process'], ['FAQs', '#faq'], ['Track delivery', '/track'], ['Book now', '#book'], ['About us', '/about'], ['Contact us', '/contact']].map(([l, h]) => <a key={l as string} href={h as string} className="hover:text-white w-fit">{l as string}</a>)}</div></div>
+        <div><h4 className="text-white font-semibold mb-4 text-[13px] tracking-wide">SUPPORT</h4><div className="space-y-2.5 flex flex-col text-[13.5px]">{[['How it works', '#process'], ['FAQs', '#faq'], ['Track delivery', '/track'], ['Book now', '#shop'], ['About us', '/about'], ['Contact us', '/contact']].map(([l, h]) => <a key={l as string} href={h as string} className="hover:text-white w-fit">{l as string}</a>)}</div></div>
         <div><h4 className="text-white font-semibold mb-4 text-[13px] tracking-wide flex items-center gap-1.5"><MapPin size={14} /> DELIVERY</h4><p className="text-[13px] leading-relaxed">{foot.delivery}<br />Doorstep delivery & pickup<br /><br />{STORE.hours}</p>
           <a href="/track" className="inline-flex items-center gap-1.5 mt-4 bg-white text-[#641629] font-semibold rounded-full px-4 py-2.5 text-xs hover:bg-[#e8c66a] hover:text-[#3d0a1a] transition">Track your delivery →</a>
         </div>

@@ -2,7 +2,7 @@ import AiAssistant from '../components/AiAssistant';
 import Hero from '../components/Hero';
 import Navbar from '../components/Navbar';
 import { CartDrawer, QuickView, Toasts, TrackFloat } from '../components/Overlays';
-import { Booking, Faq, FeatureBanner, Footer, Looks, MobileBar, Process } from '../components/Sections';
+import { Faq, FeatureBanner, Footer, Looks, MobileBar, Process } from '../components/Sections';
 import Shop from '../components/Shop';
 
 export default function Home() {
@@ -16,7 +16,6 @@ export default function Home() {
       <Process />
       <Looks />
       <Faq />
-      <Booking />
       <Footer />
       <div className="h-16 sm:hidden" />
       <MobileBar />
