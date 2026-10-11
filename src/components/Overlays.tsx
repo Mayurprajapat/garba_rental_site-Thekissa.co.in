@@ -269,12 +269,14 @@ export function CartDrawer() {
 
   // Cloud se latest status lao (admin ne cancel/confirm kiya ho to customer ko dikhe).
   // Drawer khulne par + My Orders tab par ek baar silent sync — same-device local merge ke upar.
+  // Naya status PURANE ko replace karta hai (confirm ke baad cancel → sirf cancel dikhega).
   const syncing = useRef(false);
   const [syncingUi, setSyncingUi] = useState(false);
-  const syncCloudStatuses = async (silent = true) => {
-    if (syncing.current) return;
+  const syncCloudStatuses = async (silent = true): Promise<number> => {
+    if (syncing.current) return 0;
     const mine = getMyOrders();
-    if (!mine.length) return;
+    if (!mine.length) return 0;
+    const before = new Map(mine.map((o) => [o.id, `${o.status || ''}|${o.note || ''}|${o.readyDate || ''}|${(o as MyOrder).payStatus || ''}`]));
     syncing.current = true;
     if (!silent) setSyncingUi(true);
     try {
@@ -282,6 +284,21 @@ export function CartDrawer() {
     } catch { /* offline ho to local hi sahi */ }
     syncing.current = false;
     if (!silent) setSyncingUi(false);
+    let changed = 0;
+    try {
+      for (const o of getMyOrders()) {
+        const prev = before.get(o.id);
+        const now = `${o.status || ''}|${o.note || ''}|${o.readyDate || ''}|${(o as MyOrder).payStatus || ''}`;
+        if (prev !== undefined && prev !== now) changed++;
+      }
+    } catch { /* ignore */ }
+    return changed;
+  };
+  const refreshStatuses = async () => {
+    const n = await syncCloudStatuses(false);
+    if (n > 0) setLookupMsg(`✓ ${n} order${n === 1 ? '' : 's'} updated — latest status neeche dikh raha hai.`);
+    else setLookupMsg('✓ Already up to date — store se koi naya update nahi hai.');
+    setTab('orders');
   };
   useEffect(() => {
     if (open) {
@@ -290,7 +307,7 @@ export function CartDrawer() {
       } catch { /* ignore */ }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open ]);
+  }, [open, tab]);
 
   const rows = useMemo(() => cart.map((c) => ({ ...c, p: products.find((x) => x.id === c.id)! })).filter((r) => r.p), [cart, products]);
   const subtotal = rows.reduce((a, r) => a + rowPrice(r) * r.qty, 0);
@@ -636,7 +653,7 @@ export function CartDrawer() {
                     </div>
                     {lookupMsg && <p className="text-[12px] mt-2 bg-[#faf7ef] border border-[#c9a44a]/40 rounded-xl px-3 py-2">{lookupMsg}</p>}
                     {orders.length > 0 && (
-                      <button onClick={() => syncCloudStatuses(false)} disabled={syncingUi} className="mt-2 w-full text-[12.5px] font-bold border border-black/15 rounded-xl px-3 py-2 hover:bg-black hover:text-white transition disabled:opacity-50">
+                      <button onClick={refreshStatuses} disabled={syncingUi} className="mt-2 w-full text-[12.5px] font-bold border border-black/15 rounded-xl px-3 py-2 hover:bg-black hover:text-white transition disabled:opacity-50">
                         {syncingUi ? 'Checking latest status…' : '↻ Refresh order status'}
                       </button>
                     )}
