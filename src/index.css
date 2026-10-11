@@ -32,6 +32,8 @@ body { overflow-x: clip; }
 img, video { max-width: 100%; }
 /* Leaflet map site ke modal/drawer ke upar na aaye */
 .leaflet-container { max-width: 100%; }
+/* Agent marker GPS pings ke beech glide kare (teleport/flicker nahi) */
+.leaflet-marker-icon.agent-glide { transition: transform 1.2s linear; }
 .leaflet-pane { z-index: 1 !important; }
 .leaflet-top, .leaflet-bottom { z-index: 5 !important; }
 
