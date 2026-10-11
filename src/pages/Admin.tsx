@@ -176,14 +176,14 @@ function ReplyCell({ b, reload, notify }: { b: BookingRow; reload: () => void; n
   const [msg, setMsgText] = useState(() => buildNotifyMsg('update', b));
   useEffect(() => { setMsgText(buildNotifyMsg(kind, b)); }, [kind, b]);
   return (
-    <div className="min-w-[168px] max-w-[200px] space-y-1">
-      <div className="flex gap-1">
-        <button onClick={() => setDecision('confirmed')} className={`flex-1 text-[10.5px] font-bold rounded-full px-1.5 py-0.5 border ${b.status === 'confirmed' ? 'bg-emerald-600 text-white border-emerald-600' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white'} transition`}>✓ Will give</button>
-        <button onClick={() => setDecision('cancelled')} className={`flex-1 text-[10.5px] font-bold rounded-full px-1.5 py-0.5 border ${b.status === 'cancelled' ? 'bg-rose-600 text-white border-rose-600' : 'border-rose-300 text-rose-700 hover:bg-rose-600 hover:text-white'} transition`}>✕ Can't give</button>
+    <div className="min-w-[172px] max-w-[204px] space-y-1.5">
+      <div className="grid grid-cols-2 gap-1">
+        <button onClick={() => setDecision('confirmed')} className={`text-[10.5px] font-bold rounded-lg px-1 py-1 border transition ${b.status === 'confirmed' ? 'bg-emerald-600 text-white border-emerald-600' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white'}`}>✓ Will give</button>
+        <button onClick={() => setDecision('cancelled')} className={`text-[10.5px] font-bold rounded-lg px-1 py-1 border transition ${b.status === 'cancelled' ? 'bg-rose-600 text-white border-rose-600' : 'border-rose-300 text-rose-700 hover:bg-rose-600 hover:text-white'}`}>✕ Can't give</button>
       </div>
-      <div className="flex flex-wrap gap-1">
+      <div className="grid grid-cols-1 gap-1">
         {['Available — will deliver', 'Out of stock', 'Not available on this date'].map((r) => (
-          <button key={r} onClick={() => saveNote(r)} title="Send this reason to the customer" className="text-[10px] font-semibold bg-white border rounded-full px-1.5 py-px hover:border-black">{r}</button>
+          <button key={r} onClick={() => saveNote(r)} title="Send this reason to the customer" className="text-[10px] font-semibold bg-white border rounded-lg px-2 py-1 hover:border-black text-left transition">{r}</button>
         ))}
       </div>
       <input value={note} onChange={(e) => setNote(e.target.value)} onBlur={(e) => { if (e.target.value !== String(b.admin_note || '')) saveNote(e.target.value); }}
@@ -829,7 +829,8 @@ export default function Admin() {
                           <td className="admin-td"><span className={`status-pill ${statusStyle[b.status] || ''}`}>{b.status}</span></td>
                           <td className="admin-td"><ReplyCell b={b} reload={loadBookings} notify={(m) => { setMsg(m); setTimeout(() => setMsg(''), 3000); }} /></td>
                           <td className="admin-td">
-                            <div className="flex justify-end gap-1 flex-wrap">
+                            <div className="min-w-[218px]">
+                              <div className="grid grid-cols-3 gap-1">
                               {STATUSES.map((s) => (
                                 <button key={s} onClick={async () => {
                                   if (useCloud && supabase) {
@@ -844,8 +845,9 @@ export default function Admin() {
                                     loadBookings();
                                   }
                                   else { updateLocalBooking(b.id, { status: s }); loadBookings(); }
-                                }} className={`text-[10.5px] font-bold rounded-full px-2 py-1 border capitalize ${b.status === s ? 'bg-[#1a0f1e] text-white' : 'hover:border-black'}`}>{s}</button>
+                                }} className={`text-[10.5px] font-bold rounded-lg px-1 py-1.5 border capitalize transition ${b.status === s ? 'bg-gradient-to-b from-[#2b141b] to-[#1c0d12] text-[#f7ead0] border-transparent ring-1 ring-[#c9a44a]/50' : 'bg-white hover:border-[#8a6d1f]/60'}`}>{s}</button>
                               ))}
+                              </div>
                               <button onClick={async () => {
                                 if (!confirm(`Delete ${b.order_id || 'this booking'} (${b.name || 'customer'}) permanently? This cannot be undone.`)) return;
                                 if (useCloud && supabase) {
@@ -861,7 +863,7 @@ export default function Admin() {
                                   setMsg('Booking deleted permanently.');
                                   setTimeout(() => setMsg(''), 3000);
                                 } else { deleteLocalBooking(b.id); loadBookings(); }
-                              }} title="Delete this booking permanently" className="w-7 h-7 grid place-items-center rounded-full border border-rose-200 text-rose-700 hover:bg-rose-600 hover:text-white hover:border-rose-600 transition"><Trash2 size={12} /></button>
+                              }} title="Delete this booking permanently" className="mt-1 w-full flex items-center justify-center gap-1 rounded-lg border border-rose-200 text-rose-700 text-[10.5px] font-bold px-2 py-1.5 hover:bg-rose-600 hover:text-white hover:border-rose-600 transition"><Trash2 size={12} /> Delete booking</button>
                             </div>
                           </td>
                         </tr>
