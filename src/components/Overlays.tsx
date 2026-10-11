@@ -35,10 +35,11 @@ export function QuickView() {
   const [photoIdx, setPhotoIdx] = useState(0);
   const [spin, setSpin] = useState(false);
   const [qty, setQty] = useState(1);
+  const [size, setSize] = useState('');
   // Date availability checker (additive — Add to list flow same rehta hai)
   const [availDate, setAvailDate] = useState('');
   const [avail, setAvail] = useState<{ checking: boolean; qty: number } | null>(null);
-  useEffect(() => { setPicked([]); setPhotoIdx(0); setSpin(false); setQty(1); setAvailDate(''); setAvail(null); }, [id]);
+  useEffect(() => { setPicked([]); setPhotoIdx(0); setSpin(false); setQty(1); setSize(''); setAvailDate(''); setAvail(null); }, [id]);
   // Modal khula ho to background page lock — saara scroll card ke andar
   useEffect(() => {
     if (!p) return;
@@ -53,6 +54,8 @@ export function QuickView() {
   const lookSubtitle = completeLook?.subtitle?.trim() || 'The complete look is right here — nothing to search for.';
   const lookHint = completeLook?.hint?.trim() || 'Tick = joins the dress · Only this = rent the item alone, without the dress.';
   const look = useMemo(() => (p ? lookFor(p) : []), [p, siteV]);
+  const sizes = useMemo(() => (p?.sizes?.length ? p.sizes : ['Free size']), [p]);
+  const selSize = sizes.includes(size) ? size : sizes[0];
   const photos = useMemo(() => (p ? photosFor(p) : []), [p]);
   const frames = useMemo(() => (p ? spinFramesFor(p) : []), [p]);
   const canSpin = frames.length > 1;
@@ -63,7 +66,7 @@ export function QuickView() {
     setPicked((prev) => (prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name]));
   const addDress = () => {
     if (!p || soldOut) return;
-    addToCart(p.id, 'Free size', '1day', picked.length ? picked : undefined, undefined, qty);
+    addToCart(p.id, selSize, '1day', picked.length ? picked : undefined, undefined, qty);
     setQuickView(null);
   };
   const checkAvail = async (d: string) => {
@@ -170,6 +173,18 @@ export function QuickView() {
                 <p className="label-pro">Rental plan</p>
                 <div className="mt-2 border border-[#641629] bg-[#faf7ef] rounded-2xl p-3"><b className="text-sm">1-day · ₹{p.rent1.toLocaleString('en-IN')}</b><p className="text-[11px] text-[#6f5b6a] mt-0.5">Single event + returns · same price for all days</p></div>
               </div>
+              <div className="mt-3">
+                <p className="label-pro">Select size</p>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {sizes.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSize(s)}
+                      className={`min-w-11 px-3.5 py-2 rounded-xl text-[13px] font-bold border transition ${s === selSize ? 'bg-[#1a0f1e] text-white border-[#1a0f1e] shadow-[0_8px_18px_-10px_rgba(26,15,30,.6)]' : 'bg-white border-black/15 hover:border-black'}`}
+                    >{s}</button>
+                  ))}
+                </div>
+              </div>
               <div className="mt-3 rounded-2xl border border-[#c9a44a]/50 bg-[#fffdf9] p-3.5">
                 <p className="label-pro">Check date availability</p>
                 <input type="date" value={availDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => checkAvail(e.target.value)} className="input-pro !py-2 text-[13px] mt-2" />
@@ -198,7 +213,7 @@ export function QuickView() {
                 <button onClick={() => toggleWish(p.id)} className="btn-outline-dark !py-3 !text-[13px]"><Heart size={15} className={wishlist.includes(p.id) ? 'fill-[#641629] text-[#641629]' : ''} /> Wishlist</button>
               </div>
               {soldOut && <p className="text-[12px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 mt-2 text-center">This outfit is currently out of stock. Please check back soon or ask on WhatsApp.</p>}
-              <a href={waLink(`Hi TheKissa.co! Is ${p.name} (${p.id}), free size, 1-day available?`)} target="_blank" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 border border-[#641629]/15 rounded-full py-3 text-[13px] font-semibold hover:border-[#641629] transition"><MessageCircle size={15} /> Ask on WhatsApp</a>
+              <a href={waLink(`Hi TheKissa.co! Is ${p.name} (${p.id}), size ${selSize}, 1-day available?`)} target="_blank" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 border border-[#641629]/15 rounded-full py-3 text-[13px] font-semibold hover:border-[#641629] transition"><MessageCircle size={15} /> Ask on WhatsApp</a>
               <ProductReviews productId={p.id} productName={p.name} />
               <div className="grid grid-cols-3 gap-2 mt-5 text-[11px] font-medium text-[#6f5b6a] border-t border-[#641629]/8 pt-4">
                 <span className="flex items-center gap-1.5"><ShieldCheck size={13} className="text-emerald-600" /> Sanitised</span>
@@ -662,7 +677,7 @@ export function CartDrawer() {
   };
 
   const rowLabel = (r: { plan: '1day'; size: string; qty: number; addons?: string[] }) => {
-    const base = `1-day · Free size x${r.qty}`;
+    const base = `1-day · ${r.size} x${r.qty}`;
     return r.addons?.length ? `${base} + ${r.addons.join(', ')}` : base;
   };
 
@@ -1067,7 +1082,7 @@ export function CartDrawer() {
                         ) : (
                           <>
                             <b className="text-[13px] leading-tight block">{r.p.name}</b>
-                            <p className="text-[11px] text-black/55">Free size • 1-day • x{r.qty}</p>
+                            <p className="text-[11px] text-black/55">Size {r.size} • 1-day • x{r.qty}</p>
                           </>
                         )}
                         {!!r.addons?.length && <p className="text-[11px] text-emerald-700 font-medium">+ {r.addons.join(', ')}</p>}
