@@ -59,8 +59,12 @@ function Dispatch({ bookings }: { bookings: B[] }) {
   const pretty = (() => { try { return new Date(day + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return day; } })();
 
   const text = `Dispatch list — ${pretty} (${list.length} deliveries)\n` + list.map((b, i) => {
-    const bal = Number(b.total || b.subtotal || 0) - Number(b.token_amount || 0);
-    return `${i + 1}. ${b.name} — ${b.phone}${b.address ? ` — ${b.address}` : ''} — ${itemsShort(b)} — Total ${inr(b.total || b.subtotal)}${bal > 0 ? `, Balance ${inr(bal)}` : ', Paid full'}${b.deposit ? `, Deposit ${inr(b.deposit)}` : ''}`;
+    // Naye full orders me token me 30% extra bhi hai; purane full me sirf rent
+    const extraInToken = String(b.payment_mode) === 'upi-qr-full' ? Math.max(0, Number(b.token_amount || 0) - Number(b.total || b.subtotal || 0)) : 0;
+    const rentBal = String(b.payment_mode) === 'upi-qr-full' ? 0 : Math.max(0, Number(b.total || b.subtotal || 0) - Number(b.token_amount || 0));
+    const extraDue = Math.max(0, Number(b.deposit || 0) - extraInToken);
+    const due = rentBal + extraDue;
+    return `${i + 1}. ${b.name} — ${b.phone}${b.address ? ` — ${b.address}` : ''} — ${itemsShort(b)} — Total ${inr(b.total || b.subtotal)}${due > 0 ? `, Collect ${inr(due)}${rentBal > 0 ? ` (rent ${inr(rentBal)})` : ''}${extraDue > 0 ? ` (extra ${inr(extraDue)})` : ''}` : ', Paid full'}`;
   }).join('\n');
 
   return (
@@ -76,7 +80,10 @@ function Dispatch({ bookings }: { bookings: B[] }) {
         <>
           <div className="mt-3 space-y-2 max-h-[380px] overflow-y-auto">
             {list.map((b) => {
-              const bal = Number(b.total || b.subtotal || 0) - Number(b.token_amount || 0);
+              const extraInToken = String(b.payment_mode) === 'upi-qr-full' ? Math.max(0, Number(b.token_amount || 0) - Number(b.total || b.subtotal || 0)) : 0;
+              const rentBal = String(b.payment_mode) === 'upi-qr-full' ? 0 : Math.max(0, Number(b.total || b.subtotal || 0) - Number(b.token_amount || 0));
+              const extraDue = Math.max(0, Number(b.deposit || 0) - extraInToken);
+              const due = rentBal + extraDue;
               return (
                 <div key={b.id} className="border border-[#1a0f1e]/8 rounded-xl p-3 text-[13px]">
                   <div className="flex items-center gap-2">
@@ -87,7 +94,7 @@ function Dispatch({ bookings }: { bookings: B[] }) {
                   <p className="text-[#3d2b36] mt-0.5">{itemsShort(b)}</p>
                   {b.address && <p className="text-[#3d2b36] mt-0.5">📍 {String(b.address)}</p>}
                   <p className="text-[12px] text-[#8a7584] mt-0.5">
-                    {bal > 0 ? `Balance ${inr(bal)} to collect` : 'Paid full'}{b.deposit ? ` · Deposit ${inr(b.deposit)} (refundable)` : ''}
+                    {due > 0 ? `Collect ${inr(due)}${rentBal > 0 ? ` (rent ${inr(rentBal)})` : ''}${extraDue > 0 ? ` (extra ${inr(extraDue)})` : ''}` : 'Paid full — extra already received'}
                   </p>
                 </div>
               );

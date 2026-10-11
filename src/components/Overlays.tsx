@@ -478,8 +478,11 @@ export function CartDrawer() {
   const disc = promo.trim() ? promoDiscount(subtotal, promo) : 0;
   const total = subtotal - disc;
   const half = halfAdvance(total);
-  const payAmount = payChoice === 'full' ? total : half;
-  const balance = total - payAmount;
+  // Full = rent + 30% extra ek saath (delivery par kuch nahi, extra baad me wapas).
+  // Half = 50% rent now, baaki rent + 30% extra delivery par.
+  const payAmount = payChoice === 'full' ? total + deposit : half;
+  const rentBalance = payChoice === 'full' ? 0 : total - half;
+  const extraDue = payChoice === 'full' ? 0 : deposit;
 
   // Dusre phone / cache-clear ke baad order wapas lao (same mobile number ya Order ID se)
   const runLookupByPhone = async () => {
@@ -578,8 +581,8 @@ export function CartDrawer() {
     proof,
   });
 
-  const buildCustomerMsg = (o: { id: string; total: number; deposit: number }) =>
-    `Your order has been placed successfully!\n\nOrder ID: ${o.id}\nName: ${name}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\nRefundable extra 30%: ${formatINR(o.deposit)} — you will get this back when you return the outfit.\n\nThank you for renting with TheKissa.co! Delivery updates will be shared with you on WhatsApp/SMS.`;
+  const buildCustomerMsg = (o: { id: string; total: number; deposit: number; token: number; mode: string }) =>
+    `Your order has been placed successfully!\n\nOrder ID: ${o.id}\nName: ${name}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\nPaid now: ${formatINR(o.token)}${o.mode === 'upi-qr-full' ? ' (rent + 30% extra — nothing due on delivery)' : ''}\nRefundable extra 30%: ${formatINR(o.deposit)} — you will get this back when you return the outfit.\n\nThank you for renting with TheKissa.co! Delivery updates will be shared with you on WhatsApp/SMS.`;
 
   const orderLines = () => rows.map((r, i) => r.single
     ? `${i + 1}. ${r.single.name} (accessory only — ${r.p.id} look) x${r.qty} = ${formatINR(r.single.price * r.qty)}`
@@ -589,13 +592,13 @@ export function CartDrawer() {
   // Earning (rent) vs refundable deposit vs total collection — teeno alag line me,
   // taaki store ko ek nazar me samajh aaye kitna rakhna hai, kitna wapas dena hai.
   const buildStoreMsg = (o: { id: string; mode: string; token: number; total: number; deposit: number; lines: string[]; paymentId: string }) =>
-    `New order ${o.id} — TheKissa.co\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\n\nRent (your earning): ${formatINR(o.total)}\n${o.mode === 'upi-qr-full' ? `Payment: Full ${formatINR(o.token)} received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments` : o.mode === 'upi-qr-half' ? `Payment: Half ${formatINR(o.token)} received via QR (UTR ${o.paymentId}), balance ${formatINR(o.total - o.token)} on delivery — VERIFY in Reports → Payments` : `Payment: Token ${formatINR(o.token)} received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments`}\nRefundable extra 30%: ${formatINR(o.deposit)} — collect on delivery, return on outfit return\nTotal collection: ${formatINR(o.total + o.deposit)} (${formatINR(o.token)} received + ${formatINR(o.total - o.token + o.deposit)} on delivery)`;
+    `New order ${o.id} — TheKissa.co\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\n\nRent (your earning): ${formatINR(o.total)}\n${o.mode === 'upi-qr-full' ? `Payment: Full ${formatINR(o.token)} (rent + 30% extra) received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments` : o.mode === 'upi-qr-half' ? `Payment: Half ${formatINR(o.token)} received via QR (UTR ${o.paymentId}), balance ${formatINR(o.total - o.token)} + 30% extra ${formatINR(o.deposit)} on delivery — VERIFY in Reports → Payments` : `Payment: Token ${formatINR(o.token)} received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments`}\nRefundable extra 30%: ${formatINR(o.deposit)}${o.mode === 'upi-qr-full' ? ' (already received — return on outfit return)' : ' — collect on delivery, return on outfit return'}\nTotal collection: ${formatINR(o.total + o.deposit)} (${formatINR(o.token)} received + ${formatINR(Math.max(0, o.total - o.token + (o.mode === 'upi-qr-full' ? 0 : o.deposit)))} on delivery)`;
 
   const goQr = () => {
     const v = validateDetails();
     if (v) { setErr(v); return; }
     setErr('');
-    const amt = payChoice === 'full' ? total : half;
+    const amt = payChoice === 'full' ? total + deposit : half;
     if (amt < 1) {
       setErr('Amount is below ₹1 — please contact store on WhatsApp.');
       return;
@@ -632,7 +635,7 @@ export function CartDrawer() {
       if (await todayOrderCount(phone.trim()) >= 5) { setErr('You already have 5 orders today from this number. For more, please contact the store on WhatsApp.'); return; }
     } catch { /* guard fail ho to order mat roko */ }
     setPaying(true);
-    const amt = payChoice === 'full' ? total : half;
+    const amt = payChoice === 'full' ? total + deposit : half;
     const mode = payChoice === 'full' ? 'upi-qr-full' : 'upi-qr-half';
     try {
       let orderId = makeOrderId();
@@ -731,7 +734,7 @@ export function CartDrawer() {
                     <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Order ID</span><b className="text-right break-words min-w-0">{order.id}</b></div>
                     <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Name</span><b className="text-right break-words min-w-0">{name}</b></div>
                     {address.trim() && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Delivery</span><b className="text-[12.5px] text-right break-words min-w-0">{address.trim()}</b></div>}
-                    <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Payment</span><b className="text-right break-words min-w-0">{order.mode === 'upi-qr-full' ? `Full claimed via QR ${formatINR(order.token)} · verification pending` : order.mode === 'upi-qr-half' ? `Half claimed via QR ${formatINR(order.token)} · Balance ${formatINR(order.total - order.token)} on delivery · verification pending` : order.mode === 'upi-qr' ? `Token claimed via QR ${formatINR(order.token)} · verification pending` : 'Pay on delivery'}</b></div>
+                    <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Payment</span><b className="text-right break-words min-w-0">{order.mode === 'upi-qr-full' ? `Full claimed via QR ${formatINR(order.token)} (rent + 30% extra) · verification pending` : order.mode === 'upi-qr-half' ? `Half claimed via QR ${formatINR(order.token)} · Balance ${formatINR(order.total - order.token)} + 30% extra ${formatINR(order.deposit)} on delivery · verification pending` : order.mode === 'upi-qr' ? `Token claimed via QR ${formatINR(order.token)} · verification pending` : 'Pay on delivery'}</b></div>
                     {order.paymentId && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Txn ID</span><b className="text-[12px] text-right break-all">{order.paymentId}</b></div>}
                     <div className="border-t border-black/10 my-2 pt-2 flex justify-between"><span>Total rent</span><b>{formatINR(order.total)}</b></div>
                     <div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Refundable extra 30% (you get back on return)</span><b>{formatINR(order.deposit)}</b></div>
@@ -781,11 +784,11 @@ export function CartDrawer() {
                 <div className="grid gap-2">
                   <button type="button" onClick={() => setPayChoice('full')} className={`text-left border rounded-2xl p-3.5 text-sm transition ${payChoice === 'full' ? 'border-[#641629] bg-[#faf7ef] ring-2 ring-[#641629]/20' : 'border-black/10 bg-white hover:border-black/30'}`}>
                     <span className="flex items-center gap-2 font-bold"><span className={`w-4 h-4 rounded-full border-2 grid place-items-center ${payChoice === 'full' ? 'border-[#641629]' : 'border-black/25'}`}>{payChoice === 'full' && <span className="w-2 h-2 rounded-full bg-[#641629]" />}</span> Full payment <span className="ml-auto text-[10px] font-bold bg-emerald-600 text-white rounded-full px-2 py-0.5">RECOMMENDED</span></span>
-                    <span className="block text-[12.5px] mt-1">Pay now <b>{formatINR(total)}</b> full rent · Balance <b>₹0</b> on delivery</span>
+                    <span className="block text-[12.5px] mt-1">Pay now <b>{formatINR(total + deposit)}</b> (rent + 30% extra) · Nothing due on delivery · <b>{formatINR(deposit)}</b> back on return</span>
                   </button>
                   <button type="button" onClick={() => setPayChoice('half')} className={`text-left border rounded-2xl p-3.5 text-sm transition ${payChoice === 'half' ? 'border-[#641629] bg-[#faf7ef] ring-2 ring-[#641629]/20' : 'border-black/10 bg-white hover:border-black/30'}`}>
                     <span className="flex items-center gap-2 font-bold"><span className={`w-4 h-4 rounded-full border-2 grid place-items-center ${payChoice === 'half' ? 'border-[#641629]' : 'border-black/25'}`}>{payChoice === 'half' && <span className="w-2 h-2 rounded-full bg-[#641629]" />}</span> Half payment <span className="ml-auto text-[10px] font-bold bg-black text-white rounded-full px-2 py-0.5">50% NOW</span></span>
-                    <span className="block text-[12.5px] mt-1">Pay now <b>{formatINR(half)}</b> (50%) · Balance <b>{formatINR(total - half)}</b> on delivery</span>
+                    <span className="block text-[12.5px] mt-1">Pay now <b>{formatINR(half)}</b> (50%) · Balance <b>{formatINR(total - half)}</b> + 30% extra <b>{formatINR(deposit)}</b> on delivery</span>
                   </button>
                 </div>
                 {err && <p className="text-[12.5px] text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{err}</p>}
@@ -808,8 +811,8 @@ export function CartDrawer() {
                       <p className="text-[11px] font-bold tracking-[0.14em]">SCAN & PAY {payChoice === 'full' ? 'FULL AMOUNT' : 'HALF AMOUNT'}</p>
                       <b className="font-display text-[32px] text-[#641629] leading-none mt-1 block">{formatINR(payAmount)}</b>
                       {payChoice === 'full'
-                        ? <p className="text-[11.5px] text-emerald-700 font-semibold mt-1">Full rent — no balance due on delivery</p>
-                        : <p className="text-[11.5px] text-black/55 mt-1">Half payment (50%) — balance {formatINR(balance)} due on delivery</p>}
+                        ? <p className="text-[11.5px] text-emerald-700 font-semibold mt-1">Full — rent + 30% extra paid, nothing due on delivery</p>
+                        : <p className="text-[11.5px] text-black/55 mt-1">Half payment (50%) — balance {formatINR(rentBalance)} + 30% extra {formatINR(extraDue)} due on delivery</p>}
                       <div className="mx-auto mt-3 w-fit bg-white p-3 rounded-2xl border border-black/10">
                         <QRCodeSVG value={upiLink} size={200} />
                       </div>
@@ -886,7 +889,7 @@ export function CartDrawer() {
                         ))}
                       </div>
                       <div className="border-t border-black/10 mt-2 pt-2 flex justify-between text-[13px]"><span>Total rent</span><b>{formatINR(o.total)}</b></div>
-                      <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} on delivery${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : 'Pay on delivery'} · Refundable extra 30% {formatINR(o.deposit)} — you get it back on return</p>
+                      <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)} (rent + 30% extra) claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} + 30% extra ${formatINR(o.deposit)} on delivery${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : 'Pay on delivery'} · Refundable extra 30% {formatINR(o.deposit)} — you get it back on return</p>
                       <span className={`inline-block mt-1 text-[10.5px] font-bold rounded-full px-2 py-0.5 border ${o.status === 'cancelled' ? 'text-white bg-rose-600 border-rose-600' : o.status === 'delivered' || o.status === 'returned' ? 'text-violet-800 bg-violet-50 border-violet-200' : o.status === 'confirmed' ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : 'text-amber-800 bg-amber-50 border-amber-200'}`}>
                         {o.status === 'cancelled' ? '✕ Cancelled' : o.status === 'delivered' ? '✓ Delivered' : o.status === 'returned' ? '✓ Returned' : o.status === 'confirmed' ? '✓ Confirmed — will be delivered' : '⏳ Payment sent — awaiting store confirmation'}
                       </span>
@@ -961,7 +964,7 @@ export function CartDrawer() {
                     <div className="flex justify-between"><span>Subtotal</span><b>{formatINR(subtotal)}</b></div>
                     <div className="flex justify-between text-[17px]"><span>Total rent</span><b>{formatINR(total)}</b></div>
                     <div className="flex justify-between text-emerald-700"><span>Refundable extra 30% (you get back)</span><b>{formatINR(deposit)}</b></div>
-                    <p className="text-[11px] text-black/50">You will get {formatINR(deposit)} back via UPI/cash within 24h of return. It is paid separately on delivery, over and above the rent.</p>
+                    <p className="text-[11px] text-black/50">{payChoice === 'full' ? `Nothing due on delivery — you will get ${formatINR(deposit)} back via UPI/cash within 24h of return.` : `Balance rent + 30% extra due on delivery. You will get ${formatINR(deposit)} back via UPI/cash within 24h of return.`}</p>
                   </div>
                   <button disabled={rows.length === 0} onClick={() => setStep('details')} className="w-full bg-[#221114] text-white font-semibold rounded-full py-3.5 text-sm disabled:opacity-40 flex items-center justify-center gap-2"><ShoppingBasket size={15} /> Proceed to Checkout →</button>
                   <button onClick={clear} className="w-full text-xs text-black/50 underline">Clear list</button>

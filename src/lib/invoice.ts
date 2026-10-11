@@ -136,8 +136,11 @@ export function downloadInvoicePDF(o: MyOrder, opts?: {
     y += bold ? 20 : 17;
   };
   row('Total rent', inr(o.total), true);
-  row('Paid now', inr(o.token));
-  row('Balance on delivery', inr(Math.max(0, o.total - o.token)));
+  row(o.mode === 'upi-qr-full' ? 'Paid now (rent + 30% extra)' : 'Paid now', inr(o.token));
+  // Full me token me extra bhi hai — rent balance kabhi negative nahi
+  const rentBal = o.mode === 'upi-qr-full' ? 0 : Math.max(0, o.total - o.token);
+  const extraDue = o.mode === 'upi-qr-full' ? 0 : o.deposit;
+  row('Balance on delivery', inr(rentBal + extraDue));
   row('Refundable extra 30% (30% of ' + inr(o.total) + ' rent)', inr(o.deposit), true, [22, 120, 70]);
   row('Total collection (rent + deposit)', inr(o.total + o.deposit), true);
   if (opts?.paymentId) {
