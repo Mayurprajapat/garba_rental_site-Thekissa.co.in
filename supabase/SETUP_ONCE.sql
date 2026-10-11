@@ -75,6 +75,7 @@ create table if not exists public.bookings (
   ready_date date,
   admin_note text default '',
   promo_code text default '',
+  payment_proof text default '',
   status text default 'new' check (status in ('new','confirmed','delivered','returned','cancelled')),
   created_at timestamptz default now()
 );
@@ -99,6 +100,7 @@ alter table public.bookings add column if not exists payment_status text default
 alter table public.bookings add column if not exists ready_date date;
 alter table public.bookings add column if not exists admin_note text default '';
 alter table public.bookings add column if not exists promo_code text default '';
+alter table public.bookings add column if not exists payment_proof text default '';
 alter table public.bookings add column if not exists status text default 'new';
 
 -- ============ 3. Deliveries table (live tracking) ============
@@ -220,6 +222,22 @@ create policy "admin upload images"
   on storage.objects for all to authenticated
   using (bucket_id = 'product-images')
   with check (bucket_id = 'product-images');
+
+-- ============ 6b. Payment screenshots bucket (compulsory UTR proof) ============
+-- Customer bina login ke upload karega, admin + customer dekh sakenge.
+insert into storage.buckets (id, name, public)
+values ('payment-proofs','payment-proofs', true)
+on conflict (id) do nothing;
+
+drop policy if exists "public read proofs" on storage.objects;
+create policy "public read proofs"
+  on storage.objects for select
+  using (bucket_id = 'payment-proofs');
+
+drop policy if exists "anon upload proofs" on storage.objects;
+create policy "anon upload proofs"
+  on storage.objects for insert to anon, authenticated
+  with check (bucket_id = 'payment-proofs');
 
 -- ============ 7. Seed: current 11 ladies products (sirf naye judenge, purane safe) ============
 insert into public.products (id, name, hindi, category, rent1, rent3, rent9, buy, deposit, rating, reviews, sizes, colors, img, badge, "desc", fabric, accessories, stock, active) values

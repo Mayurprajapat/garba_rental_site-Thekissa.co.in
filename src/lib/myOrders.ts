@@ -28,6 +28,8 @@ export interface MyOrder {
   note?: string;
   /** UPI payment verification: verified / rejected / unverified (admin panel se) */
   payStatus?: string;
+  /** Payment screenshot (compressed dataURL ya cloud URL) — order confirm ke liye compulsory */
+  proof?: string;
   /** Admin ne order kab tak ready hoga ye date di ho (YYYY-MM-DD) */
   readyDate?: string;
 }

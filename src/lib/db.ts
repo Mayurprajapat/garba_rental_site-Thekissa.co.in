@@ -28,6 +28,8 @@ export async function saveBooking(payload: {
   payment_status?: string;
   /** Checkout me laga promo code (uppercase, optional) */
   promo_code?: string | null;
+  /** Payment screenshot (cloud URL ya compressed dataURL) */
+  payment_proof?: string | null;
   /** Admin sets the date by which the order will be ready (YYYY-MM-DD) */
   ready_date?: string | null;
   /** Admin's message for the customer (Out of stock / Available etc.) */
@@ -62,6 +64,7 @@ export async function saveBooking(payload: {
       admin_note: payload.admin_note ?? null,
       address: payload.address ?? null,
       promo_code: payload.promo_code ?? null,
+      payment_proof: payload.payment_proof ?? null,
     });
   } catch { /* ignore */ }
 
@@ -88,12 +91,13 @@ export async function saveBooking(payload: {
     admin_note: payload.admin_note ?? null,
     address: payload.address ?? null,
     promo_code: payload.promo_code ?? null,
+    payment_proof: payload.payment_proof ?? null,
     status: 'new',
   };
   let { error } = await supabase.from('bookings').insert(row);
   if (error && isMissingColumnError(error.message)) {
     // Cloud me naye columns nahi hain (migration pending) — unke bina retry
-    const { ready_date: _r, admin_note: _n, address: _a, promo_code: _p, ...withoutNew } = row;
+    const { ready_date: _r, admin_note: _n, address: _a, promo_code: _p, payment_proof: _f, ...withoutNew } = row;
     ({ error } = await supabase.from('bookings').insert(withoutNew));
   }
   if (error && isMissingColumnError(error.message)) {
@@ -154,6 +158,7 @@ function bookingRowToMyOrder(r: any): MyOrder | null {
       mode: String(r.payment_mode || 'pay-on-delivery'),
       status: String(r.status || 'new'),
       payStatus: String(r.payment_status || 'unverified'),
+      proof: r.payment_proof ? String(r.payment_proof) : undefined,
       note: r.admin_note ? String(r.admin_note) : undefined,
       readyDate: r.ready_date ? String(r.ready_date) : undefined,
     };

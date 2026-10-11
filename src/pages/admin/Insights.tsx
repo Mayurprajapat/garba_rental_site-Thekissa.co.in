@@ -226,6 +226,16 @@ function Payments({ bookings, reload }: { bookings: B[]; reload: () => void }) {
                     <Copy size={11} /> {copiedId === b.id ? 'Copied ✓' : 'Copy UTR'}
                   </button>
                 )}
+              </div>
+              {b.payment_proof ? (
+                <a href={String(b.payment_proof)} target="_blank" title="Open full screenshot" className="flex items-center gap-2.5 mt-2 border border-black/10 bg-white rounded-xl p-2 hover:border-black transition w-fit">
+                  <img src={String(b.payment_proof)} alt="Payment screenshot" className="w-14 h-14 object-cover rounded-lg border" />
+                  <span className="text-[12px] font-bold underline pr-2">View screenshot →</span>
+                </a>
+              ) : (
+                <p className="text-[12px] text-amber-700 font-semibold mt-2">No screenshot attached to this order.</p>
+              )}
+              <div className="mt-2">
                 <a href={`https://wa.me/91${digits10(b.phone)}?text=${encodeURIComponent(`Hello ${b.name || 'Customer'}! TheKissa.co — for order ${b.order_id || ''} (${inr(b.token_amount)} via QR), please share your payment screenshot here. Thank you!`)}`} target="_blank"
                   title="Ask customer for payment screenshot on WhatsApp"
                   className="text-[11.5px] font-bold border border-emerald-300 text-emerald-700 rounded-full px-2.5 py-1 hover:bg-emerald-600 hover:text-white transition">

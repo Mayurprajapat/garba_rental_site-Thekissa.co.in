@@ -10,6 +10,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import { getSiteContent, useSiteVersion } from '../lib/siteContent';
 import { isValidVpa, merchantUpi, upiUrl } from '../lib/upi';
 import { OPEN_ORDERS_EVENT, clearMyOrdersFully, getMyOrders, saveMyOrder, subscribeMyOrders, type MyOrder } from '../lib/myOrders';
+import { dataUrlToBlob, fileToCompressedDataUrl } from '../lib/proof';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { promoDiscount } from '../store/useStore';
 import { getLocalBookings } from '../lib/localAdmin';
 import { useStore } from '../store/useStore';
@@ -191,6 +193,9 @@ export function CartDrawer() {
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [utr, setUtr] = useState('');
+  // Payment screenshot — UTR ke saath compulsory (compressed dataURL preview)
+  const [shot, setShot] = useState<string | null>(null);
+  const [shotBusy, setShotBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   // Honeypot bot-trap — humans kabhi nahi bharte (off-screen field)
   const [company, setCompany] = useState('');
@@ -209,7 +214,23 @@ export function CartDrawer() {
   const wasOpen = useRef(false);
   const resetAndClose = () => {
     setOpen(false);
-    setTimeout(() => { setStep('cart'); setOrder(null); setErr(''); setUtr(''); setPayChoice('full'); setPromo(''); setName(''); setPhone(''); setEmail(''); setAddress(''); setLookupMsg(''); }, 400);
+    setTimeout(() => { setStep('cart'); setOrder(null); setErr(''); setUtr(''); setShot(null); setPayChoice('full'); setPromo(''); setName(''); setPhone(''); setEmail(''); setAddress(''); setLookupMsg(''); }, 400);
+  };
+
+  // Screenshot pick → turant compress (8MB tak ki photo chalegi)
+  const onShot = async (f: File | undefined) => {
+    if (!f) return;
+    if (!f.type.startsWith('image/')) { setErr('Please attach an image file (JPG/PNG) of your payment.'); return; }
+    if (f.size > 8 * 1024 * 1024) { setErr('Screenshot is too large (max 8MB) — take a smaller photo.'); return; }
+    setErr('');
+    setShotBusy(true);
+    try {
+      const small = await fileToCompressedDataUrl(f);
+      if (!small) { setErr('Could not read that image — please try another screenshot.'); return; }
+      setShot(small);
+    } finally {
+      setShotBusy(false);
+    }
   };
   // Drawer khule aur list khaali ho par orders hon — seedha My Orders dikhao (user ko View order dhoondhna na pade)
   useEffect(() => {
@@ -393,8 +414,9 @@ export function CartDrawer() {
     return r.addons?.length ? `${base} + ${r.addons.join(', ')}` : base;
   };
 
-  // Website par order hamesha rahe — My Orders snapshot (confirm se pehle banao)
-  const snapOrder = (orderId: string, token: number, mode: string) => saveMyOrder({
+  // Website par order hamesha rahe — My Orders snapshot (confirm se pehle banao).
+  // status 'new' = payment bheja, admin confirmation baaki (customer ko confirmed tabhi dikhega jab admin confirm kare).
+  const snapOrder = (orderId: string, token: number, mode: string, proof?: string) => saveMyOrder({
     id: orderId,
     date: new Date().toISOString(),
     name: name.trim(),
@@ -410,6 +432,8 @@ export function CartDrawer() {
     deposit,
     token,
     mode,
+    status: 'new',
+    proof,
   });
 
   const buildCustomerMsg = (o: { id: string; total: number; deposit: number }) =>
@@ -453,7 +477,9 @@ export function CartDrawer() {
 
   const confirmQrPaid = async () => {
     if (paying) return;
-    if (!/^\d{12}$/.test(utr.trim()) && utr.trim() !== '') { setErr('The UTR is 12 digits — copy it from your UPI app after payment (or leave it empty).'); return; }
+    // Payment ke bina order confirm nahi — UTR + screenshot dono compulsory, admin hi confirm karega
+    if (!/^\d{12}$/.test(utr.trim())) { setErr('Please enter the 12-digit UTR from your UPI app after payment — it is required.'); return; }
+    if (!shot) { setErr('Please attach your payment screenshot — it is required to place the order.'); return; }
     setErr('');
     setPaying(true);
     const amt = payChoice === 'full' ? total : half;
@@ -466,6 +492,21 @@ export function CartDrawer() {
         while (taken.has(orderId) && guard++ < 5) orderId = makeOrderId();
       } catch { /* ignore */ }
       const ref = utr.trim();
+      // Screenshot: cloud ho to storage me upload (public URL), warna compressed copy local
+      let proof: string | null = shot;
+      try {
+        if (isSupabaseConfigured && supabase && shot) {
+          const blob = dataUrlToBlob(shot);
+          if (blob) {
+            const path = `proofs/${orderId}-${Date.now()}.jpg`;
+            const { error: upErr } = await supabase.storage.from('payment-proofs').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+            if (!upErr) {
+              const { data } = supabase.storage.from('payment-proofs').getPublicUrl(path);
+              if (data?.publicUrl) proof = data.publicUrl;
+            }
+          }
+        }
+      } catch { /* upload fail ho to compressed copy hi save hogi */ }
       await saveBooking({
         order_id: orderId,
         name: name.trim(),
@@ -486,11 +527,12 @@ export function CartDrawer() {
         payment_mode: mode,
         payment_id: ref,
         payment_status: 'unverified',
+        payment_proof: proof,
         promo_code: promo.trim() ? promo.trim().toUpperCase() : null,
       });
       setOrder({ id: orderId, paymentId: ref, mode, token: amt, total, deposit, lines: orderLines(), items: rows.map((r) => ({ name: r.single ? r.single.name : r.p.name, detail: r.single ? `${r.p.id} look · without dress` : rowLabel(r), qty: r.qty, price: rowPrice(r) * r.qty })) });
       setStep('done');
-      snapOrder(orderId, amt, mode);
+      snapOrder(orderId, amt, mode, proof || undefined);
       clear();
       // QR payment par bhi store ko WhatsApp notice (block ho to done-step buttons se resend)
       try {
@@ -528,8 +570,9 @@ export function CartDrawer() {
               <div className="flex-1 overflow-y-auto p-5">
                 <div className="text-center py-2">
                   <CheckCircle2 size={44} className="mx-auto text-emerald-600" />
-                  <h4 className="font-semibold text-xl mt-3">Order placed successfully!</h4>
-                  <p className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1.5">✓ Order confirmed</p>
+                  <h4 className="font-semibold text-xl mt-3">Payment sent successfully!</h4>
+                  <p className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-3 py-1.5">⏳ Waiting for store confirmation</p>
+                  <p className="text-[12.5px] text-black/55 mt-2">The store will check your UTR + screenshot and confirm your order. You will see it in My Orders.</p>
                   <p className="text-sm text-black/55 mt-2">Order ID: <b className="text-black">{order.id}</b></p>
                 </div>
                 <div className="mt-4 border border-black/10 rounded-2xl overflow-hidden">
@@ -626,10 +669,22 @@ export function CartDrawer() {
                       </button>
                       <a href={upiLink} className="block mt-2 text-[12.5px] font-bold text-[#641629] underline">Open in UPI app →</a>
                     </div>
-                    <label className="block text-[11px] font-bold tracking-wide">UTR / TRANSACTION ID (12 digits, you get it after payment)
-                      <input value={utr} onChange={(e) => setUtr(e.target.value.replace(/\D/g, '').slice(0, 12))} placeholder="Optional — can be left empty" inputMode="numeric" className="mt-1 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm font-normal outline-none focus:border-black" />
-                      <span className="block font-normal text-black/50 mt-1 normal-case tracking-normal">Share it for instant verification — the store confirms faster with a UTR.</span>
+                    <label className="block text-[11px] font-bold tracking-wide">UTR / TRANSACTION ID * (12 digits, you get it after payment)
+                      <input value={utr} onChange={(e) => setUtr(e.target.value.replace(/\D/g, '').slice(0, 12))} placeholder="Required — 12-digit UTR from your UPI app" inputMode="numeric" className="mt-1 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm font-normal outline-none focus:border-black" />
+                      <span className="block font-normal text-black/50 mt-1 normal-case tracking-normal">Required — the store confirms your order only after checking it.</span>
                     </label>
+                    <label className="block text-[11px] font-bold tracking-wide">PAYMENT SCREENSHOT * (required)
+                      <input type="file" accept="image/*" onChange={(e) => onShot(e.target.files?.[0])} className="mt-1 w-full text-sm file:mr-3 file:rounded-full file:border file:border-black/15 file:bg-black file:text-white file:text-[12.5px] file:font-bold file:px-4 file:py-2 hover:file:brightness-125 file:transition" />
+                      <span className="block font-normal text-black/50 mt-1 normal-case tracking-normal">Required — attach your UPI payment screenshot to place the order.</span>
+                    </label>
+                    {shotBusy && <p className="text-[12px] text-black/55">Compressing screenshot…</p>}
+                    {shot && (
+                      <div className="flex items-center gap-3 border border-emerald-200 bg-emerald-50 rounded-2xl p-2.5">
+                        <img src={shot} alt="Payment screenshot" className="w-14 h-14 object-cover rounded-xl border" />
+                        <p className="text-[12px] font-bold text-emerald-800 flex-1">Screenshot attached ✓</p>
+                        <button onClick={() => setShot(null)} className="text-[12px] font-bold text-rose-700 underline shrink-0">Remove</button>
+                      </div>
+                    )}
                     {err && <p className="text-[12.5px] text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{err}</p>}
                     <button disabled={paying} onClick={confirmQrPaid} className="w-full bg-[#221114] text-white font-semibold rounded-full py-3.5 text-sm disabled:opacity-50">I have paid {formatINR(payAmount)} — Confirm order</button>
                     <p className="text-[11px] text-black/45 text-center">🔒 100% safe — payment goes directly to the store account.</p>
@@ -682,8 +737,8 @@ export function CartDrawer() {
                       </div>
                       <div className="border-t border-black/10 mt-2 pt-2 flex justify-between text-[13px]"><span>Total rent</span><b>{formatINR(o.total)}</b></div>
                       <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} on delivery${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : 'Pay on delivery'} · Refundable deposit {formatINR(o.deposit)} — you get it back on return</p>
-                      <span className={`inline-block mt-1 text-[10.5px] font-bold rounded-full px-2 py-0.5 border ${o.status === 'cancelled' ? 'text-white bg-rose-600 border-rose-600' : o.status === 'delivered' || o.status === 'returned' ? 'text-violet-800 bg-violet-50 border-violet-200' : 'text-emerald-800 bg-emerald-50 border-emerald-200'}`}>
-                        {o.status === 'cancelled' ? '✕ Cancelled' : o.status === 'delivered' ? '✓ Delivered' : o.status === 'returned' ? '✓ Returned' : o.status === 'confirmed' ? '✓ Confirmed — will be delivered' : '✓ Order confirmed'}
+                      <span className={`inline-block mt-1 text-[10.5px] font-bold rounded-full px-2 py-0.5 border ${o.status === 'cancelled' ? 'text-white bg-rose-600 border-rose-600' : o.status === 'delivered' || o.status === 'returned' ? 'text-violet-800 bg-violet-50 border-violet-200' : o.status === 'confirmed' ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : 'text-amber-800 bg-amber-50 border-amber-200'}`}>
+                        {o.status === 'cancelled' ? '✕ Cancelled' : o.status === 'delivered' ? '✓ Delivered' : o.status === 'returned' ? '✓ Returned' : o.status === 'confirmed' ? '✓ Confirmed — will be delivered' : '⏳ Payment sent — awaiting store confirmation'}
                       </span>
                       {o.readyDate && o.status !== 'cancelled' && <span className="inline-block mt-1 ml-1.5 text-[10.5px] font-bold text-[#641629] bg-[#faf3ea] border border-[#c9a44a]/50 rounded-full px-2 py-0.5">📦 Available by {new Date(o.readyDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
                       {o.note && o.status !== 'cancelled' && <p className="text-[12px] mt-1.5 bg-[#faf7ef] border border-[#c9a44a]/40 rounded-xl px-3 py-2"><b>Store message:</b> {o.note}</p>}
