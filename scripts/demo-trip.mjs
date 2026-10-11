@@ -4,7 +4,7 @@
 import mqtt from 'mqtt';
 
 const TOPIC = 'thekissa/garba/DEMO01';
-const BASE = 'https://garba-rental-website-phi.vercel.app';
+const BASE = 'https://thekissa.co.in';
 const STORE = { lat: 22.7196, lng: 75.8577 };
 const DEST = { lat: 22.748, lng: 75.893 };
 

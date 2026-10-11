@@ -3,4 +3,4 @@ Allow: /
 Disallow: /d/
 Disallow: /t/
 
-Sitemap: https://garba-rental-website-phi.vercel.app/sitemap.xml
+Sitemap: https://thekissa.co.in/sitemap.xml

@@ -1,4 +1,4 @@
-const base = 'https://garba-rental-website-phi.vercel.app';
+const base = 'https://thekissa.co.in';
 const html = await (await fetch(base)).text();
 const first = [...html.matchAll(/assets\/[a-zA-Z0-9_-]+\.js/g)].map((m) => m[0]);
 const all = new Set(first);
