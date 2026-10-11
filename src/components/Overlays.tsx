@@ -267,6 +267,31 @@ export function CartDrawer() {
     return unsub;
   }, []);
 
+  // Cloud se latest status lao (admin ne cancel/confirm kiya ho to customer ko dikhe).
+  // Drawer khulne par + My Orders tab par ek baar silent sync — same-device local merge ke upar.
+  const syncing = useRef(false);
+  const [syncingUi, setSyncingUi] = useState(false);
+  const syncCloudStatuses = async (silent = true) => {
+    if (syncing.current) return;
+    const mine = getMyOrders();
+    if (!mine.length) return;
+    syncing.current = true;
+    if (!silent) setSyncingUi(true);
+    try {
+      await Promise.allSettled(mine.slice(0, 20).map((o) => fetchOrderById(o.id)));
+    } catch { /* offline ho to local hi sahi */ }
+    syncing.current = false;
+    if (!silent) setSyncingUi(false);
+  };
+  useEffect(() => {
+    if (open) {
+      try {
+        if (getMyOrders().length > 0) syncCloudStatuses(true);
+      } catch { /* ignore */ }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open ]);
+
   const rows = useMemo(() => cart.map((c) => ({ ...c, p: products.find((x) => x.id === c.id)! })).filter((r) => r.p), [cart, products]);
   const subtotal = rows.reduce((a, r) => a + rowPrice(r) * r.qty, 0);
   const deposit = rows.reduce((a, r) => a + (r.single ? 0 : r.p.deposit * r.qty), 0);
@@ -610,10 +635,22 @@ export function CartDrawer() {
                       <button onClick={runLookupById} disabled={lookupBusy} className="shrink-0 border border-black/15 text-[12.5px] font-bold rounded-xl px-4 py-2 hover:bg-black hover:text-white transition disabled:opacity-50">{lookupBusy ? '…' : 'Get'}</button>
                     </div>
                     {lookupMsg && <p className="text-[12px] mt-2 bg-[#faf7ef] border border-[#c9a44a]/40 rounded-xl px-3 py-2">{lookupMsg}</p>}
+                    {orders.length > 0 && (
+                      <button onClick={() => syncCloudStatuses(false)} disabled={syncingUi} className="mt-2 w-full text-[12.5px] font-bold border border-black/15 rounded-xl px-3 py-2 hover:bg-black hover:text-white transition disabled:opacity-50">
+                        {syncingUi ? 'Checking latest status…' : '↻ Refresh order status'}
+                      </button>
+                    )}
                   </div>
                   {orders.length === 0 && !lookupMsg && <p className="text-center text-black/50 py-8">No orders yet on this device.<br />Your confirmed orders will appear here.</p>}
                   {orders.map((o) => (
-                    <div key={o.id} className="bg-white rounded-2xl p-3.5 border border-black/10">
+                    <div key={o.id} className={`rounded-2xl p-3.5 border ${o.status === 'cancelled' ? 'bg-rose-50/50 border-rose-300' : 'bg-white border-black/10'}`}>
+                      {o.status === 'cancelled' && (
+                        <div className="rounded-xl bg-rose-700 text-white px-3.5 py-3 mb-2.5 shadow-[0_12px_24px_-14px_rgba(190,18,60,.7)]">
+                          <b className="text-[13.5px]">✕ Order cancelled by store</b>
+                          <p className="text-[12px] text-white/85 mt-0.5">{o.note || 'Sorry — this outfit is out of stock / not available for your date.'}</p>
+                          {o.payStatus !== 'verified' && o.token > 0 && <p className="text-[12px] font-bold text-white mt-1">Refund of {formatINR(o.token)} will be done on WhatsApp/UPI — contact the store.</p>}
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
                         <b className="text-[13.5px]">{o.id}</b>
                         <span className="ml-auto text-[11px] text-black/50">{new Date(o.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
@@ -628,12 +665,19 @@ export function CartDrawer() {
                       </div>
                       <div className="border-t border-black/10 mt-2 pt-2 flex justify-between text-[13px]"><span>Total rent</span><b>{formatINR(o.total)}</b></div>
                       <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} on delivery${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : 'Pay on delivery'} · Deposit {formatINR(o.deposit)} (refundable)</p>
-                      <span className={`inline-block mt-1 text-[10.5px] font-bold rounded-full px-2 py-0.5 border ${o.status === 'cancelled' ? 'text-rose-800 bg-rose-50 border-rose-200' : o.status === 'delivered' || o.status === 'returned' ? 'text-violet-800 bg-violet-50 border-violet-200' : 'text-emerald-800 bg-emerald-50 border-emerald-200'}`}>
-                        {o.status === 'cancelled' ? '✕ Not available' : o.status === 'delivered' ? '✓ Delivered' : o.status === 'returned' ? '✓ Returned' : o.status === 'confirmed' ? '✓ Confirmed — will be delivered' : '✓ Order confirmed'}
+                      <span className={`inline-block mt-1 text-[10.5px] font-bold rounded-full px-2 py-0.5 border ${o.status === 'cancelled' ? 'text-white bg-rose-600 border-rose-600' : o.status === 'delivered' || o.status === 'returned' ? 'text-violet-800 bg-violet-50 border-violet-200' : 'text-emerald-800 bg-emerald-50 border-emerald-200'}`}>
+                        {o.status === 'cancelled' ? '✕ Cancelled' : o.status === 'delivered' ? '✓ Delivered' : o.status === 'returned' ? '✓ Returned' : o.status === 'confirmed' ? '✓ Confirmed — will be delivered' : '✓ Order confirmed'}
                       </span>
-                      {o.readyDate && <span className="inline-block mt-1 ml-1.5 text-[10.5px] font-bold text-[#641629] bg-[#faf3ea] border border-[#c9a44a]/50 rounded-full px-2 py-0.5">📦 Available by {new Date(o.readyDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
-                      {o.note && <p className="text-[12px] mt-1.5 bg-[#faf7ef] border border-[#c9a44a]/40 rounded-xl px-3 py-2"><b>Store message:</b> {o.note}</p>}
+                      {o.readyDate && o.status !== 'cancelled' && <span className="inline-block mt-1 ml-1.5 text-[10.5px] font-bold text-[#641629] bg-[#faf3ea] border border-[#c9a44a]/50 rounded-full px-2 py-0.5">📦 Available by {new Date(o.readyDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                      {o.note && o.status !== 'cancelled' && <p className="text-[12px] mt-1.5 bg-[#faf7ef] border border-[#c9a44a]/40 rounded-xl px-3 py-2"><b>Store message:</b> {o.note}</p>}
+                      {o.status === 'cancelled' ? (
+                        <>
+                          <button onClick={() => { resetAndClose(); setTimeout(() => document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' }), 450); }} className="mt-2.5 w-full inline-flex items-center justify-center gap-1.5 bg-[#221114] text-white text-[12.5px] font-bold rounded-full py-2.5">Browse other dresses →</button>
+                          <a href={waLink(`Hi TheKissa.co! My order ${o.id} was cancelled. Please suggest a similar outfit. Name: ${o.name}, Mobile: ${o.phone}`)} target="_blank" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 bg-[#25d366] text-white text-[12.5px] font-bold rounded-full py-2.5"><MessageCircle size={14} /> Ask for alternative on WhatsApp</a>
+                        </>
+                      ) : (
                       <a href={waLink(`Hi TheKissa.co! Reorder ${o.id} — same items please. Name: ${o.name}, Mobile: ${o.phone}`)} target="_blank" className="mt-2.5 w-full inline-flex items-center justify-center gap-1.5 bg-[#25d366] text-white text-[12.5px] font-bold rounded-full py-2.5"><MessageCircle size={14} /> Reorder on WhatsApp</a>
+                      )}
                       <button onClick={async () => { const { downloadInvoicePDF } = await import('../lib/invoice'); downloadInvoicePDF(o, invoiceOpts()); }} className="mt-2 w-full inline-flex items-center justify-center gap-1.5 border border-[#c9a44a]/60 text-[#4d0f1f] text-[12.5px] font-bold rounded-full py-2.5 hover:bg-[#4d0f1f] hover:text-[#f7ead0] hover:border-[#4d0f1f] transition"><Download size={14} /> Download Invoice (PDF)</button>
                     </div>
                   ))}
