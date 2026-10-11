@@ -1086,7 +1086,52 @@ export default function Admin() {
                 ))}
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
-                <label className="label-pro">Sizes (comma separated)<input value={editing.sizes.join(', ')} onChange={(e) => setEditing({ ...editing, sizes: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })} className="admin-input mt-1.5" /></label>
+                <div>
+                  <p className="label-pro">Sizes — website par customer ko yehi dikhenge</p>
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {Array.from(new Set([...ALL_SIZES, ...editing.sizes.filter((s) => !ALL_SIZES.includes(s))])).map((s) => {
+                      const on = editing.sizes.includes(s);
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => {
+                            if (on && editing.sizes.length <= 1) return;
+                            setEditing({ ...editing, sizes: on ? editing.sizes.filter((x) => x !== s) : [...editing.sizes, s] });
+                          }}
+                          title={on ? 'Hatane ke liye tap karo' : 'Lagane ke liye tap karo'}
+                          className={`min-w-11 px-3.5 py-2 rounded-xl text-[13px] font-bold border transition ${on ? 'bg-[#1a0f1e] text-white border-[#1a0f1e]' : 'bg-white hover:border-black text-black/50'}`}
+                        >{s}</button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex gap-1.5 mt-2">
+                    <input
+                      placeholder="Custom size (e.g. XXS), then + Add"
+                      className="admin-input"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const el = e.target as HTMLInputElement;
+                          const v = el.value.trim().toUpperCase().slice(0, 10);
+                          if (v && !editing.sizes.includes(v)) setEditing({ ...editing, sizes: [...editing.sizes, v] });
+                          el.value = '';
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        const wrap = (e.currentTarget as HTMLElement).closest('div');
+                        const inp = wrap?.querySelector('input') as HTMLInputElement | null;
+                        const v = inp?.value.trim().toUpperCase().slice(0, 10) ?? '';
+                        if (v && !editing.sizes.includes(v)) setEditing({ ...editing, sizes: [...editing.sizes, v] });
+                        if (inp) inp.value = '';
+                      }}
+                      className="shrink-0 text-[12.5px] font-bold border rounded-xl px-3.5 hover:bg-black hover:text-white transition"
+                    >+ Add</button>
+                  </div>
+                </div>
                 <label className="label-pro">Stock<input type="number" min={0} value={editing.stock} onChange={(e) => setEditing({ ...editing, stock: Number(e.target.value) })} className="admin-input mt-1.5" /></label>
               </div>
               <div>
