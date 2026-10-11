@@ -257,6 +257,7 @@ export function CartDrawer() {
           if (b.ready_date) (o as MyOrder).readyDate = b.ready_date;
           if (b.status) (o as MyOrder).status = b.status;
           if (b.admin_note) (o as MyOrder).note = b.admin_note;
+          if ((b as any).payment_status) (o as MyOrder).payStatus = (b as any).payment_status;
         });
       } catch { /* ignore */ }
       setOrders(list);
@@ -585,6 +586,7 @@ export function CartDrawer() {
                     </div>
                     <label className="block text-[11px] font-bold tracking-wide">UTR / TRANSACTION ID (12 digits, you get it after payment)
                       <input value={utr} onChange={(e) => setUtr(e.target.value.replace(/\D/g, '').slice(0, 12))} placeholder="Optional — can be left empty" inputMode="numeric" className="mt-1 w-full border border-black/15 rounded-xl px-3.5 py-2.5 text-sm font-normal outline-none focus:border-black" />
+                      <span className="block font-normal text-black/50 mt-1 normal-case tracking-normal">Share it for instant verification — the store confirms faster with a UTR.</span>
                     </label>
                     {err && <p className="text-[12.5px] text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{err}</p>}
                     <button disabled={paying} onClick={confirmQrPaid} className="w-full bg-[#221114] text-white font-semibold rounded-full py-3.5 text-sm disabled:opacity-50">I have paid {formatINR(payAmount)} — Confirm order</button>
@@ -625,7 +627,7 @@ export function CartDrawer() {
                         ))}
                       </div>
                       <div className="border-t border-black/10 mt-2 pt-2 flex justify-between text-[13px]"><span>Total rent</span><b>{formatINR(o.total)}</b></div>
-                      <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)} claimed via QR · verification pending` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} on delivery · verification pending` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR · verification pending` : 'Pay on delivery'} · Deposit {formatINR(o.deposit)} (refundable)</p>
+                      <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} on delivery${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : 'Pay on delivery'} · Deposit {formatINR(o.deposit)} (refundable)</p>
                       <span className={`inline-block mt-1 text-[10.5px] font-bold rounded-full px-2 py-0.5 border ${o.status === 'cancelled' ? 'text-rose-800 bg-rose-50 border-rose-200' : o.status === 'delivered' || o.status === 'returned' ? 'text-violet-800 bg-violet-50 border-violet-200' : 'text-emerald-800 bg-emerald-50 border-emerald-200'}`}>
                         {o.status === 'cancelled' ? '✕ Not available' : o.status === 'delivered' ? '✓ Delivered' : o.status === 'returned' ? '✓ Returned' : o.status === 'confirmed' ? '✓ Confirmed — will be delivered' : '✓ Order confirmed'}
                       </span>

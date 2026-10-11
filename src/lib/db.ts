@@ -153,6 +153,7 @@ function bookingRowToMyOrder(r: any): MyOrder | null {
       token: Number(r.token_amount ?? 0),
       mode: String(r.payment_mode || 'pay-on-delivery'),
       status: String(r.status || 'new'),
+      payStatus: String(r.payment_status || 'unverified'),
       note: r.admin_note ? String(r.admin_note) : undefined,
       readyDate: r.ready_date ? String(r.ready_date) : undefined,
     };

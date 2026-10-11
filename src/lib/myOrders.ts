@@ -26,6 +26,8 @@ export interface MyOrder {
   /** Admin ka reply — order milega ya nahi + wajah */
   status?: string;
   note?: string;
+  /** UPI payment verification: verified / rejected / unverified (admin panel se) */
+  payStatus?: string;
   /** Admin ne order kab tak ready hoga ye date di ho (YYYY-MM-DD) */
   readyDate?: string;
 }

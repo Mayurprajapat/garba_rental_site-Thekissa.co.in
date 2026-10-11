@@ -163,28 +163,36 @@ const QR_MODES = ['upi-qr', 'upi-qr-full', 'upi-qr-half'];
 function Payments({ bookings, reload }: { bookings: B[]; reload: () => void }) {
   const [busy, setBusy] = useState<number | string | null>(null);
   const [msg, setMsg] = useState('');
+  const [copiedId, setCopiedId] = useState<number | string | null>(null);
   const list = useMemo(
     () => bookings.filter((b) => b && QR_MODES.includes(String(b.payment_mode)) && b.payment_status !== 'verified')
       .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || ''))),
     [bookings]
   );
 
-  const verify = async (b: B) => {
+  const setPayStatus = async (b: B, next: 'verified' | 'rejected') => {
     setBusy(b.id);
     setMsg('');
     try {
       if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase.from('bookings').update({ payment_status: 'verified' }).eq('id', b.id);
+        const { error } = await supabase.from('bookings').update({ payment_status: next }).eq('id', b.id);
         if (error) throw error;
       } else {
-        updateLocalBooking(Number(b.id), { payment_status: 'verified' });
+        updateLocalBooking(Number(b.id), { payment_status: next });
       }
-      setMsg(`Payment verified for ${b.order_id || b.name}.`);
+      setMsg(next === 'verified' ? `Payment verified for ${b.order_id || b.name}.` : `Payment flagged as wrong for ${b.order_id || b.name} — customer sees it in My Orders.`);
       reload();
     } catch (e: any) {
-      setMsg('Could not verify: ' + (e?.message || 'unknown error'));
+      setMsg('Could not save: ' + (e?.message || 'unknown error'));
     } finally {
       setBusy(null);
+    }
+  };
+
+  const copyUtr = (b: B) => {
+    if (copyText(String(b.payment_id || ''))) {
+      setCopiedId(b.id);
+      setTimeout(() => setCopiedId(null), 1500);
     }
   };
 
@@ -198,26 +206,48 @@ function Payments({ bookings, reload }: { bookings: B[]; reload: () => void }) {
       {list.length === 0 ? (
         <p className="text-[13px] text-[#8a7584] mt-3">All QR payments verified. 🎉</p>
       ) : (
-        <div className="mt-3 space-y-2 max-h-[380px] overflow-y-auto">
+        <div className="mt-3 space-y-2 max-h-[420px] overflow-y-auto">
           {list.map((b) => (
-            <div key={b.id} className="flex flex-wrap items-center gap-2 border border-amber-200 bg-amber-50/50 rounded-xl p-3 text-[13px]">
-              <div className="min-w-0">
-                <b>{b.order_id || `#${String(b.id).slice(-6)}`}</b>
-                <span className="text-[#3d2b36]"> · {b.name} · </span>
-                <a href={`tel:${b.phone}`} className="text-blue-700 hover:underline">{b.phone}</a>
-                <span className="block text-[12px] text-[#8a7584]">{b.payment_mode} · UTR: {b.payment_id || 'not shared'}</span>
+            <div key={b.id} className="border border-amber-200 bg-amber-50/50 rounded-xl p-3 text-[13px]">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="min-w-0">
+                  <b>{b.order_id || `#${String(b.id).slice(-6)}`}</b>
+                  <span className="text-[#3d2b36]"> · {b.name} · </span>
+                  <a href={`tel:${b.phone}`} className="text-blue-700 hover:underline">{b.phone}</a>
+                </div>
+                <b className="ml-auto">{inr(b.token_amount)}</b>
               </div>
-              <div className="ml-auto flex items-center gap-2 shrink-0">
-                <b>{inr(b.token_amount)}</b>
-                <button disabled={busy === b.id} onClick={() => verify(b)} className="text-[12px] font-bold bg-emerald-600 text-white rounded-full px-3.5 py-1.5 disabled:opacity-50 hover:brightness-110 transition flex items-center gap-1">
-                  <CheckCircle2 size={13} /> {busy === b.id ? '…' : 'Verify'}
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                <span className="text-[12px] text-[#8a7584]">{b.payment_mode} · UTR:</span>
+                <b className="text-[12.5px]">{b.payment_id || 'not shared'}</b>
+                {b.payment_id && (
+                  <button onClick={() => copyUtr(b)} title="Copy UTR — paste it in your bank/UPI app to check"
+                    className="text-[11.5px] font-bold border rounded-full px-2.5 py-1 bg-white hover:bg-black hover:text-white transition flex items-center gap-1">
+                    <Copy size={11} /> {copiedId === b.id ? 'Copied ✓' : 'Copy UTR'}
+                  </button>
+                )}
+                <a href={`https://wa.me/91${digits10(b.phone)}?text=${encodeURIComponent(`Hello ${b.name || 'Customer'}! TheKissa.co — for order ${b.order_id || ''} (${inr(b.token_amount)} via QR), please share your payment screenshot here. Thank you!`)}`} target="_blank"
+                  title="Ask customer for payment screenshot on WhatsApp"
+                  className="text-[11.5px] font-bold border border-emerald-300 text-emerald-700 rounded-full px-2.5 py-1 hover:bg-emerald-600 hover:text-white transition">
+                  Ask screenshot →
+                </a>
+              </div>
+              <div className="flex gap-1.5 mt-2">
+                <button disabled={busy === b.id} onClick={() => setPayStatus(b, 'verified')} title="Amount + UTR bank statement se match ho to dabao"
+                  className="flex-1 text-[12px] font-bold bg-emerald-600 text-white rounded-full px-3 py-1.5 disabled:opacity-50 hover:brightness-110 transition flex items-center justify-center gap-1">
+                  <CheckCircle2 size={13} /> {busy === b.id ? '…' : '✓ Sahi hai — Verify'}
+                </button>
+                <button disabled={busy === b.id} onClick={() => setPayStatus(b, 'rejected')} title="UTR galat / payment nahi mila to dabao — customer ko signal jayega"
+                  className="flex-1 text-[12px] font-bold border border-rose-300 text-rose-700 rounded-full px-3 py-1.5 disabled:opacity-50 hover:bg-rose-600 hover:text-white transition">
+                  {busy === b.id ? '…' : '✕ Galat hai — Flag'}
                 </button>
               </div>
+              {b.payment_status === 'rejected' && <p className="text-[11.5px] text-rose-700 font-semibold mt-1.5">Flagged wrong — customer sees “payment needs attention” in My Orders.</p>}
             </div>
           ))}
         </div>
       )}
-      <p className="text-[11.5px] text-[#8a7584] mt-2">Match the amount + UTR with the bank statement first, then tap Verify.</p>
+      <p className="text-[11.5px] text-[#8a7584] mt-2">Flow: Copy UTR → bank/UPI app me check karo → Sahi = Verify, Galat = Flag. UTR yahi se copy hota hai.</p>
     </div>
   );
 }
