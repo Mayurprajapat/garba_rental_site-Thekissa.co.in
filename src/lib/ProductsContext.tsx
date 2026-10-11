@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { PRODUCTS, type Product } from '../data/products';
+import { PRODUCTS, ALL_SIZES, type Product } from '../data/products';
 import { getLocalProducts } from './localAdmin';
 import { isSupabaseConfigured, supabase } from './supabase';
 
@@ -39,7 +39,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
             id: r.id, name: r.name, hindi: r.hindi ?? '', category: r.category,
             rent1: r.rent1 ?? Math.round((r.rent3 ?? 999) * 0.6), rent3: r.rent3, rent9: r.rent9, buy: r.buy, deposit: r.deposit,
             rating: Number(r.rating ?? 4.8), reviews: r.reviews ?? 0,
-            sizes: r.sizes ?? ['M'], colors: r.colors ?? [], img: r.img ?? '',
+            sizes: r.sizes ?? [...ALL_SIZES], colors: r.colors ?? [], img: r.img ?? '',
             badge: r.badge ?? undefined, desc: r.desc ?? '', fabric: r.fabric ?? '',
             accessories: Array.isArray(r.accessories) ? r.accessories : undefined,
             images: Array.isArray(r.images) ? r.images : undefined,

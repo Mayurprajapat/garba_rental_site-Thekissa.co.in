@@ -39,6 +39,7 @@ import {
 } from '../lib/localAdmin';
 import { getCategories, resetCategories, saveCategories, type ShopCategory } from '../lib/categories';
 import type { Accessory } from '../data/products';
+import { ALL_SIZES } from '../data/products';
 import type { LiveProduct } from '../lib/ProductsContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import DeliveriesPanel from './admin/DeliveriesPanel';
@@ -54,7 +55,7 @@ const emptyProduct: ProductRow = {
   id: '', name: '', hindi: '', category: 'women',
   rent1: 899, rent3: 1299, rent9: 2499, buy: 4299, deposit: 2000,
   rating: 4.8, reviews: 0,
-  sizes: ['S', 'M', 'L', 'XL'], colors: ['Multicolor'],
+  sizes: [...ALL_SIZES], colors: ['Multicolor'],
   img: '/images/g-hero.webp', badge: '', desc: '', fabric: 'Cotton', stock: 5, active: true,
 } as ProductRow;
 
@@ -684,6 +685,23 @@ export default function Admin() {
                   </select>
                   <button onClick={() => setEditing({ ...emptyProduct, id: `RL-${Date.now().toString().slice(-4)}` })} className="bg-[#1a0f1e] text-white text-[13px] font-semibold rounded-xl px-4 py-2.5 flex items-center justify-center gap-1.5"><Plus size={14} /> New product</button>
                   <button onClick={() => downloadCSV('products.csv', filteredProducts)} className="text-[13px] font-semibold border rounded-xl px-4 py-2.5">Export CSV</button>
+                  <button
+                    title={`Har product par ${ALL_SIZES.join(', ')} sizes laga do`}
+                    onClick={async () => {
+                      if (!products.length) { setMsg('No products to update.'); return; }
+                      if (!confirm(`All ${products.length} products par sizes ${ALL_SIZES.join(', ')} laga du?`)) return;
+                      if (useCloud && supabase) {
+                        const { error } = await supabase.from('products').update({ sizes: ALL_SIZES }).neq('id', '__none__');
+                        if (error) { setMsg('Error: ' + error.message); return; }
+                        loadProducts(); emitProductsLive();
+                      } else {
+                        persistProducts(products.map((p) => ({ ...p, sizes: [...ALL_SIZES] })));
+                      }
+                      setMsg(`All sizes (${ALL_SIZES.join(', ')}) set on ${products.length} products — live on website.`);
+                      setTimeout(() => setMsg(''), 4000);
+                    }}
+                    className="text-[13px] font-semibold border border-emerald-300 text-emerald-800 rounded-xl px-4 py-2.5 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition"
+                  >All sizes on all</button>
                 </div>
                 <div className="flex gap-1.5 flex-wrap items-center mt-3">
                   {(['all', 'live', 'oos', 'hidden'] as const).map((s) => (
