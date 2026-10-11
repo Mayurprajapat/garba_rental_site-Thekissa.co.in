@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { BadgeCheck, Check, CheckCircle2, CreditCard, Heart, Mail, MapPin, MessageCircle, Minus, Plus, ReceiptText, ShieldCheck, ShoppingBasket, Sparkles, Star, Trash2, Truck, X } from 'lucide-react';
+import { BadgeCheck, Check, CheckCircle2, CreditCard, Download, Heart, Mail, MapPin, MessageCircle, Minus, Plus, ReceiptText, ShieldCheck, ShoppingBasket, Sparkles, Star, Trash2, Truck, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { addonTotal, lookFor, photosFor, spinFramesFor, STORE, waLink, type Accessory, type Category } from '../data/products';
 import { itemImgFor } from '../lib/items';
@@ -203,7 +203,7 @@ export function CartDrawer() {
   const [lookupId, setLookupId] = useState('');
   const [lookupBusy, setLookupBusy] = useState(false);
   const [lookupMsg, setLookupMsg] = useState('');
-  const [order, setOrder] = useState<{ id: string; paymentId: string; mode: string; token: number; total: number; deposit: number; lines: string[] } | null>(null);
+  const [order, setOrder] = useState<{ id: string; paymentId: string; mode: string; token: number; total: number; deposit: number; lines: string[]; items: MyOrder['items'] } | null>(null);
   const [payChoice, setPayChoice] = useState<'half' | 'full'>('full');
   const [promo, setPromo] = useState('');
   const wasOpen = useRef(false);
@@ -316,6 +316,25 @@ export function CartDrawer() {
     }
   };
 
+  // Designer invoice PDF — store details bill footer ke liye (PDF lib lazy-load: site slow nahi hogi)
+  const invoiceOpts = () => ({ brand: STORE.brand, phone: STORE.phoneDisplay, email: STORE.email, address: STORE.addressLong });
+  const downloadDoneInvoice = async () => {
+    if (!order) return;
+    const { downloadInvoicePDF } = await import('../lib/invoice');
+    downloadInvoicePDF({
+      id: order.id,
+      date: new Date().toISOString(),
+      name: name.trim() || 'Customer',
+      phone: phone.trim(),
+      event: eventDate || 'TBD',
+      items: order.items,
+      total: order.total,
+      deposit: order.deposit,
+      token: order.token,
+      mode: order.mode,
+    }, { ...invoiceOpts(), paymentId: order.paymentId || undefined });
+  };
+
   const validateDetails = () => {
     if (name.trim().length < 3) return 'Please enter your full name';
     if (!isValidIndianPhone(phone)) return 'Please enter a valid 10-digit mobile number';
@@ -425,7 +444,7 @@ export function CartDrawer() {
         payment_id: ref,
         payment_status: 'unverified',
       });
-      setOrder({ id: orderId, paymentId: ref, mode, token: amt, total, deposit, lines: orderLines() });
+      setOrder({ id: orderId, paymentId: ref, mode, token: amt, total, deposit, lines: orderLines(), items: rows.map((r) => ({ name: r.single ? r.single.name : r.p.name, detail: r.single ? `${r.p.id} look · without dress` : rowLabel(r), qty: r.qty, price: rowPrice(r) * r.qty })) });
       setStep('done');
       snapOrder(orderId, amt, mode);
       clear();
@@ -492,6 +511,8 @@ export function CartDrawer() {
                 {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
                   ? <a href={`mailto:${email.trim()}?subject=${encodeURIComponent(`Order confirmed ${order.id} — TheKissa.co`)}&body=${encodeURIComponent(buildCustomerMsg(order))}`} className="mt-2 w-full bg-black text-white font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-1.5"><Mail size={15} /> Send me confirmation</a>
                   : <span className="mt-2 w-full bg-black/[.06] text-black/40 font-semibold rounded-full py-3 text-sm flex items-center justify-center gap-1.5"><Mail size={15} /> Enter email above</span>}
+                <p className="text-[12px] font-bold mt-4 text-center">Designer bill for your records:</p>
+                <button onClick={downloadDoneInvoice} className="btn-gold w-full mt-2 !py-3 !text-sm"><Download size={15} /> Download Invoice (PDF)</button>
                 <button onClick={resetAndClose} className="w-full mt-3 bg-[#641629] text-white font-semibold rounded-full py-3 text-sm">Continue shopping</button>
                 <button onClick={() => { setStep('cart'); setTab('orders'); }} className="w-full mt-2 border border-black/15 font-semibold rounded-full py-3 text-sm hover:bg-black hover:text-white transition">View in My Orders</button>
                 <a href="/track" className="w-full mt-2 border border-black/15 font-semibold rounded-full py-3 text-sm hover:bg-[#641629] hover:border-[#641629] hover:text-white transition flex items-center justify-center gap-2">📍 Track delivery boy</a>
@@ -610,6 +631,7 @@ export function CartDrawer() {
                       {o.readyDate && <span className="inline-block mt-1 ml-1.5 text-[10.5px] font-bold text-[#641629] bg-[#faf3ea] border border-[#c9a44a]/50 rounded-full px-2 py-0.5">📦 Available by {new Date(o.readyDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
                       {o.note && <p className="text-[12px] mt-1.5 bg-[#faf7ef] border border-[#c9a44a]/40 rounded-xl px-3 py-2"><b>Store message:</b> {o.note}</p>}
                       <a href={waLink(`Hi TheKissa.co! Reorder ${o.id} — same items please. Name: ${o.name}, Mobile: ${o.phone}`)} target="_blank" className="mt-2.5 w-full inline-flex items-center justify-center gap-1.5 bg-[#25d366] text-white text-[12.5px] font-bold rounded-full py-2.5"><MessageCircle size={14} /> Reorder on WhatsApp</a>
+                      <button onClick={async () => { const { downloadInvoicePDF } = await import('../lib/invoice'); downloadInvoicePDF(o, invoiceOpts()); }} className="mt-2 w-full inline-flex items-center justify-center gap-1.5 border border-[#c9a44a]/60 text-[#4d0f1f] text-[12.5px] font-bold rounded-full py-2.5 hover:bg-[#4d0f1f] hover:text-[#f7ead0] hover:border-[#4d0f1f] transition"><Download size={14} /> Download Invoice (PDF)</button>
                     </div>
                   ))}
                 </div>
