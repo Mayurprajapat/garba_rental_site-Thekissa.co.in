@@ -61,11 +61,11 @@ const STATUSES = ['new', 'confirmed', 'delivered', 'returned', 'cancelled'] as c
 const useCloud = isSupabaseConfigured && !!supabase;
 
 const statusStyle: Record<string, string> = {
-  new: 'bg-amber-50 text-amber-700 border border-amber-200',
-  confirmed: 'bg-blue-50 text-blue-700 border border-blue-200',
-  delivered: 'bg-violet-50 text-violet-700 border border-violet-200',
-  returned: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-  cancelled: 'bg-rose-50 text-rose-700 border border-rose-200',
+  new: 'bg-amber-50 text-amber-800 border border-amber-300 ring-1 ring-amber-200/50',
+  confirmed: 'bg-blue-50 text-blue-800 border border-blue-200',
+  delivered: 'bg-violet-50 text-violet-800 border border-violet-200',
+  returned: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+  cancelled: 'bg-rose-50 text-rose-800 border border-rose-200',
 };
 
 function toCSV(rows: Record<string, any>[]): string {
@@ -728,26 +728,27 @@ export default function Admin() {
             {view === 'bookings' && (
               <div>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <label className="flex-1 flex items-center gap-2 bg-white border rounded-xl px-3.5">
-                    <Search size={15} className="text-[#8a7584] shrink-0" />
+                  <label className="flex-1 flex items-center gap-2 bg-[#fffdf9] border border-[#c9a44a]/35 rounded-xl px-3.5 shadow-[0_8px_20px_-14px_rgba(60,30,40,.35)] focus-within:border-[#8a6d1f] focus-within:ring-2 focus-within:ring-[#c9a44a]/25 transition">
+                    <Search size={15} className="text-[#8a6d1f] shrink-0" />
                     <input value={bq} onChange={(e) => setBq(e.target.value)} placeholder="Search name, order ID, mobile, address…" className="py-2.5 outline-none w-full text-sm bg-transparent" />
                     {bq && <button onClick={() => setBq('')} title="Clear search" className="text-[#8a7584] hover:text-black text-lg leading-none">×</button>}
                   </label>
-                  <button onClick={() => downloadCSV('bookings.csv', filteredBookings)} className="text-xs font-bold border rounded-xl px-3.5 py-2.5 bg-white shrink-0">Export CSV</button>
+                  <button onClick={() => downloadCSV('bookings.csv', filteredBookings)} className="text-xs font-bold rounded-xl px-4 py-2.5 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] text-[#f7ead0] ring-1 ring-[#c9a44a]/40 shadow-[0_10px_20px_-12px_rgba(34,17,20,.6)] hover:brightness-125 transition shrink-0">Export CSV</button>
                 </div>
                 {bq.trim() && <p className="text-[12px] text-[#8a7584] mt-2">{filteredBookings.length} result{filteredBookings.length === 1 ? '' : 's'} for “{bq.trim()}” <button onClick={() => setBq('')} className="underline hover:text-black">clear</button></p>}
                 <div className="flex gap-1.5 flex-wrap items-center mt-2.5">
                   {['all', ...STATUSES].map((s) => (
-                    <button key={s} onClick={() => setStatusFilter(s)} className={`text-xs font-bold rounded-full px-3.5 py-1.5 border capitalize ${statusFilter === s ? 'bg-[#1a0f1e] text-white border-[#1a0f1e]' : 'bg-white'}`}>{s} {s !== 'all' ? `· ${bookings.filter((b) => b.status === s).length}` : ''}</button>
+                    <button key={s} onClick={() => setStatusFilter(s)} className={`text-xs font-bold rounded-full px-3.5 py-1.5 border capitalize transition ${statusFilter === s ? 'bg-gradient-to-b from-[#2b141b] to-[#1c0d12] text-[#f7ead0] border-transparent ring-1 ring-[#c9a44a]/50 shadow-[0_8px_18px_-10px_rgba(34,17,20,.6)]' : 'bg-white hover:border-[#8a6d1f]/60'}`}>{s} {s !== 'all' ? `· ${bookings.filter((b) => b.status === s).length}` : ''}</button>
                   ))}
                 </div>
-                <div className="admin-card mt-4 overflow-x-auto">
+                <div className="admin-card mt-4 overflow-x-auto relative ring-1 ring-[#c9a44a]/25 !rounded-2xl shadow-[0_24px_50px_-30px_rgba(60,30,40,.35)]">
+                  <div aria-hidden className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-[#e8c66a] via-[#c9a44a] to-[#8e1a4f] rounded-t-2xl" />
                   <table className="w-full min-w-[1340px]">
-                    <thead><tr className="border-b border-[#1a0f1e]/8"><th className="admin-th">Order</th><th className="admin-th">Customer</th><th className="admin-th">Event</th><th className="admin-th">Ready by</th><th className="admin-th">Total</th><th className="admin-th">Deposit</th><th className="admin-th">Payment</th><th className="admin-th">Status</th><th className="admin-th">Customer reply</th><th className="admin-th text-right">Actions</th></tr></thead>
+                    <thead className="bg-gradient-to-b from-[#fbf3df] to-[#f7efe0]"><tr className="border-b border-[#c9a44a]/30"><th className="admin-th">Order</th><th className="admin-th">Customer</th><th className="admin-th">Event</th><th className="admin-th">Ready by</th><th className="admin-th">Total</th><th className="admin-th">Deposit</th><th className="admin-th">Payment</th><th className="admin-th">Status</th><th className="admin-th">Customer reply</th><th className="admin-th text-right">Actions</th></tr></thead>
                     <tbody>
-                      {filteredBookings.map((b) => (
-                        <tr key={b.id} className="hover:bg-[#faf7ef]">
-                          <td className="admin-td font-bold">{b.order_id || `#${String(b.id).slice(-6)}`}<span className="block text-[11px] font-normal text-[#8a7584]">#{String(b.id).slice(-6)}</span></td>
+                      {filteredBookings.map((b, bi) => (
+                        <tr key={b.id} className={`transition hover:bg-[#faf3e2] ${bi % 2 === 1 ? 'bg-[#fffdf6]' : ''}`}>
+                          <td className="admin-td font-bold text-[#4d0f1f]">{b.order_id || `#${String(b.id).slice(-6)}`}<span className="block text-[11px] font-normal text-[#8a7584]">#{String(b.id).slice(-6)}</span></td>
                           <td className="admin-td"><b className="block text-[13px]">{b.name}</b><a href={`tel:${b.phone}`} className="text-[12px] text-blue-700 hover:underline">{b.phone}</a>{b.address && <span className="block text-[11.5px] text-[#3d2b36] mt-0.5 max-w-[180px]">📍 {String(b.address)}</span>}</td>
                           <td className="admin-td text-[12.5px] text-[#3d2b36]">{b.event_date || '—'}<span className="block text-[#8a7584]">{b.category} · {b.size}</span></td>
                           <td className="admin-td">
