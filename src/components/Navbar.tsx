@@ -115,7 +115,7 @@ export default function Navbar() {
               <span className="hidden sm:inline">Booking list</span>
               <span className="bg-gradient-to-b from-[#f0d78c] to-[#c9a44a] text-[#3d0a1a] text-xs font-bold min-w-7 h-7 px-1.5 grid place-items-center rounded-full">{count}</span>
             </button>
-            <button onClick={openOrders} title="Apne orders dekho" aria-label="My Orders"
+            <button onClick={openOrders} title="View your orders" aria-label="My Orders"
               className="relative w-10 h-10 grid place-items-center rounded-full border border-black/10 bg-white hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)] transition">
               <PackageSearch size={16} />
               {orderCount > 0 && <span className="absolute -top-1 -right-1 text-[10px] font-bold min-w-5 h-5 px-1 grid place-items-center rounded-full bg-emerald-600 text-white">{orderCount}</span>}

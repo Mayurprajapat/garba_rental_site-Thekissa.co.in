@@ -296,8 +296,8 @@ export function CartDrawer() {
   };
   const refreshStatuses = async () => {
     const n = await syncCloudStatuses(false);
-    if (n > 0) setLookupMsg(`✓ ${n} order${n === 1 ? '' : 's'} updated — latest status neeche dikh raha hai.`);
-    else setLookupMsg('✓ Already up to date — store se koi naya update nahi hai.');
+    if (n > 0) setLookupMsg(`✓ ${n} order${n === 1 ? '' : 's'} updated — latest status is shown below.`);
+    else setLookupMsg('✓ Already up to date — no new update from the store.');
     setTab('orders');
   };
   useEffect(() => {
@@ -327,10 +327,10 @@ export function CartDrawer() {
     try {
       const { orders: found } = await fetchOrdersByPhone(digits);
       if (found.length) {
-        setLookupMsg(`✓ ${found.length} order${found.length === 1 ? '' : 's'} found — neeche dikh raha hai.`);
+        setLookupMsg(`✓ ${found.length} order${found.length === 1 ? '' : 's'} found — shown below.`);
         setTab('orders');
       } else {
-        setLookupMsg('No order found for this number on this device yet. Order wale mobile number se check karo, ya Order ID try karo.');
+        setLookupMsg('No order found for this number on this device yet. Check the mobile number used for the order, or try the Order ID.');
       }
     } catch {
       setLookupMsg('Could not search right now — please try again.');
@@ -347,10 +347,10 @@ export function CartDrawer() {
     try {
       const found = await fetchOrderById(needle);
       if (found) {
-        setLookupMsg(`✓ Order ${found.id} found — neeche dikh raha hai.`);
+        setLookupMsg(`✓ Order ${found.id} found — shown below.`);
         setTab('orders');
       } else {
-        setLookupMsg('Order ID not found on this device. Spelling check karo (e.g. RL-2026-1234).');
+        setLookupMsg('Order ID not found on this device. Check the spelling (e.g. RL-2026-1234).');
       }
     } catch {
       setLookupMsg('Could not search right now — please try again.');
@@ -641,8 +641,8 @@ export function CartDrawer() {
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#fafafa]">
                   {/* Order wapas lao — dusra phone / cache clear ke baad */}
                   <div className="bg-white rounded-2xl p-3.5 border border-[#c9a44a]/50">
-                    <b className="text-[13px]">Order nahi dikh raha?</b>
-                    <p className="text-[11.5px] text-black/55 mt-0.5">Order wale mobile number ya Order ID se wapas lao:</p>
+                    <b className="text-[13px]">Can&apos;t see your order?</b>
+                    <p className="text-[11.5px] text-black/55 mt-0.5">Find it with your order mobile number or Order ID:</p>
                     <div className="flex gap-2 mt-2">
                       <input value={lookupPhone} onChange={(e) => setLookupPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile" inputMode="numeric" className="flex-1 min-w-0 border border-black/15 rounded-xl px-3 py-2 text-[13px] outline-none focus:border-black" />
                       <button onClick={runLookupByPhone} disabled={lookupBusy} className="shrink-0 bg-[#221114] text-white text-[12.5px] font-bold rounded-xl px-4 py-2 disabled:opacity-50">{lookupBusy ? '…' : 'Find'}</button>
@@ -700,8 +700,8 @@ export function CartDrawer() {
                   ))}
                 </div>
                 <div className="p-4 border-t border-black/10 bg-white" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-                  <p className="text-[11px] text-black/50 text-center">Orders isi device/browser me save rehte hain + store ko WhatsApp par bhi jaate hain.<br />Dusre phone par dekhna ho to upar mobile number se Find karo.</p>
-                  {orders.length > 0 && <button onClick={() => { if (confirm('Saare orders is device se hata dein? (Store ke paas WhatsApp wala record rahega.)')) { clearMyOrdersFully(); setOrders([]); } }} className="w-full text-xs text-black/50 underline mt-1">Clear history</button>}
+                  <p className="text-[11px] text-black/50 text-center">Orders stay saved on this device/browser and are also sent to the store on WhatsApp.<br />To view on another phone, use Find with your mobile number above.</p>
+                  {orders.length > 0 && <button onClick={() => { if (confirm('Remove all orders from this device? (The store keeps its WhatsApp record.)')) { clearMyOrdersFully(); setOrders([]); } }} className="w-full text-xs text-black/50 underline mt-1">Clear history</button>}
                 </div>
               </>
             ) : (
