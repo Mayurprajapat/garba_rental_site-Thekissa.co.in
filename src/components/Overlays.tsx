@@ -515,44 +515,53 @@ export function CartDrawer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, tab]);
 
-  // Background status sync — drawer band ho tab bhi admin ka decision
-  // (confirmed / onway / delivered / returned / cancelled) customer tak pahuche.
-  // Change mile to toast — customer ko khud pata chal jayega uske order ka kya hua.
+  // Fast live status — admin panel me change hote hi (max ~10s) customer ke
+  // My Orders me PARTICULAR status + toast. Ek halki call per tick (phone se
+  // saare orders ek saath), sirf tab visible ho tabhi. Same browser me to
+  // events se same-second update hota hi hai.
   const pushToast = useStore((s) => s.pushToast);
   useEffect(() => {
     let stop = false;
-    const statusToast = (s?: string) =>
+    const statusText = (s?: string) =>
       s === 'confirmed' ? 'Confirmed ✓'
       : s === 'onway' ? 'On the way 🚚 — arriving soon'
       : s === 'delivered' ? 'Delivered ✓ — enjoy!'
       : s === 'returned' ? 'Returned ✓'
-      : s === 'cancelled' ? 'Update from store — tap My Orders' : 'Order update — tap My Orders';
-    const tick = async () => {
+      : s === 'cancelled' ? 'Cancelled — tap My Orders' : 'Order update — tap My Orders';
+    const fastTick = async () => {
       try {
         if (stop || document.visibilityState === 'hidden') return;
         const mine = getMyOrders();
         if (!mine.length) return;
-        const before = new Map(mine.map((o) => [o.id, o.status || '']));
-        const n = await syncCloudStatuses(true);
-        if (n > 0 && !stop) {
-          getMyOrders()
-            .filter((o) => before.get(o.id) !== undefined && before.get(o.id) !== (o.status || ''))
-            .slice(0, 2)
-            .forEach((o) => pushToast(`Order ${o.id}: ${statusToast(o.status)}`));
+        const before = new Map(mine.map((o) => [o.id, `${o.status || ''}|${o.note || ''}|${o.readyDate || ''}|${o.payStatus || ''}`]));
+        // Ek hi RPC me is device ke numbers ka taza status (note/ready-date samet)
+        const phones = [...new Set(mine.map((o) => String(o.phone || '').replace(/\D/g, '').slice(-10)).filter((d) => d.length >= 10))].slice(0, 3);
+        if (phones.length) {
+          await Promise.allSettled(phones.map((p) => fetchOrdersByPhone(p)));
+        } else {
+          await syncCloudStatuses(true);
         }
-      } catch { /* offline ho to agli baar */ }
+        if (stop) return;
+        getMyOrders()
+          .filter((o) => {
+            const p = before.get(o.id);
+            return p !== undefined && p !== `${o.status || ''}|${o.note || ''}|${o.readyDate || ''}|${o.payStatus || ''}`;
+          })
+          .slice(0, 2)
+          .forEach((o) => pushToast(`Order ${o.id}: ${statusText(o.status)}`));
+      } catch { /* offline ho to agli tick */ }
     };
     const onVisible = () => {
-      if (document.visibilityState === 'visible') tick();
+      if (document.visibilityState === 'visible') fastTick();
     };
-    tick();
-    const t = setInterval(tick, 45000);
-    window.addEventListener('focus', tick);
+    fastTick();
+    const t = setInterval(fastTick, 10000);
+    window.addEventListener('focus', fastTick);
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       stop = true;
       clearInterval(t);
-      window.removeEventListener('focus', tick);
+      window.removeEventListener('focus', fastTick);
       document.removeEventListener('visibilitychange', onVisible);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
