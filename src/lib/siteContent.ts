@@ -190,7 +190,7 @@ function normalizeCompleteLook(raw: any): CompleteLook {
   (Object.keys(d.defaults) as Category[]).forEach((cat) => {
     const arr = savedDefaults[cat];
     defaults[cat] = Array.isArray(arr)
-      ? arr.map(cleanLookItem).filter((x): x is Accessory => !!x).slice(0, 20)
+      ? arr.map(cleanLookItem).filter((x): x is Accessory => !!x).slice(0, 30)
       : [...d.defaults[cat]];
   });
   const text = (v: any, fb: string) => (typeof v === 'string' && v.trim() ? v : fb);

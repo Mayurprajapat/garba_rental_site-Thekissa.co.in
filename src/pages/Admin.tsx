@@ -38,7 +38,7 @@ import {
   type LocalBooking,
 } from '../lib/localAdmin';
 import { getCategories, resetCategories, saveCategories, type ShopCategory } from '../lib/categories';
-import { formatAccessories, parseAccessories } from '../data/products';
+import type { Accessory } from '../data/products';
 import type { LiveProduct } from '../lib/ProductsContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import DeliveriesPanel from './admin/DeliveriesPanel';
@@ -454,22 +454,37 @@ export default function Admin() {
     e.preventDefault();
     if (!editing) return;
     if (!editing.id.trim() || !editing.name.trim()) { setMsg('Product ID and name are required.'); return; }
+    // Complete-look rows saaf karo — khaali naam wali lines hatao (max 30)
+    const cleanLook: Accessory[] = (editing.accessories ?? [])
+      .map((a) => {
+        const out: Accessory = { name: a.name.trim().slice(0, 80), tag: a.tag };
+        if (a.tag === 'addon') out.price = Math.max(0, Math.round(Number(a.price) || 0));
+        if (typeof a.x === 'number' && typeof a.y === 'number') { out.x = a.x; out.y = a.y; }
+        return out;
+      })
+      .filter((a) => !!a.name)
+      .slice(0, 30);
+    const toSave = { ...editing, accessories: cleanLook };
     if (useCloud && supabase) {
-      const { error } = await supabase.from('products').upsert({ ...editing, badge: editing.badge || null }, { onConflict: 'id' });
+      const { error } = await supabase.from('products').upsert({ ...toSave, badge: toSave.badge || null }, { onConflict: 'id' });
       if (error && /column|schema cache|does not exist/i.test(error.message)) {
         // Purana cloud schema (bina accessories/images column) — unke bina retry
-        const { accessories: _a, images: _i, ...legacy } = editing as any;
-        const { error: err2 } = await supabase.from('products').upsert({ ...legacy, badge: editing.badge || null }, { onConflict: 'id' });
-        setMsg(err2 ? 'Error: ' + err2.message : 'Product saved — live on website.');
+        const { accessories: _a, images: _i, ...legacy } = toSave as any;
+        const { error: err2 } = await supabase.from('products').upsert({ ...legacy, badge: toSave.badge || null }, { onConflict: 'id' });
+        if (!err2 && (cleanLook.length || (toSave.images ?? []).length)) {
+          setMsg('Product saved, but Complete look / photos did not save — Supabase me supabase/migration_accessories.sql run karo (one-time), phir dobara save karo.');
+        } else {
+          setMsg(err2 ? 'Error: ' + err2.message : 'Product saved — live on website.');
+        }
         if (!err2) { setEditing(null); loadProducts(); emitProductsLive(); }
         return;
       }
       setMsg(error ? 'Error: ' + error.message : 'Product saved — live on website.');
       if (!error) { setEditing(null); loadProducts(); emitProductsLive(); }
     } else {
-      const i = products.findIndex((p) => p.id === editing.id);
+      const i = products.findIndex((p) => p.id === toSave.id);
       const next = [...products];
-      if (i >= 0) next[i] = editing; else next.unshift(editing);
+      if (i >= 0) next[i] = toSave; else next.unshift(toSave);
       persistProducts(next);
       setEditing(null);
       setMsg('Product saved — live on website.');
@@ -1117,18 +1132,55 @@ export default function Admin() {
                 <label className="label-pro">Fabric<input value={editing.fabric} onChange={(e) => setEditing({ ...editing, fabric: e.target.value })} className="admin-input mt-1.5" /></label>
               </div>
               <label className="label-pro block">Description<textarea value={editing.desc} onChange={(e) => setEditing({ ...editing, desc: e.target.value })} className="admin-input mt-1.5" rows={3} /></label>
-              <label className="label-pro block">Complete look — what the model wore (one per line: name | included / free / price · photo dot with @ x,y)
-                <textarea
-                  value={formatAccessories(editing.accessories ?? [])}
-                  onChange={(e) => setEditing({
-                    ...editing,
-                    accessories: parseAccessories(e.target.value),
-                  })}
-                  className="admin-input mt-1.5" rows={4}
-                  placeholder={'Oxidised jhumka | 99 @ 67,24\nBandhani dupatta | included\nDandiya pair | free'}
-                />
-              </label>
-              <p className="text-[11.5px] text-[#8a7584] -mt-2">Leave empty to use Website → Complete look defaults. Nayi line jodo = naya item, line hatao = item hat jayega.</p>
+              <div>
+                <p className="label-pro">Complete look — what the model wore <span className="font-normal text-[#8a7584]">({(editing.accessories ?? []).length} items)</span></p>
+                <div className="space-y-1.5 mt-1.5">
+                  {(editing.accessories ?? []).map((a, i) => (
+                    <div key={i} className="flex gap-1.5 items-center">
+                      <input
+                        value={a.name}
+                        onChange={(e) => setEditing({ ...editing, accessories: (editing.accessories ?? []).map((x, j) => (j === i ? { ...x, name: e.target.value } : x)) })}
+                        placeholder={`Item ${i + 1} — e.g. Oxidised jhumka`}
+                        maxLength={80}
+                        className="admin-input flex-1 min-w-0"
+                      />
+                      <select
+                        value={a.tag}
+                        onChange={(e) => setEditing({ ...editing, accessories: (editing.accessories ?? []).map((x, j) => (j === i ? { ...x, tag: e.target.value as Accessory['tag'], price: e.target.value === 'addon' ? (x.price ?? 0) : undefined } : x)) })}
+                        className="admin-input !w-auto shrink-0"
+                        title="Included = dress ke saath · Free = muft · Paid = alag se charge"
+                      >
+                        <option value="included">Included</option>
+                        <option value="free">Free</option>
+                        <option value="addon">Paid ₹</option>
+                      </select>
+                      {a.tag === 'addon' && (
+                        <input
+                          type="number" min={0} max={99999}
+                          value={a.price ?? 0}
+                          onChange={(e) => setEditing({ ...editing, accessories: (editing.accessories ?? []).map((x, j) => (j === i ? { ...x, price: Math.max(0, Number(e.target.value) || 0) } : x)) })}
+                          className="admin-input !w-24 shrink-0"
+                          title="Rent price (₹)"
+                        />
+                      )}
+                      <button
+                        type="button"
+                        title="Remove item"
+                        onClick={() => setEditing({ ...editing, accessories: (editing.accessories ?? []).filter((_, j) => j !== i) })}
+                        className="shrink-0 w-10 h-10 grid place-items-center rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-600 hover:text-white transition"
+                      ><Trash2 size={13} /></button>
+                    </div>
+                  ))}
+                </div>
+                {(editing.accessories ?? []).length >= 30
+                  ? <p className="text-[12px] font-semibold text-amber-700 mt-2">Max 30 items — website box me isse zyada suit nahi karenge.</p>
+                  : <button
+                      type="button"
+                      onClick={() => setEditing({ ...editing, accessories: [...(editing.accessories ?? []), { name: '', tag: 'included' as const }] })}
+                      className="mt-2 text-[12.5px] font-bold border rounded-full px-3.5 py-1.5 flex items-center gap-1 hover:bg-black hover:text-white transition"
+                    ><Plus size={13} /> Add item</button>}
+                <p className="text-[11.5px] text-[#8a7584] mt-1.5">Included = dress ke saath · Free = muft gift · Paid = customer tick karke jodega. Khaali chhodo to Website → Complete look wale default items lagenge. Save karte hi website par live.</p>
+              </div>
               <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={editing.active} onChange={(e) => setEditing({ ...editing, active: e.target.checked })} className="w-4 h-4 accent-[#3d0a26]" /> Show on website</label>
               <div className="flex gap-2 pt-2">
                 <button className="flex-1 bg-[#1a0f1e] text-white font-semibold rounded-full py-3 text-sm">Save product</button>

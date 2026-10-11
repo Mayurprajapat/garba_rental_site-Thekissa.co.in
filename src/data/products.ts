@@ -166,7 +166,7 @@ export function parseAccessories(text: string): Accessory[] {
       acc.y = Math.min(95, Number(m[2]));
     }
     out.push(acc);
-    if (out.length >= 20) break;
+    if (out.length >= 30) break;
   }
   return out;
 }
