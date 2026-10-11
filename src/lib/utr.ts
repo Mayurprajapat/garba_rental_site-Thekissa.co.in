@@ -10,5 +10,8 @@ export function looksFakeUtr(utr: string): boolean {
   const asc = '01234567890123456789';
   const desc = '98765432109876543210';
   if (asc.includes(s) || desc.includes(s)) return true; // 1234... / 9876...
+  // 123456789xxx / 987654321xxx jaise gade hue number (pehle 9 digit sequence)
+  const head9 = s.slice(0, 9);
+  if (asc.includes(head9) || desc.includes(head9)) return true;
   return false;
 }

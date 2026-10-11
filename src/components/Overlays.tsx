@@ -585,9 +585,11 @@ export function CartDrawer() {
     ? `${i + 1}. ${r.single.name} (accessory only — ${r.p.id} look) x${r.qty} = ${formatINR(r.single.price * r.qty)}`
     : `${i + 1}. ${r.p.name} (${r.p.id}) — ${rowLabel(r)} = ${formatINR(rowPrice(r) * r.qty)}`);
 
-  // Store notification — ALWAYS goes to the client's number/email
-  const buildStoreMsg = (o: { id: string; mode: string; token: number; total: number; deposit: number; lines: string[] }) =>
-    `New order ${o.id} — TheKissa.co\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\n${o.mode === 'upi-qr-full' ? `Full payment: ${formatINR(o.token)} paid via QR` : o.mode === 'upi-qr-half' ? `Half payment: ${formatINR(o.token)} paid via QR, balance ${formatINR(o.total - o.token)} on delivery` : o.mode === 'upi-qr' ? `Token: ${formatINR(o.token)} paid via QR` : 'Token: Pay on delivery'}\nRefundable deposit: ${formatINR(o.deposit)} (return to customer on outfit return)`;
+  // Store notification — ALWAYS goes to the client's number/email.
+  // Earning (rent) vs refundable deposit vs total collection — teeno alag line me,
+  // taaki store ko ek nazar me samajh aaye kitna rakhna hai, kitna wapas dena hai.
+  const buildStoreMsg = (o: { id: string; mode: string; token: number; total: number; deposit: number; lines: string[]; paymentId: string }) =>
+    `New order ${o.id} — TheKissa.co\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\n\nRent (your earning): ${formatINR(o.total)}\n${o.mode === 'upi-qr-full' ? `Payment: Full ${formatINR(o.token)} received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments` : o.mode === 'upi-qr-half' ? `Payment: Half ${formatINR(o.token)} received via QR (UTR ${o.paymentId}), balance ${formatINR(o.total - o.token)} on delivery — VERIFY in Reports → Payments` : `Payment: Token ${formatINR(o.token)} received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments`}\nRefundable deposit: ${formatINR(o.deposit)} — collect on delivery, return on outfit return\nTotal collection: ${formatINR(o.total + o.deposit)} (${formatINR(o.token)} received + ${formatINR(o.total - o.token + o.deposit)} on delivery)`;
 
   const goQr = () => {
     const v = validateDetails();
@@ -684,7 +686,7 @@ export function CartDrawer() {
       clear();
       // QR payment par bhi store ko WhatsApp notice (block ho to done-step buttons se resend)
       try {
-        window.open(waLink(`New order ${orderId} — TheKissa.co\n\nName: ${name.trim()}\nMobile: ${phone.trim()}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(total)}\n${mode === 'upi-qr-full' ? `Full payment: ${formatINR(amt)} paid via QR` : `Half payment: ${formatINR(amt)} paid via QR, balance ${formatINR(total - amt)} on delivery`}${ref ? ` (UTR ${ref})` : ''}\nRefundable deposit: ${formatINR(deposit)} (return to customer on outfit return)`), '_blank');
+        window.open(waLink(buildStoreMsg({ id: orderId, paymentId: ref, mode, token: amt, total, deposit, lines: orderLines() })), '_blank');
       } catch { /* popup blocked — resend buttons below */ }
     } catch (e: any) {
       setErr(e?.message || 'Could not confirm order');
