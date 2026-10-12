@@ -51,7 +51,7 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
       onClick={() => setQuickView(p.id)}
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f4f1ea] img-sheen">
-        <img src={p.img} alt={p.name} loading="lazy" className="w-full h-full object-contain transition duration-700 group-hover:scale-[1.06]" />
+        <img src={p.img} alt={p.name} loading="lazy" decoding="async" className="w-full h-full object-contain transition duration-700 group-hover:scale-[1.06]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
         {soldOut && <span className="absolute inset-0 grid place-items-center bg-black/45 z-[1]"><span className="bg-white text-black text-[11px] font-black tracking-[0.14em] rounded-full px-3.5 py-1.5">OUT OF STOCK</span></span>}
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 z-[2]">
@@ -72,32 +72,32 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
           <span className="absolute bottom-3 left-3 z-[2] bg-black/65 backdrop-blur text-white text-[10px] font-bold tracking-wide rounded-full px-2.5 py-1">⟳ 360°</span>
         )}
       </div>
-      <div className="p-3 sm:p-3.5 flex flex-col flex-1">
-        <h3 className="font-display font-semibold text-[14.5px] sm:text-[15.5px] leading-snug line-clamp-2 text-black tracking-tight min-h-[42px]">{p.name}</h3>
-        <div className="flex flex-wrap gap-1.5 mt-2">
-          <span className="text-[10.5px] font-bold text-[#3d2b36] bg-[#faf3ea] border border-[#c9a44a]/40 rounded-full px-2.5 py-1 truncate max-w-full">{p.fabric}</span>
-          {savePct > 0 && <span className="text-[10.5px] font-black text-white bg-emerald-600 rounded-full px-2.5 py-1">SAVE {savePct}%</span>}
+      <div className="p-2.5 sm:p-3.5 flex flex-col flex-1">
+        <h3 className="font-display font-semibold text-[13.5px] sm:text-[15.5px] leading-snug line-clamp-2 text-black tracking-tight min-h-[38px] sm:min-h-[42px]">{p.name}</h3>
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          <span className="text-[10px] sm:text-[10.5px] font-bold text-[#3d2b36] bg-[#faf3ea] border border-[#c9a44a]/40 rounded-full px-2 py-0.5 sm:py-1 truncate max-w-full">{p.fabric}</span>
+          {savePct > 0 && <span className="text-[10px] sm:text-[10.5px] font-black text-white bg-emerald-600 rounded-full px-2 py-0.5 sm:py-1">SAVE {savePct}%</span>}
         </div>
-        <p className="text-[12px] text-neutral-500 mt-2 leading-relaxed line-clamp-2">{p.desc}</p>
-        <div className="flex items-center gap-1 text-xs font-semibold text-[#8a6d00] mt-2">
+        <p className="text-[11.5px] sm:text-[12px] text-neutral-500 mt-1.5 leading-snug sm:leading-relaxed line-clamp-2">{p.desc}</p>
+        <div className="flex items-center gap-1 text-xs font-semibold text-[#8a6d00] mt-1.5">
           <Star size={12} className="fill-[#c9960a] text-[#c9960a]" /> {p.rating}
           <span className="text-[#8a7584] font-normal">({p.reviews})</span>
-          <span className="ml-auto text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">1-day</span>
+          <span className="ml-auto text-[9.5px] sm:text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">1-day</span>
         </div>
-        <div className="hairline-premium my-2" />
-        <div className="grid grid-cols-2 gap-1.5 mt-auto">
-          <div className="rounded-xl border border-[#c9a44a]/40 bg-[#faf3ea] px-1.5 py-1.5 text-center min-w-0">
-            <span className="block text-[8.5px] font-black tracking-[0.08em] text-[#8a6d1f] whitespace-nowrap">RENT · 1-DAY</span>
-            <b className="block font-display text-[14px] sm:text-[16px] text-[#4d0f1f] tabular-nums leading-tight truncate">₹{price.toLocaleString('en-IN')}</b>
+        <div className="hairline-premium my-1.5 sm:my-2" />
+        <div className="grid grid-cols-2 gap-1 sm:gap-1.5 mt-auto">
+          <div className="rounded-lg sm:rounded-xl border border-[#c9a44a]/40 bg-[#faf3ea] px-1 py-1 sm:py-1.5 text-center min-w-0 overflow-hidden">
+            <span className="block text-[7.5px] sm:text-[8.5px] font-black tracking-[0.06em] text-[#8a6d1f] whitespace-nowrap">RENT</span>
+            <b className="block font-display text-[13px] sm:text-[16px] text-[#4d0f1f] tabular-nums leading-tight truncate">₹{price.toLocaleString('en-IN')}</b>
           </div>
-          <div className="rounded-xl border border-[#641629]/25 bg-[#641629]/[.05] px-1.5 py-1.5 text-center min-w-0">
-            <span className="block text-[8.5px] font-black tracking-[0.08em] text-[#641629] whitespace-nowrap">BUY · YOURS</span>
-            <b className="block font-display text-[14px] sm:text-[16px] text-[#641629] tabular-nums leading-tight truncate">₹{buyPrice.toLocaleString('en-IN')}</b>
+          <div className="rounded-lg sm:rounded-xl border border-[#641629]/25 bg-[#641629]/[.05] px-1 py-1 sm:py-1.5 text-center min-w-0 overflow-hidden">
+            <span className="block text-[7.5px] sm:text-[8.5px] font-black tracking-[0.06em] text-[#641629] whitespace-nowrap">BUY</span>
+            <b className="block font-display text-[13px] sm:text-[16px] text-[#641629] tabular-nums leading-tight truncate">₹{buyPrice.toLocaleString('en-IN')}</b>
           </div>
         </div>
-        <p className="text-[11px] sm:text-[11.5px] font-bold text-[#8a6d1f] mt-1.5 leading-snug">Rent + ₹{refundableExtra(price).toLocaleString('en-IN')} refundable · Buy no return</p>
-        {freeDandiya && <p className="text-[11px] sm:text-[11.5px] font-black text-emerald-700 mt-0.5">✓ FREE Dandiya included</p>}
-        <div className="grid grid-cols-2 gap-1.5 mt-2">
+        <p className="text-[10.5px] sm:text-[11.5px] font-bold text-[#8a6d1f] mt-1 sm:mt-1.5 leading-snug">Rent + ₹{refundableExtra(price).toLocaleString('en-IN')} refundable · Buy no return</p>
+        {freeDandiya && <p className="text-[10.5px] sm:text-[11.5px] font-black text-emerald-700 mt-0.5">✓ FREE Dandiya</p>}
+        <div className="grid grid-cols-2 gap-1 sm:gap-1.5 mt-1.5 sm:mt-2">
           <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id, 'rent'); }}
             disabled={soldOut}
             className="inline-flex items-center justify-center gap-1 text-white text-[12px] sm:text-[12.5px] font-bold rounded-full py-2.5 px-1 bg-[#1e7a45] shadow-[0_12px_22px_-12px_rgba(30,122,69,.6)] hover:brightness-110 transition disabled:opacity-40 whitespace-nowrap">
@@ -121,7 +121,7 @@ function SingleCard({ item }: { item: SingleItem }) {
   return (
     <div className="card card-hover group h-full overflow-hidden flex flex-col !rounded-[18px]">
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f4f1ea] img-sheen">
-        <img src={item.img} alt={item.name} loading="lazy" className="w-full h-full object-contain transition duration-700 group-hover:scale-[1.06]" />
+        <img src={item.img} alt={item.name} loading="lazy" decoding="async" className="w-full h-full object-contain transition duration-700 group-hover:scale-[1.06]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
         <span className="absolute top-3 left-3 z-[2] bg-gradient-to-br from-[#f0d78c] to-[#c9a44a] text-[#1a0f1e] text-[10px] font-black tracking-[0.1em] rounded-full px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)]">ONLY ITEM</span>
       </div>
@@ -267,7 +267,7 @@ export default function Shop() {
                 <button key={c.id} onClick={() => pickCat(on ? null : c)}
                   className={`relative shrink-0 w-[132px] sm:w-[148px] h-[88px] sm:h-[98px] rounded-2xl overflow-hidden bg-[#f4f1ea] text-left transition-all duration-200 ${on ? 'ring-[3px] ring-[#221114] ring-offset-2 ring-offset-[#faf8f6]' : 'ring-1 ring-black/10 hover:ring-black/30'}`}>
                   {c.img
-                    ? <img src={c.img} alt={c.label} loading="lazy" className="absolute inset-0 w-full h-full object-contain" />
+                    ? <img src={c.img} alt={c.label} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-contain" />
                     : <div className="absolute inset-0 grid place-items-center text-[10px] text-neutral-400 bg-[#f4f1ea]">No photo</div>}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
                   <span className="absolute top-1.5 right-1.5 text-[8.5px] font-bold tracking-wider uppercase bg-white/85 backdrop-blur rounded-full px-1.5 py-0.5">{c.kind === 'item' ? 'Item' : 'Dresses'}</span>

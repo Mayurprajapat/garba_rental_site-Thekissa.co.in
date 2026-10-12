@@ -50,6 +50,7 @@ export default function SpinViewer({ photos, name }: { photos: string[]; name: s
           src={photos[idx] ?? ''}
           alt={name}
           draggable={false}
+          decoding="async"
           onDragStart={(e) => e.preventDefault()}
           className="w-full h-full object-contain pointer-events-none"
         />

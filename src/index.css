@@ -163,10 +163,10 @@ body {
     repeating-radial-gradient(circle at 50% 120%, rgba(232,198,106,.05) 0 2px, transparent 2px 26px);
   background-size: 120px 120px, 140px 140px, 44px 44px, cover;
 }
-/* Green glowing pill — Navratri slots */
+/* Green glowing pill — Navratri slots (opacity-only: phone par lag-free) */
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, .55), 0 0 14px rgba(46, 204, 113, .35); }
-  50% { box-shadow: 0 0 0 6px rgba(46, 204, 113, 0), 0 0 22px rgba(46, 204, 113, .55); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: .55; }
 }
 .glow-green { animation: glowPulse 2.2s ease-in-out infinite; }
 
@@ -175,6 +175,10 @@ body {
 .premium-heading { text-shadow: 0 1px 2px rgba(0,0,0,.04), 0 12px 32px -20px rgba(0,0,0,.25); }
 /* Glass surface — navbar/drawer overlay */
 .glass { background: rgba(255,255,255,.82); backdrop-filter: blur(16px) saturate(150%); -webkit-backdrop-filter: blur(16px) saturate(150%); }
+/* Phone par halka blur — scroll buttery, battery-friendly */
+@media (max-width: 639px) {
+  .glass { background: rgba(255,253,249,.94); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+}
 /* Gradient hairline — luxury divider */
 .hairline-premium { height: 1px; background: linear-gradient(90deg, transparent, rgba(17,17,17,.18), transparent); }
 /* Dark hero me soft radial glow */

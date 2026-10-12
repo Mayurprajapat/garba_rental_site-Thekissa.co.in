@@ -99,7 +99,7 @@ export function QuickView() {
                   <SpinViewer photos={frames} name={p.name} />
                 ) : (
                 <>
-                <img key={photos[photoIdx] ?? p.img} src={photos[photoIdx] ?? p.img} alt={p.name} className="w-full h-full object-contain" />
+                <img key={photos[photoIdx] ?? p.img} src={photos[photoIdx] ?? p.img} alt={p.name} decoding="async" className="w-full h-full object-contain" />
                 {soldOut && <span className="absolute inset-0 grid place-items-center bg-black/45 z-[2]"><span className="bg-white text-black text-[12px] font-black tracking-[0.14em] rounded-full px-4 py-2">OUT OF STOCK</span></span>}
                 {p.badge && !soldOut && <span className="absolute top-4 left-4 bg-gradient-to-br from-[#f0d78c] to-[#c9a44a] text-[#641629] text-[10px] font-bold tracking-[0.12em] rounded-full px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)] z-[2]">{p.badge}</span>}
                 {photoIdx > 0 && (
