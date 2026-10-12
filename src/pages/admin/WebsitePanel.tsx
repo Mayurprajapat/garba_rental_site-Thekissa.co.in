@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { getSiteContent, resetSiteContent, saveSiteContent, type SiteContent } from '../../lib/siteContent';
 import { formatAccessories, parseAccessories, type Category } from '../../data/products';
+import { dataUrlToBlob, fileToCompressedDataUrl } from '../../lib/proof';
+import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 
 const LOOK_CATS: Category[] = ['women', 'premium', 'men', 'kids', 'combo'];
 
@@ -27,11 +29,47 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export default function WebsitePanel() {
   const [c, setC] = useState<SiteContent>(() => getSiteContent());
   const [msg, setMsg] = useState('');
+  const [lookUrl, setLookUrl] = useState('');
+  const [lookBusy, setLookBusy] = useState(false);
 
   const save = () => {
     saveSiteContent(c);
     setMsg('Website updated — live on site.');
     setTimeout(() => setMsg(''), 3000);
+  };
+
+  // Customer-look photo upload — cloud ho to storage URL, warna compressed copy (same browser)
+  const uploadLook = async (f: File): Promise<string | null> => {
+    try {
+      const small = await fileToCompressedDataUrl(f, 900, 0.72);
+      if (isSupabaseConfigured && supabase) {
+        const blob = (small ? dataUrlToBlob(small) : null) ?? (f.type.startsWith('image/') ? f : null);
+        if (!blob) return null;
+        const name = `look-${Date.now()}.jpg`;
+        const { error } = await supabase.storage.from('product-images').upload(name, blob, { contentType: 'image/jpeg', upsert: true });
+        if (error) { setMsg('Upload failed: ' + error.message); setTimeout(() => setMsg(''), 3000); return null; }
+        return supabase.storage.from('product-images').getPublicUrl(name).data.publicUrl;
+      }
+      return small;
+    } catch {
+      return null;
+    }
+  };
+
+  const addLookFiles = async (files: FileList | null) => {
+    const list = [...(files ?? [])].slice(0, Math.max(0, 12 - c.looks.imgs.length));
+    if (!list.length) return;
+    setLookBusy(true);
+    try {
+      const urls: string[] = [];
+      for (const f of list) {
+        const url = await uploadLook(f);
+        if (url) urls.push(url);
+      }
+      if (urls.length) setC((p) => ({ ...p, looks: { ...p.looks, imgs: [...p.looks.imgs, ...urls].slice(0, 12) } }));
+    } finally {
+      setLookBusy(false);
+    }
   };
 
   const setStore = (k: keyof SiteContent['store'], v: string) =>
@@ -164,8 +202,28 @@ export default function WebsitePanel() {
             <Field label="Big heading"><input value={c.looks.title} onChange={(e) => setC((p) => ({ ...p, looks: { ...p.looks, title: e.target.value } }))} className="admin-input" /></Field>
           </div>
           <Field label="Note (small text below)"><input value={c.looks.note} onChange={(e) => setC((p) => ({ ...p, looks: { ...p.looks, note: e.target.value } }))} className="admin-input" /></Field>
-          <Field label="Photos (one line = one photo)">
-            <textarea value={c.looks.imgs.join('\n')} onChange={(e) => setC((p) => ({ ...p, looks: { ...p.looks, imgs: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) } }))} className="admin-input" rows={5} />
+          <Field label={`Customer photos (${c.looks.imgs.length}/12) — first = leftmost on website`}>
+            <div className="flex flex-wrap gap-1.5">
+              {c.looks.imgs.map((src, i) => (
+                <div key={`${src}-${i}`} className="relative">
+                  <img src={src} alt="" className={`w-16 h-20 object-cover rounded-xl border-2 ${i === 0 ? 'border-black' : 'border-black/10'}`} />
+                  {i === 0 && <span className="absolute top-0.5 left-0.5 text-[8.5px] font-black bg-black text-white rounded-full px-1.5 py-0.5">1ST</span>}
+                  <button type="button" onClick={() => setC((p) => ({ ...p, looks: { ...p.looks, imgs: p.looks.imgs.filter((_, j) => j !== i) } }))} title="Remove photo" className="absolute -top-1.5 -right-1.5 w-5 h-5 grid place-items-center rounded-full bg-rose-600 text-white text-[11px] font-bold">✕</button>
+                </div>
+              ))}
+              {c.looks.imgs.length < 12 && (
+                <label title="Upload photos from phone" className="w-16 h-20 grid place-items-center rounded-xl border-2 border-dashed border-black/25 cursor-pointer hover:border-black hover:bg-black/5 transition text-xl font-bold text-black/40">+
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addLookFiles(e.target.files); e.target.value = ''; }} />
+                </label>
+              )}
+            </div>
+            {lookBusy && <p className="text-[12px] text-black/55 mt-1">Uploading…</p>}
+            <div className="flex gap-1.5 mt-2">
+              <input value={lookUrl} onChange={(e) => setLookUrl(e.target.value)} placeholder="Ya photo link paste karo, then + Add" className="admin-input"
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (lookUrl.trim() && c.looks.imgs.length < 12) { setC((p) => ({ ...p, looks: { ...p.looks, imgs: [...p.looks.imgs, lookUrl.trim()].slice(0, 12) } })); setLookUrl(''); } } }} />
+              <button type="button" onClick={() => { if (lookUrl.trim() && c.looks.imgs.length < 12) { setC((p) => ({ ...p, looks: { ...p.looks, imgs: [...p.looks.imgs, lookUrl.trim()].slice(0, 12) } })); setLookUrl(''); } }} className="shrink-0 text-[12.5px] font-bold border rounded-xl px-3.5 hover:bg-black hover:text-white transition">+ Add</button>
+            </div>
+            <p className="text-[11.5px] text-[#8a7584] mt-1">+ dabake phone se seedha upload karo ya link paste karo · ✕ se hatao · neeche Save dabana mat bhoolo.</p>
           </Field>
         </Card>
 
