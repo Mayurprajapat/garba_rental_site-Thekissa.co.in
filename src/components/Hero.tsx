@@ -75,7 +75,7 @@ export default function Hero() {
           </div>
           <div className="mandala-bg mt-5 rounded-2xl bg-gradient-to-br from-[#2b070e] via-[#4d0f1f] to-[#6e1a34] text-white px-5 py-4 shadow-[0_20px_45px_-20px_rgba(61,10,38,.6)] ring-1 ring-[#c9a44a]/50 relative overflow-hidden">
             <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e8c66a]/80 to-transparent" />
-            <p className="font-display font-black text-[22px] min-[400px]:text-[26px] sm:text-[32px] leading-tight tracking-tight break-words text-balance text-[#f7ead0]">100% Refundable Extra ({pct}%)</p>
+            <p className="font-display font-black text-[22px] min-[400px]:text-[26px] sm:text-[32px] leading-tight tracking-tight break-words text-balance text-white drop-shadow-[0_2px_10px_rgba(0,0,0,.55)]">100% Refundable Extra <span className="text-[#e8c66a]">({pct}%)</span></p>
             <p className="text-white/85 text-[12.5px] sm:text-[13px] mt-1.5">Returned via UPI/cash within 24 hours of return — no deductions on normal wear</p>
           </div>
           {/* Mobile photos — desktop collage yahan nahi dikhta, isliye chhoti strip */}
