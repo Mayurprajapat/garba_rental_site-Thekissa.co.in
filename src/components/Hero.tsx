@@ -73,10 +73,11 @@ export default function Hero() {
             <button onClick={goShop} className="group relative overflow-hidden card-shine inline-flex items-center gap-1.5 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] ring-1 ring-[#c9a44a]/50 text-[#f7ead0] text-[13px] font-bold rounded-full px-5 py-2.5 shadow-[0_12px_24px_-12px_rgba(34,17,20,.6)] hover:brightness-125 transition">Shop collection →</button>
             <a href={waLink('Hi TheKissa.co! I want to rent a Garba outfit')} target="_blank" className="group relative overflow-hidden card-shine inline-flex items-center gap-1.5 bg-[#1e7a45] text-white text-[13px] font-bold rounded-full px-5 py-2.5 shadow-[0_12px_24px_-12px_rgba(30,122,69,.6)] hover:brightness-110 transition">WhatsApp us</a>
           </div>
-          <div className="mandala-bg mt-5 rounded-2xl bg-gradient-to-br from-[#2b070e] via-[#4d0f1f] to-[#6e1a34] text-white px-5 py-4 shadow-[0_20px_45px_-20px_rgba(61,10,38,.6)] ring-1 ring-[#c9a44a]/50 relative overflow-hidden">
-            <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e8c66a]/80 to-transparent" />
-            <p className="font-display font-black text-[22px] min-[400px]:text-[26px] sm:text-[32px] leading-tight tracking-tight break-words text-balance text-white drop-shadow-[0_2px_10px_rgba(0,0,0,.55)]">100% Refundable Extra <span className="text-[#e8c66a]">({pct}%)</span></p>
-            <p className="text-white/85 text-[12.5px] sm:text-[13px] mt-1.5">Returned via UPI/cash within 24 hours of return — no deductions on normal wear</p>
+          <div className="mt-5 rounded-2xl bg-gradient-to-br from-[#fdf6e3] via-[#f0d78c] to-[#d9ab2e] px-5 py-4 shadow-[0_20px_45px_-20px_rgba(160,120,30,.55)] ring-1 ring-[#8a6d1f]/50 relative overflow-hidden">
+            <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/80" />
+            <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#8a6d1f]/10 to-transparent" />
+            <p className="relative font-display font-black text-[22px] min-[400px]:text-[26px] sm:text-[32px] leading-tight tracking-tight break-words text-balance text-[#3d0a1a]">100% Refundable Extra <span className="whitespace-nowrap inline-block align-middle rounded-full bg-[#3d0a1a] text-[#f0d78c] px-3.5 py-1 text-[0.62em] tracking-normal shadow-[0_8px_18px_-8px_rgba(61,10,26,.7)]">({pct}%)</span></p>
+            <p className="relative text-[#3d0a1a]/75 font-medium text-[12.5px] sm:text-[13px] mt-1.5">Returned via UPI/cash within 24 hours of return — no deductions on normal wear</p>
           </div>
           {/* Mobile photos — desktop collage yahan nahi dikhta, isliye chhoti strip */}
           <div className="md:hidden mt-4 grid grid-cols-3 gap-2">
