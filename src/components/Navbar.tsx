@@ -100,8 +100,9 @@ export default function Navbar() {
             </a>
             <button onClick={() => {
                 document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' });
+                setTimeout(() => document.getElementById('shop-search')?.focus({ preventScroll: true }), 500);
               }}
-              className="w-10 h-10 grid place-items-center rounded-full border border-black/10 bg-white hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)] transition" title="Browse collection" aria-label="Browse collection">
+              className="w-10 h-10 grid place-items-center rounded-full border border-black/10 bg-white hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)] transition" title="Search collection" aria-label="Search collection">
               <Search size={16} />
             </button>
             <button onClick={toggleWishlist} title={wishOnly ? 'Show all outfits' : 'Show wishlist only'} aria-label="Wishlist"

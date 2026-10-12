@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Gem, Heart, SearchX, ShoppingBasket, SlidersHorizontal, Star, X } from 'lucide-react';
+import { Gem, Heart, Search, SearchX, ShoppingBasket, SlidersHorizontal, Star, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { lookFor, spinFramesFor, type Product } from '../data/products';
 import type { LiveProduct } from '../lib/ProductsContext';
@@ -323,6 +323,15 @@ export default function Shop() {
           </div>
           <div className="flex items-center gap-2">
             <div className="chip-gold shrink-0">1-day rental</div>
+            <div className="flex flex-1 items-center gap-1.5 bg-white border border-black/10 rounded-full pl-3 pr-1 py-1 focus-within:border-[#641629]/60 transition min-w-0">
+              <Search size={14} className="text-black/35 shrink-0" />
+              <input id="shop-search" value={search} onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search — mirror, red, blouse…"
+                className="flex-1 bg-transparent outline-none text-[12.5px] min-w-0 placeholder:text-black/35" />
+              {search.trim() && (
+                <button onClick={() => setSearch('')} aria-label="Clear search" className="w-7 h-7 grid place-items-center rounded-full bg-black/5 hover:bg-black hover:text-white transition shrink-0"><X size={12} /></button>
+              )}
+            </div>
             <button onClick={() => setShowFilters((v) => !v)}
               className="shrink-0 relative flex items-center gap-1.5 text-[12.5px] font-semibold border border-black/10 rounded-full px-3.5 py-1.5 hover:border-black/40 bg-white transition">
               <SlidersHorizontal size={14} /> <span className="hidden sm:inline">Filters</span>
