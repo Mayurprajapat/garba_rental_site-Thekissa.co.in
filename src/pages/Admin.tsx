@@ -810,6 +810,7 @@ export default function Admin() {
                   <b>Dress</b> = dresses · <b>Item</b> = single-rent items only (jhumka, kamarbandh — without a dress).
                   Keyword comma (,) means <b>OR</b> (e.g. <code>dupatta, bandhani</code>); words inside one comma part must all match (e.g. <code>oxidised jhumka</code>).
                   Empty keyword = all products in that group.
+                  <b>Strict</b> ON = tile me <b>sirf tick kiye products</b> — keyword matching band, mixing zero (Blouse/Jewellery ke liye best).
                 </div>
                 <div className="flex flex-wrap gap-2 mt-4">
                   <button onClick={() => persistCats([{ id: `cat-${Date.now().toString(36)}`, label: 'New category', query: '', img: '/images/g-hero.webp', kind: 'dress' }, ...cats])} className="bg-[#1a0f1e] text-white text-[13px] font-semibold rounded-xl px-4 py-2.5 flex items-center gap-1.5"><Plus size={14} /> New category</button>
@@ -825,8 +826,8 @@ export default function Admin() {
                           const n = catCounts.get(c.id) ?? 0;
                           const unit = c.kind === 'item' ? (n === 1 ? 'item' : 'items') : (n === 1 ? 'dress' : 'dresses');
                           return n > 0
-                            ? <p className="text-[11.5px] font-bold text-emerald-700">✓ {n} {unit} match — website par dikhega</p>
-                            : <p className="text-[11.5px] font-bold text-amber-700">⚠ 0 match — keyword badlo ya product me ye tile tick karo</p>;
+                            ? <p className="text-[11.5px] font-bold text-emerald-700">✓ {n} {unit} match — website par dikhega{c.strict ? ' (Strict)' : ''}</p>
+                            : <p className="text-[11.5px] font-bold text-amber-700">⚠ 0 match — {c.strict ? 'Strict ON hai, product me ye tile tick karo' : 'keyword badlo ya product me ye tile tick karo'}</p>;
                         })()}
                         <div className="grid grid-cols-2 gap-2">
                           <label className="label-pro block">Type
@@ -837,6 +838,10 @@ export default function Admin() {
                           </label>
                           <label className="label-pro block">Keyword<input value={c.query} onChange={(e) => persistCats(cats.map((x) => (x.id === c.id ? { ...x, query: e.target.value.toLowerCase() } : x)))} placeholder="blouse" className="admin-input mt-1" /></label>
                         </div>
+                        <label className="flex items-center gap-2 text-[12.5px] font-bold text-[#3d2b36]">
+                          <input type="checkbox" checked={!!c.strict} onChange={(e) => persistCats(cats.map((x) => (x.id === c.id ? { ...x, strict: e.target.checked } : x)))} className="w-4 h-4 accent-[#3d0a26]" />
+                          Strict — sirf tick kiye products (mixing band)
+                        </label>
                         {c.kind === 'dress' && (
                           <div>
                             <p className="label-pro">Dress group (unticked = all groups)</p>

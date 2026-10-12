@@ -17,6 +17,8 @@ export interface ShopCategory {
   kind: 'dress' | 'item';
   /** dress group filter — khaali/undefined = sab groups. Eg. ['women'] = sirf women dresses */
   cats?: Category[];
+  /** Strict ON = tile me SIRF tick kiye (tagged) products — keyword match band, mixing zero */
+  strict?: boolean;
 }
 
 export const DEFAULT_CATEGORIES: ShopCategory[] = [
@@ -66,22 +68,26 @@ export function tileHay(p: TileProduct): string {
 /**
  * Dress kisi tile me dikhega ya nahi.
  * Tags tick hain to WAHI final hain (sirf ticked tiles) — keyword ignore.
- * Tags khaali = purana keyword + dress-group behaviour.
+ * Tile Strict hai to BINA tags wala dress kabhi nahi dikhega (mixing zero).
+ * Tags khaali + non-strict = purana keyword + dress-group behaviour.
  */
-export function dressInTile(p: TileProduct, tile: Pick<ShopCategory, 'id' | 'query' | 'kind' | 'cats'>): boolean {
+export function dressInTile(p: TileProduct, tile: Pick<ShopCategory, 'id' | 'query' | 'kind' | 'cats' | 'strict'>): boolean {
   const tags = cleanTags(p);
   if (tags.length) return tags.includes(tile.id.toLowerCase());
+  if (tile.strict) return false;
   if (tile.cats?.length && p.category && !(tile.cats as string[]).includes(p.category)) return false;
   return matchesCategory(tileHay(p), tile.query);
 }
 
 /**
  * Single-rent item (bina dress) kisi item-tile me dikhega ya nahi.
- * Parent dress par tags tick hain to wahi final — warna item naam se keyword match.
+ * Parent dress par tags tick hain to wahi final — tile Strict hai to bina-tags item kabhi nahi.
+ * Warna item naam se keyword match.
  */
-export function itemInTile(itemName: string, parent: TileProduct, tile: Pick<ShopCategory, 'id' | 'query' | 'kind' | 'cats'>): boolean {
+export function itemInTile(itemName: string, parent: TileProduct, tile: Pick<ShopCategory, 'id' | 'query' | 'kind' | 'cats' | 'strict'>): boolean {
   const tags = cleanTags(parent);
   if (tags.length) return tags.includes(tile.id.toLowerCase());
+  if (tile.strict) return false;
   const q = tile.query.trim();
   return !q || matchesCategory(itemName.toLowerCase(), q);
 }
@@ -103,6 +109,7 @@ function normalize(list: ShopCategory[]): ShopCategory[] {
     ...c,
     kind: c.kind === 'item' ? 'item' as const : 'dress' as const,
     cats: Array.isArray((c as any).cats) ? (c as any).cats : undefined,
+    strict: (c as any).strict === true,
   }));
 }
 
