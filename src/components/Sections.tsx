@@ -6,6 +6,36 @@ import { STORE } from '../data/store';
 import { getSiteContent, DEFAULT_CONTENT, useSiteVersion } from '../lib/siteContent';
 import Logo from './Logo';
 
+/** Marigold toran — festive bunting strip. Pure CSS/static, no logic. */
+const TORAN_BLOOMS: { bg: string; w: number; h: number }[] = [
+  { bg: 'radial-gradient(circle at 35% 30%, #fef3c7, #fbbf24 45%, #b45309)', w: 13, h: 13 },
+  { bg: 'radial-gradient(circle at 35% 30%, #bbf7d0, #22c55e 55%, #15803d)', w: 9, h: 13 },
+  { bg: 'radial-gradient(circle at 35% 30%, #ffedd5, #fb923c 45%, #9a3412)', w: 12, h: 12 },
+  { bg: 'radial-gradient(circle at 35% 30%, #fef9c3, #fde047 45%, #a16207)', w: 13, h: 13 },
+  { bg: 'radial-gradient(circle at 35% 30%, #fecaca, #ef4444 50%, #7f1d1d)', w: 10, h: 10 },
+  { bg: 'radial-gradient(circle at 35% 30%, #bbf7d0, #22c55e 55%, #15803d)', w: 9, h: 13 },
+];
+const TORAN_DROPS = [10, 18, 13, 22, 15, 20, 12, 24];
+
+export function ToranDivider() {
+  return (
+    <div aria-hidden className="bg-[#faf8f6] overflow-hidden select-none">
+      <div className="h-[2px] bg-gradient-to-r from-transparent via-[#c9a44a]/80 to-transparent" />
+      <div className="flex items-start justify-around max-w-6xl mx-auto px-1">
+        {Array.from({ length: 30 }).map((_, i) => {
+          const b = TORAN_BLOOMS[i % TORAN_BLOOMS.length];
+          return (
+            <span key={i} className="flex flex-col items-center shrink-0">
+              <span className="w-px bg-[#c9a44a]/70" style={{ height: TORAN_DROPS[i % TORAN_DROPS.length] }} />
+              <span className="toran-bloom" style={{ background: b.bg, width: b.w, height: b.h }} />
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function FeatureBanner() {
   useSiteVersion();
   const icons = [Sparkles, ShieldCheck, Navigation];
