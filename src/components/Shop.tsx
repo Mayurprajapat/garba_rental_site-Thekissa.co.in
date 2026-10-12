@@ -86,27 +86,27 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
         </div>
         <div className="hairline-premium my-2" />
         <div className="grid grid-cols-2 gap-1.5 mt-auto">
-          <div className="rounded-xl border border-[#c9a44a]/40 bg-[#faf3ea] px-2.5 py-2 text-center">
-            <span className="block text-[9.5px] font-black tracking-[0.08em] text-[#8a6d1f]">RENT · 1-DAY</span>
-            <b className="block font-display text-[16px] text-[#4d0f1f] tabular-nums leading-tight">₹{price.toLocaleString('en-IN')}</b>
+          <div className="rounded-xl border border-[#c9a44a]/40 bg-[#faf3ea] px-1.5 py-1.5 text-center min-w-0">
+            <span className="block text-[8.5px] font-black tracking-[0.08em] text-[#8a6d1f] whitespace-nowrap">RENT · 1-DAY</span>
+            <b className="block font-display text-[14px] sm:text-[16px] text-[#4d0f1f] tabular-nums leading-tight truncate">₹{price.toLocaleString('en-IN')}</b>
           </div>
-          <div className="rounded-xl border border-[#641629]/25 bg-[#641629]/[.05] px-2.5 py-2 text-center">
-            <span className="block text-[9.5px] font-black tracking-[0.08em] text-[#641629]">BUY · YOURS</span>
-            <b className="block font-display text-[16px] text-[#641629] tabular-nums leading-tight">₹{buyPrice.toLocaleString('en-IN')}</b>
+          <div className="rounded-xl border border-[#641629]/25 bg-[#641629]/[.05] px-1.5 py-1.5 text-center min-w-0">
+            <span className="block text-[8.5px] font-black tracking-[0.08em] text-[#641629] whitespace-nowrap">BUY · YOURS</span>
+            <b className="block font-display text-[14px] sm:text-[16px] text-[#641629] tabular-nums leading-tight truncate">₹{buyPrice.toLocaleString('en-IN')}</b>
           </div>
         </div>
-        <p className="text-[11.5px] font-bold text-[#8a6d1f] mt-1.5">Rent + ₹{refundableExtra(price).toLocaleString('en-IN')} refundable · Buy no return</p>
-        {freeDandiya && <p className="text-[11.5px] font-black text-emerald-700 mt-0.5">✓ FREE Dandiya pair included</p>}
-        <div className="grid grid-cols-2 gap-1.5 mt-2.5">
+        <p className="text-[11px] sm:text-[11.5px] font-bold text-[#8a6d1f] mt-1.5 leading-snug">Rent + ₹{refundableExtra(price).toLocaleString('en-IN')} refundable · Buy no return</p>
+        {freeDandiya && <p className="text-[11px] sm:text-[11.5px] font-black text-emerald-700 mt-0.5">✓ FREE Dandiya included</p>}
+        <div className="grid grid-cols-2 gap-1.5 mt-2">
           <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id, 'rent'); }}
             disabled={soldOut}
-            className="inline-flex items-center justify-center gap-1.5 text-white text-[12.5px] font-bold rounded-full py-2.5 bg-[#1e7a45] shadow-[0_12px_22px_-12px_rgba(30,122,69,.6)] hover:brightness-110 transition disabled:opacity-40">
-            <ShoppingBasket size={13} /> {soldOut ? 'Out of Stock' : `Rent ₹${price.toLocaleString('en-IN')}`}
+            className="inline-flex items-center justify-center gap-1 text-white text-[12px] sm:text-[12.5px] font-bold rounded-full py-2.5 px-1 bg-[#1e7a45] shadow-[0_12px_22px_-12px_rgba(30,122,69,.6)] hover:brightness-110 transition disabled:opacity-40 whitespace-nowrap">
+            <ShoppingBasket size={13} className="shrink-0" /> {soldOut ? 'Stock out' : 'Rent'}
           </button>
           <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id, 'buy'); }}
             disabled={soldOut}
-            className="inline-flex items-center justify-center gap-1.5 text-[#f7ead0] text-[12.5px] font-bold rounded-full py-2.5 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] ring-1 ring-[#c9a44a]/40 shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 transition disabled:opacity-40">
-            <ShoppingBasket size={13} /> {soldOut ? 'Out of Stock' : `Buy ₹${buyPrice.toLocaleString('en-IN')}`}
+            className="inline-flex items-center justify-center gap-1 text-[#f7ead0] text-[12px] sm:text-[12.5px] font-bold rounded-full py-2.5 px-1 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] ring-1 ring-[#c9a44a]/40 shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 transition disabled:opacity-40 whitespace-nowrap">
+            <ShoppingBasket size={13} className="shrink-0" /> {soldOut ? 'Stock out' : 'Buy'}
           </button>
         </div>
       </div>

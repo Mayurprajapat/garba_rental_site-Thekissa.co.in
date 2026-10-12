@@ -178,22 +178,22 @@ export function QuickView() {
                 <p className="label-pro">Rent or Buy — you choose</p>
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   <button type="button" onClick={() => setMode('rent')}
-                    className={`text-left border rounded-2xl p-3 transition ${!isBuy ? 'border-[#641629] bg-[#faf7ef] ring-2 ring-[#641629]/20' : 'border-black/10 bg-white hover:border-black/30'}`}>
+                    className={`text-left border rounded-2xl p-2.5 sm:p-3 transition min-w-0 ${!isBuy ? 'border-[#641629] bg-[#faf7ef] ring-2 ring-[#641629]/20' : 'border-black/10 bg-white hover:border-black/30'}`}>
                     <span className="flex items-center gap-1.5 text-[13px] font-bold">
-                      <span className={`w-4 h-4 rounded-full border-2 grid place-items-center ${!isBuy ? 'border-[#641629]' : 'border-black/25'}`}>{!isBuy && <span className="w-2 h-2 rounded-full bg-[#641629]" />}</span>
+                      <span className={`w-4 h-4 rounded-full border-2 grid place-items-center shrink-0 ${!isBuy ? 'border-[#641629]' : 'border-black/25'}`}>{!isBuy && <span className="w-2 h-2 rounded-full bg-[#641629]" />}</span>
                       Rent
                     </span>
-                    <b className="block text-[15px] mt-1">₹{p.rent1.toLocaleString('en-IN')}</b>
-                    <span className="block text-[11px] text-[#6f5b6a]">1-day · return after event</span>
+                    <b className="block text-[15px] mt-1 truncate">₹{p.rent1.toLocaleString('en-IN')}</b>
+                    <span className="block text-[11px] text-[#6f5b6a] leading-snug">1-day · return after event</span>
                   </button>
                   <button type="button" onClick={() => setMode('buy')}
-                    className={`text-left border rounded-2xl p-3 transition ${isBuy ? 'border-[#641629] bg-[#faf7ef] ring-2 ring-[#641629]/20' : 'border-black/10 bg-white hover:border-black/30'}`}>
+                    className={`text-left border rounded-2xl p-2.5 sm:p-3 transition min-w-0 ${isBuy ? 'border-[#641629] bg-[#faf7ef] ring-2 ring-[#641629]/20' : 'border-black/10 bg-white hover:border-black/30'}`}>
                     <span className="flex items-center gap-1.5 text-[13px] font-bold">
-                      <span className={`w-4 h-4 rounded-full border-2 grid place-items-center ${isBuy ? 'border-[#641629]' : 'border-black/25'}`}>{isBuy && <span className="w-2 h-2 rounded-full bg-[#641629]" />}</span>
+                      <span className={`w-4 h-4 rounded-full border-2 grid place-items-center shrink-0 ${isBuy ? 'border-[#641629]' : 'border-black/25'}`}>{isBuy && <span className="w-2 h-2 rounded-full bg-[#641629]" />}</span>
                       Buy
                     </span>
-                    <b className="block text-[15px] mt-1">₹{p.buy.toLocaleString('en-IN')}</b>
-                    <span className="block text-[11px] text-[#6f5b6a]">Yours forever · no return</span>
+                    <b className="block text-[15px] mt-1 truncate">₹{p.buy.toLocaleString('en-IN')}</b>
+                    <span className="block text-[11px] text-[#6f5b6a] leading-snug">Yours forever · no return</span>
                   </button>
                 </div>
               </div>
@@ -224,7 +224,7 @@ export function QuickView() {
                 )}
               </div>
               )}
-              <div className="flex items-baseline gap-2 mt-3"><b className="font-display text-[22px]">₹{(lineTotal * qty).toLocaleString('en-IN')}</b>{!isBuy && p.buy > p.rent1 && <><s className="text-[#8a7584] text-sm">₹{p.buy.toLocaleString('en-IN')}</s><span className="text-[11px] font-black text-white bg-emerald-600 rounded-full px-2 py-0.5">SAVE {Math.round((1 - p.rent1 / p.buy) * 100)}%</span></>}{isBuy && <span className="text-[11px] font-black text-white bg-[#641629] rounded-full px-2 py-0.5">BUY · NO RETURN</span>}</div>
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-3"><b className="font-display text-[22px]">₹{(lineTotal * qty).toLocaleString('en-IN')}</b>{!isBuy && p.buy > p.rent1 && <><s className="text-[#8a7584] text-sm">₹{p.buy.toLocaleString('en-IN')}</s><span className="text-[11px] font-black text-white bg-emerald-600 rounded-full px-2 py-0.5">SAVE {Math.round((1 - p.rent1 / p.buy) * 100)}%</span></>}{isBuy && <span className="text-[11px] font-black text-white bg-[#641629] rounded-full px-2 py-0.5">BUY · NO RETURN</span>}</div>
               {!isBuy
                 ? <p className="text-[11.5px] text-emerald-700 font-semibold mt-0.5">+ ₹{refundableExtra(p.rent1).toLocaleString('en-IN')} refundable extra (30% — you get it back)</p>
                 : <p className="text-[11.5px] text-black/55 font-medium mt-0.5">One-time price · no deposit, no return needed</p>}
