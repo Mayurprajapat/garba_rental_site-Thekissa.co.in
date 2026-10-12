@@ -209,7 +209,7 @@ function normalizeCompleteLook(raw: any): CompleteLook {
 
 function normalize(c: SiteContent): SiteContent {
   const savedStore = c.store || {};
-  const savedHero = c.hero || {};
+  const savedHero = (c as any).hero || {};
   const savedLooks = c.looks || {};
   // If the old default hero subtitle (menswear mention) is present, use the new ladies-only subtitle
   const OLD_SUB = 'Chaniya Choli, Kediyu-Dhoti and bridal couture';
@@ -239,9 +239,15 @@ function normalize(c: SiteContent): SiteContent {
     ? (c as any).shopNote.replace(/\s*[·•|]\s*Codes:.*$/i, '').replace(/1-day, 3-day or 9-day rentals/i, '1-day rentals').replace(/100% refundable deposit/i, '100% refundable 30% extra').trim()
     : '';
   const shopNote = rawNote || DEFAULT_CONTENT.shopNote;
+  // Refundable extra % — admin sets it (0–90). Invalid/old values fall back to 30.
+  // Note: null/undefined/'' = not set → 30. Explicit 0 = no extra (allowed).
+  const rawPctIn = (c as any).refundablePct;
+  const rawPct = rawPctIn == null || rawPctIn === '' ? NaN : Number(rawPctIn);
+  const refundablePct = Number.isFinite(rawPct) ? Math.min(90, Math.max(0, Math.round(rawPct))) : 30;
   return {
     ...DEFAULT_CONTENT,
     ...c,
+    refundablePct,
     store: {
       ...DEFAULT_CONTENT.store,
       ...savedStore,

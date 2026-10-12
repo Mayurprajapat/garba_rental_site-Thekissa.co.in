@@ -17,6 +17,19 @@ export function normalizeSizes(input: unknown): string[] {
   return clean.length ? clean : [...ALL_SIZES];
 }
 
+/**
+ * Shop-tile tags ko safe banao — lowercase tile ids, max 10.
+ * Khaali/missing = [] = keyword auto-match (purana behaviour).
+ */
+export function normalizeTags(input: unknown): string[] {
+  if (!Array.isArray(input)) return [];
+  return [...new Set(
+    input
+      .map((t) => String(t ?? '').trim().toLowerCase().slice(0, 40))
+      .filter(Boolean)
+  )].slice(0, 10);
+}
+
 export interface Accessory {
   name: string;
   tag: 'included' | 'free' | 'addon';
@@ -48,6 +61,9 @@ export interface Product {
   fabric: string;
   // Admin override — khaali ho to category default look use hota hai (lookFor)
   accessories?: Accessory[];
+  // Shop tiles (Admin → Categories) — tick kiya to dress/item SIRF wahi tiles me dikhega.
+  // Khaali/missing = keyword se auto-match (purana behaviour). Tile id lowercase me save hota hai.
+  tags?: string[];
 }
 
 // NOTE: Demo catalog — 11 ladies demo products, har category tile ke liye alag stock.

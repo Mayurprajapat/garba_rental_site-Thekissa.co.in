@@ -5,7 +5,7 @@ import { addonTotal, lookFor, normalizeSizes, photosFor, spinFramesFor, STORE, w
 import { itemImgFor } from '../lib/items';
 import { fetchOrderById, fetchOrdersByPhone, cloudLookupDiag, isUtrUsed, saveBooking } from '../lib/db';
 import { looksFakeUtr } from '../lib/utr';
-import { formatINR, halfAdvance, isValidIndianPhone, makeOrderId, refundableExtra } from '../lib/order';
+import { formatINR, halfAdvance, isValidIndianPhone, makeOrderId, refundableExtra, getRefundablePct } from '../lib/order';
 import { useProducts } from '../lib/ProductsContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { getSiteContent, useSiteVersion } from '../lib/siteContent';
@@ -226,7 +226,7 @@ export function QuickView() {
               )}
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mt-3"><b className="font-display text-[22px]">₹{(lineTotal * qty).toLocaleString('en-IN')}</b>{!isBuy && p.buy > p.rent1 && <><s className="text-[#8a7584] text-sm">₹{p.buy.toLocaleString('en-IN')}</s><span className="text-[11px] font-black text-white bg-emerald-600 rounded-full px-2 py-0.5">SAVE {Math.round((1 - p.rent1 / p.buy) * 100)}%</span></>}{isBuy && <span className="text-[11px] font-black text-white bg-[#641629] rounded-full px-2 py-0.5">BUY · NO RETURN</span>}</div>
               {!isBuy
-                ? <p className="text-[11.5px] text-emerald-700 font-semibold mt-0.5">+ ₹{refundableExtra(p.rent1).toLocaleString('en-IN')} refundable extra (30% — you get it back)</p>
+                ? <p className="text-[11.5px] text-emerald-700 font-semibold mt-0.5">+ ₹{refundableExtra(p.rent1).toLocaleString('en-IN')} refundable extra ({getRefundablePct()}% — you get it back)</p>
                 : <p className="text-[11.5px] text-black/55 font-medium mt-0.5">One-time price · no deposit, no return needed</p>}
               <div className="flex items-center justify-between mt-4 border border-black/10 rounded-2xl px-3.5 py-2.5">
                 <span className="text-[12.5px] font-bold">Quantity <span className="block text-[11px] font-normal text-black/50">How many dresses do you need?</span></span>
@@ -633,9 +633,11 @@ export function CartDrawer() {
   const half = halfAdvance(total);
   // Buy ho to sirf full payment — half sirf rent ke liye
   const effectivePayChoice = hasBuy ? 'full' as const : payChoice;
-  // Full = rent + 30% extra together (nothing on delivery, extra returned later).
-  // Half = 50% rent now, remaining rent + 30% extra on delivery.
+  // Full = rent + refundable extra together (nothing on delivery, extra returned later).
+  // Half = 50% rent now, remaining rent + refundable extra on delivery.
   // Buy items hon to half band — sirf full.
+  // Admin → Website se % badalta hai, live re-render ke liye fresh read.
+  const pct = getRefundablePct();
   const payAmount = effectivePayChoice === 'full' ? total + deposit : half;
   const rentBalance = effectivePayChoice === 'full' ? 0 : total - half;
   const extraDue = effectivePayChoice === 'full' ? 0 : deposit;
@@ -740,8 +742,10 @@ export function CartDrawer() {
     proof,
   });
 
-  const buildCustomerMsg = (o: { id: string; total: number; deposit: number; token: number; mode: string }) =>
-    `Your order has been placed successfully!\n\nOrder ID: ${o.id}\nName: ${name}\nEvent: ${eventDate || 'TBD'}\nTotal${hasRent ? ' rent' : ''}${hasBuy && hasRent ? ' + buy' : hasBuy ? ' (buy)' : ''}: ${formatINR(o.total)}\nPaid now: ${formatINR(o.token)}${o.mode === 'upi-qr-full' ? (o.deposit > 0 ? ' (rent + 30% extra — nothing due on delivery)' : ' (full payment — nothing due on delivery)') : ''}${o.deposit > 0 ? `\nRefundable extra 30%: ${formatINR(o.deposit)} — you will get this back when you return the outfit.` : ''}\n\nThank you for shopping with TheKissa.co! Delivery updates will be shared with you on WhatsApp/SMS.`;
+  const buildCustomerMsg = (o: { id: string; total: number; deposit: number; token: number; mode: string }) => {
+    const pct = getRefundablePct();
+    return `Your order has been placed successfully!\n\nOrder ID: ${o.id}\nName: ${name}\nEvent: ${eventDate || 'TBD'}\nTotal${hasRent ? ' rent' : ''}${hasBuy && hasRent ? ' + buy' : hasBuy ? ' (buy)' : ''}: ${formatINR(o.total)}\nPaid now: ${formatINR(o.token)}${o.mode === 'upi-qr-full' ? (o.deposit > 0 ? ` (rent + ${pct}% extra — nothing due on delivery)` : ' (full payment — nothing due on delivery)') : ''}${o.deposit > 0 ? `\nRefundable extra ${pct}%: ${formatINR(o.deposit)} — you will get this back when you return the outfit.` : ''}\n\nThank you for shopping with TheKissa.co! Delivery updates will be shared with you on WhatsApp/SMS.`;
+  };
 
   const orderLines = () => rows.map((r, i) => r.single
     ? `${i + 1}. ${r.single.name} (accessory only — ${r.p.id} look) x${r.qty} = ${formatINR(r.single.price * r.qty)}`
@@ -751,8 +755,10 @@ export function CartDrawer() {
   // Earning (rent+buy) vs refundable deposit vs total collection — on three separate lines,
   // so the store sees at a glance how much to keep and how much to return.
   // The order is 'new' — the admin confirms/cancels after checking the UTR + screenshot.
-  const buildStoreMsg = (o: { id: string; mode: string; token: number; total: number; deposit: number; lines: string[]; paymentId: string }) =>
-    `New order ${o.id} — TheKissa.co\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\n\nTotal (your earning): ${formatINR(o.total)}\n${o.mode === 'upi-qr-full' ? `Payment: Full ${formatINR(o.token)}${o.deposit > 0 ? ' (rent + 30% extra)' : ''} received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments, then confirm` : o.mode === 'upi-qr-half' ? `Payment: Half ${formatINR(o.token)} received via QR (UTR ${o.paymentId}), balance ${formatINR(o.total - o.token)} + 30% extra ${formatINR(o.deposit)} on delivery — VERIFY in Reports → Payments, then confirm` : `Payment: Token ${formatINR(o.token)} received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments, then confirm`}${o.deposit > 0 ? `\nRefundable extra 30%: ${formatINR(o.deposit)}${o.mode === 'upi-qr-full' ? ' (already received — return on outfit return)' : ' — collect on delivery, return on outfit return'}` : '\nNo deposit — buy order, no return needed.'}\nTotal collection: ${formatINR(o.total + o.deposit)} (${formatINR(o.token)} received + ${formatINR(Math.max(0, o.total - o.token + (o.mode === 'upi-qr-full' ? 0 : o.deposit)))} on delivery)`;
+  const buildStoreMsg = (o: { id: string; mode: string; token: number; total: number; deposit: number; lines: string[]; paymentId: string }) => {
+    const pct = getRefundablePct();
+    return `New order ${o.id} — TheKissa.co\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\n\nTotal (your earning): ${formatINR(o.total)}\n${o.mode === 'upi-qr-full' ? `Payment: Full ${formatINR(o.token)}${o.deposit > 0 ? ` (rent + ${pct}% extra)` : ''} received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments, then confirm` : o.mode === 'upi-qr-half' ? `Payment: Half ${formatINR(o.token)} received via QR (UTR ${o.paymentId}), balance ${formatINR(o.total - o.token)} + ${pct}% extra ${formatINR(o.deposit)} on delivery — VERIFY in Reports → Payments, then confirm` : `Payment: Token ${formatINR(o.token)} received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments, then confirm`}${o.deposit > 0 ? `\nRefundable extra ${pct}%: ${formatINR(o.deposit)}${o.mode === 'upi-qr-full' ? ' (already received — return on outfit return)' : ' — collect on delivery, return on outfit return'}` : '\nNo deposit — buy order, no return needed.'}\nTotal collection: ${formatINR(o.total + o.deposit)} (${formatINR(o.token)} received + ${formatINR(Math.max(0, o.total - o.token + (o.mode === 'upi-qr-full' ? 0 : o.deposit)))} on delivery)`;
+  };
 
   const goQr = () => {
     const v = validateDetails();
@@ -895,11 +901,11 @@ export function CartDrawer() {
                     <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Order ID</span><b className="text-right break-words min-w-0">{order.id}</b></div>
                     <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Name</span><b className="text-right break-words min-w-0">{name}</b></div>
                     {address.trim() && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Delivery</span><b className="text-[12.5px] text-right break-words min-w-0">{address.trim()}</b></div>}
-                    <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Payment</span><b className="text-right break-words min-w-0">{order.mode === 'upi-qr-full' ? `Full claimed via QR ${formatINR(order.token)}${order.deposit > 0 ? ' (rent + 30% extra)' : ''} · verification pending` : order.mode === 'upi-qr-half' ? `Half claimed via QR ${formatINR(order.token)} · Balance ${formatINR(order.total - order.token)} + 30% extra ${formatINR(order.deposit)} on delivery · verification pending` : order.mode === 'upi-qr' ? `Token claimed via QR ${formatINR(order.token)} · verification pending` : 'Pay on delivery'}</b></div>
+                    <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Payment</span><b className="text-right break-words min-w-0">{order.mode === 'upi-qr-full' ? `Full claimed via QR ${formatINR(order.token)}${order.deposit > 0 ? ` (rent + ${pct}% extra)` : ''} · verification pending` : order.mode === 'upi-qr-half' ? `Half claimed via QR ${formatINR(order.token)} · Balance ${formatINR(order.total - order.token)} + ${pct}% extra ${formatINR(order.deposit)} on delivery · verification pending` : order.mode === 'upi-qr' ? `Token claimed via QR ${formatINR(order.token)} · verification pending` : 'Pay on delivery'}</b></div>
                     {order.paymentId && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Txn ID</span><b className="text-[12px] text-right break-all">{order.paymentId}</b></div>}
                     <div className="border-t border-black/10 my-2 pt-2 flex justify-between"><span>Total</span><b>{formatINR(order.total)}</b></div>
                     {order.deposit > 0
-                      ? <><div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Refundable extra 30% (you get back on return)</span><b>{formatINR(order.deposit)}</b></div>
+                      ? <><div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Refundable extra {pct}% (you get back on return)</span><b>{formatINR(order.deposit)}</b></div>
                     <p className="text-[11px] text-black/50 pt-1">You will get {formatINR(order.deposit)} back via UPI/cash within 24h of return.</p></>
                       : <p className="text-[11px] text-black/50 pt-1">Buy order — no deposit, no return needed.</p>}
                   </div>
@@ -941,7 +947,7 @@ export function CartDrawer() {
                   {promo.trim() && disc <= 0 && <p className="text-[11.5px] text-rose-700 font-medium">This code is not valid for this order.</p>}
                   <div className="flex justify-between text-[15px]"><span>Total{hasBuy && hasRent ? ' (rent + buy)' : hasBuy ? ' (buy)' : ' rent'}</span><b>{formatINR(total)}</b></div>
                   {deposit > 0
-                    ? <><div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Refundable extra 30% (you get back on return)</span><b>{formatINR(deposit)}</b></div>
+                    ? <><div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Refundable extra {pct}% (you get back on return)</span><b>{formatINR(deposit)}</b></div>
                   <p className="text-[11px] text-black/50">You will get {formatINR(deposit)} back via UPI/cash within 24h of return · QR scan & pay via any UPI app</p></>
                     : <p className="text-[11px] text-black/50">Buy order — no deposit, no return needed · QR scan & pay via any UPI app</p>}
                 </div>
@@ -949,12 +955,12 @@ export function CartDrawer() {
                 <div className="grid gap-2">
                   <button type="button" onClick={() => setPayChoice('full')} className={`text-left border rounded-2xl p-3.5 text-sm transition ${effectivePayChoice === 'full' ? 'border-[#641629] bg-[#faf7ef] ring-2 ring-[#641629]/20' : 'border-black/10 bg-white hover:border-black/30'}`}>
                     <span className="flex items-center gap-2 font-bold"><span className={`w-4 h-4 rounded-full border-2 grid place-items-center ${effectivePayChoice === 'full' ? 'border-[#641629]' : 'border-black/25'}`}>{effectivePayChoice === 'full' && <span className="w-2 h-2 rounded-full bg-[#641629]" />}</span> Full payment <span className="ml-auto text-[10px] font-bold bg-emerald-600 text-white rounded-full px-2 py-0.5">RECOMMENDED</span></span>
-                    <span className="block text-[12.5px] mt-1">Pay now <b>{formatINR(total + deposit)}</b>{deposit > 0 ? ' (rent + 30% extra)' : ' (full amount)'} · Nothing due on delivery{deposit > 0 ? <> · <b>{formatINR(deposit)}</b> back on return</> : ''}</span>
+                    <span className="block text-[12.5px] mt-1">Pay now <b>{formatINR(total + deposit)}</b>{deposit > 0 ? ` (rent + ${pct}% extra)` : ' (full amount)'} · Nothing due on delivery{deposit > 0 ? <> · <b>{formatINR(deposit)}</b> back on return</> : ''}</span>
                   </button>
                   {!hasBuy && (
                   <button type="button" onClick={() => setPayChoice('half')} className={`text-left border rounded-2xl p-3.5 text-sm transition ${payChoice === 'half' ? 'border-[#641629] bg-[#faf7ef] ring-2 ring-[#641629]/20' : 'border-black/10 bg-white hover:border-black/30'}`}>
                     <span className="flex items-center gap-2 font-bold"><span className={`w-4 h-4 rounded-full border-2 grid place-items-center ${payChoice === 'half' ? 'border-[#641629]' : 'border-black/25'}`}>{payChoice === 'half' && <span className="w-2 h-2 rounded-full bg-[#641629]" />}</span> Half payment <span className="ml-auto text-[10px] font-bold bg-black text-white rounded-full px-2 py-0.5">50% NOW</span></span>
-                    <span className="block text-[12.5px] mt-1">Pay now <b>{formatINR(half)}</b> (50%) · Balance <b>{formatINR(total - half)}</b> + 30% extra <b>{formatINR(deposit)}</b> on delivery</span>
+                    <span className="block text-[12.5px] mt-1">Pay now <b>{formatINR(half)}</b> (50%) · Balance <b>{formatINR(total - half)}</b> + {pct}% extra <b>{formatINR(deposit)}</b> on delivery</span>
                   </button>
                   )}
                   {hasBuy && <p className="text-[11.5px] text-black/55">Buy items me sirf full payment hota hai — half payment sirf rent ke liye hai.</p>}
@@ -979,8 +985,8 @@ export function CartDrawer() {
                       <p className="text-[11px] font-bold tracking-[0.14em]">SCAN & PAY {effectivePayChoice === 'full' ? 'FULL AMOUNT' : 'HALF AMOUNT'}</p>
                       <b className="font-display text-[32px] text-[#641629] leading-none mt-1 block">{formatINR(payAmount)}</b>
                       {effectivePayChoice === 'full'
-                        ? <p className="text-[11.5px] text-emerald-700 font-semibold mt-1">{deposit > 0 ? 'Full — rent + 30% extra paid, nothing due on delivery' : 'Full payment — nothing due on delivery'}</p>
-                        : <p className="text-[11.5px] text-black/55 mt-1">Half payment (50%) — balance {formatINR(rentBalance)} + 30% extra {formatINR(extraDue)} due on delivery</p>}
+                        ? <p className="text-[11.5px] text-emerald-700 font-semibold mt-1">{deposit > 0 ? `Full — rent + ${pct}% extra paid, nothing due on delivery` : 'Full payment — nothing due on delivery'}</p>
+                        : <p className="text-[11.5px] text-black/55 mt-1">Half payment (50%) — balance {formatINR(rentBalance)} + {pct}% extra {formatINR(extraDue)} due on delivery</p>}
                       <div className="mx-auto mt-3 w-fit bg-white p-3 rounded-2xl border border-black/10">
                         <QRCodeSVG value={upiLink} size={200} />
                       </div>
@@ -1072,7 +1078,7 @@ export function CartDrawer() {
                         })}
                       </div>
                       <div className="border-t border-black/10 mt-2 pt-2 flex justify-between text-[13px]"><span>Total</span><b>{formatINR(o.total)}</b></div>
-                      <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)}${o.deposit > 0 ? ' (rent + 30% extra)' : ''} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} + 30% extra ${formatINR(o.deposit)} on delivery${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : 'Pay on delivery'}{o.deposit > 0 ? ` · Refundable extra 30% ${formatINR(o.deposit)} — you get it back on return` : ' · Buy order — no return needed'}</p>
+                      <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)}${o.deposit > 0 ? ` (rent + ${pct}% extra)` : ''} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} + ${pct}% extra ${formatINR(o.deposit)} on delivery${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : 'Pay on delivery'}{o.deposit > 0 ? ` · Refundable extra ${pct}% ${formatINR(o.deposit)} — you get it back on return` : ' · Buy order — no return needed'}</p>
                       <span className={`inline-block mt-1 text-[10.5px] font-bold rounded-full px-2 py-0.5 border ${o.status === 'cancelled' ? 'text-white bg-rose-600 border-rose-600' : o.status === 'delivered' || o.status === 'returned' ? 'text-violet-800 bg-violet-50 border-violet-200' : o.status === 'confirmed' ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : o.status === 'onway' ? 'text-orange-800 bg-orange-50 border-orange-200' : 'text-amber-800 bg-amber-50 border-amber-200'}`}>
                         {o.status === 'cancelled' ? '✕ Cancelled' : o.status === 'delivered' ? '✓ Delivered' : o.status === 'returned' ? '✓ Returned' : o.status === 'confirmed' ? '✓ Confirmed' : o.status === 'onway' ? '🚚 On the way — arriving soon' : '⏳ Payment sent — awaiting store confirmation'}
                       </span>
@@ -1129,7 +1135,7 @@ export function CartDrawer() {
                         )}
                         {!!r.addons?.length && <p className="text-[11px] text-emerald-700 font-medium">+ {r.addons.join(', ')}</p>}
                         <b className="text-[14px]">{formatINR(rowPrice(r) * r.qty)}</b>
-                        {!r.single && r.plan !== 'buy' && <p className="text-[11px] text-emerald-700 font-semibold">+ {formatINR(refundableExtra(rowPrice(r) * r.qty))} refundable extra (30%)</p>}
+                        {!r.single && r.plan !== 'buy' && <p className="text-[11px] text-emerald-700 font-semibold">+ {formatINR(refundableExtra(rowPrice(r) * r.qty))} refundable extra ({pct}%)</p>}
                         {!r.single && r.plan === 'buy' && <p className="text-[11px] text-black/50 font-medium">No deposit · no return</p>}
                         <div className="flex items-center gap-2 mt-1.5">
                           <span className="text-[11px] font-bold text-black/55">Qty:</span>
@@ -1149,8 +1155,8 @@ export function CartDrawer() {
                     <div className="flex justify-between"><span>Subtotal</span><b>{formatINR(subtotal)}</b></div>
                     <div className="flex justify-between text-[17px]"><span>Total{hasBuy && hasRent ? ' (rent + buy)' : hasBuy ? ' (buy)' : ' rent'}</span><b>{formatINR(total)}</b></div>
                     {deposit > 0
-                      ? <><div className="flex justify-between text-emerald-700"><span>Refundable extra 30% (you get back)</span><b>{formatINR(deposit)}</b></div>
-                    <p className="text-[11px] text-black/50">{effectivePayChoice === 'full' ? `Nothing due on delivery — you will get ${formatINR(deposit)} back via UPI/cash within 24h of return.` : `Balance rent + 30% extra due on delivery. You will get ${formatINR(deposit)} back via UPI/cash within 24h of return.`}</p></>
+                      ? <><div className="flex justify-between text-emerald-700"><span>Refundable extra {pct}% (you get back)</span><b>{formatINR(deposit)}</b></div>
+                    <p className="text-[11px] text-black/50">{effectivePayChoice === 'full' ? `Nothing due on delivery — you will get ${formatINR(deposit)} back via UPI/cash within 24h of return.` : `Balance rent + ${pct}% extra due on delivery. You will get ${formatINR(deposit)} back via UPI/cash within 24h of return.`}</p></>
                       : <p className="text-[11px] text-black/50">Buy order — full payment now, no deposit, no return needed.</p>}
                   </div>
                   <button disabled={rows.length === 0} onClick={() => setStep('details')} className="w-full bg-[#221114] text-white font-semibold rounded-full py-3.5 text-sm disabled:opacity-40 flex items-center justify-center gap-2"><ShoppingBasket size={15} /> Proceed to Checkout →</button>

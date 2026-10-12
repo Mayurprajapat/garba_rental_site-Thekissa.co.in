@@ -59,7 +59,7 @@ function Dispatch({ bookings }: { bookings: B[] }) {
   const pretty = (() => { try { return new Date(day + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return day; } })();
 
   const text = `Dispatch list — ${pretty} (${list.length} deliveries)\n` + list.map((b, i) => {
-    // New full orders include the 30% extra in the token; old full orders include rent only
+    // Full orders include the refundable extra in the token (rate admin panel se lagta hai); old full orders include rent only
     const extraInToken = String(b.payment_mode) === 'upi-qr-full' ? Math.max(0, Number(b.token_amount || 0) - Number(b.total || b.subtotal || 0)) : 0;
     const rentBal = String(b.payment_mode) === 'upi-qr-full' ? 0 : Math.max(0, Number(b.total || b.subtotal || 0) - Number(b.token_amount || 0));
     const extraDue = Math.max(0, Number(b.deposit || 0) - extraInToken);

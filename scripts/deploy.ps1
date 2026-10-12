@@ -32,7 +32,7 @@ if (-not $changes) {
   Write-Host "Committed: $msg" -ForegroundColor Green
 }
 
-Write-Host '--- 3/3: Push (GitHub → Vercel auto-deploy) ---'
+Write-Host '--- 3/3: Push (GitHub to Vercel auto-deploy) ---'
 git push origin main
 Write-Host ''
-Write-Host 'DONE — 2-4 min me live hoga. Kuch aur karne ki zaroorat nahi.' -ForegroundColor Green
+Write-Host 'DONE - 2-4 min me live hoga. Kuch aur karne ki zaroorat nahi.' -ForegroundColor Green

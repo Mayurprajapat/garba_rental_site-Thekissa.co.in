@@ -38,9 +38,10 @@ import {
   type LocalBooking,
 } from '../lib/localAdmin';
 import { dataUrlToBlob, fileToCompressedDataUrl } from '../lib/proof';
-import { getCategories, resetCategories, saveCategories, type ShopCategory } from '../lib/categories';
+import { dressInTile, getCategories, itemInTile, resetCategories, saveCategories, type ShopCategory } from '../lib/categories';
 import type { Accessory } from '../data/products';
-import { ALL_SIZES, normalizeSizes } from '../data/products';
+import { ALL_SIZES, normalizeSizes, normalizeTags } from '../data/products';
+import { singlesFor } from '../components/Shop';
 import type { LiveProduct } from '../lib/ProductsContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import DeliveriesPanel from './admin/DeliveriesPanel';
@@ -100,6 +101,19 @@ function waCustomerLink(b: BookingRow): string | null {
 }
 
 const inr = (n: any) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+
+/** Category tile photo preview — toot/broken link ho to seedha warning (admin ko turant pata chale). */
+function CatImg({ src }: { src: string }) {
+  const [err, setErr] = useState(false);
+  if (!src || err) {
+    return (
+      <div className="w-16 h-[76px] rounded-xl border bg-black/5 grid place-items-center text-center text-[10px] leading-tight text-[#8a7584] shrink-0 px-1">
+        {src ? 'Photo load nahi hui — link check karo' : 'No photo'}
+      </div>
+    );
+  }
+  return <img src={src} alt="" onError={() => setErr(true)} className="w-16 h-[76px] object-contain rounded-xl border shrink-0" />;
+}
 
 /** Booking items in a short line — "Lehenga x1, Blouse" */
 function itemsShort(b: BookingRow): string {
@@ -391,6 +405,23 @@ export default function Admin() {
     return { live, lowStock, fresh, revenue, total: bookings.length };
   }, [products, bookings]);
 
+  // Har category tile me abhi kitne dresses/items match ho rahe hain — admin ko turant dikhe
+  const catCounts = useMemo(() => {
+    const singles = singlesFor(products);
+    const m = new Map<string, number>();
+    cats.forEach((c) => {
+      if (c.kind === 'item') {
+        m.set(c.id, singles.filter((it) => {
+          const parent = products.find((p) => p.id === it.productId);
+          return itemInTile(it.name, parent ?? {}, c);
+        }).length);
+      } else {
+        m.set(c.id, products.filter((p) => dressInTile(p, c)).length);
+      }
+    });
+    return m;
+  }, [products, cats]);
+
   const filteredProducts = products.filter((p) => {
     const okQ = q.trim() ? `${p.id} ${p.name} ${p.hindi}`.toLowerCase().includes(q.toLowerCase()) : true;
     const okC = catFilter === 'all' ? true : p.category === catFilter;
@@ -468,15 +499,17 @@ export default function Admin() {
       .slice(0, 30);
     // Sizes — kabhi empty/undefined save mat karo, warna website par gayab lagega
     const cleanSizes = normalizeSizes(editing.sizes);
-    const toSave = { ...editing, sizes: cleanSizes, accessories: cleanLook };
+    // Shop tiles — lowercase tile ids, max 10. Khaali = keyword auto-match.
+    const cleanTags = normalizeTags((editing as any).tags);
+    const toSave = { ...editing, sizes: cleanSizes, accessories: cleanLook, tags: cleanTags };
     if (useCloud && supabase) {
       const { error } = await supabase.from('products').upsert({ ...toSave, badge: toSave.badge || null }, { onConflict: 'id' });
       if (error && /column|schema cache|does not exist/i.test(error.message)) {
-        // Old cloud schema (without accessories/images/rent1 columns) — retry without them
-        const { accessories: _a, images: _i, rent1: _r, ...legacy } = toSave as any;
+        // Old cloud schema (without accessories/images/rent1/tags columns) — retry without them
+        const { accessories: _a, images: _i, rent1: _r, tags: _t, ...legacy } = toSave as any;
         const { error: err2 } = await supabase.from('products').upsert({ ...legacy, badge: toSave.badge || null }, { onConflict: 'id' });
-        if (!err2 && (cleanLook.length || (toSave.images ?? []).length || (editing as any).rent1 != null)) {
-          setMsg('Product saved, but Complete look / photos / 1-day rent did not save — run supabase/SETUP_ONCE.sql in Supabase (one-time), then save again.');
+        if (!err2 && (cleanLook.length || (toSave.images ?? []).length || (editing as any).rent1 != null || cleanTags.length)) {
+          setMsg('Product saved, but Complete look / photos / 1-day rent / tiles did not save — run supabase/SETUP_ONCE.sql in Supabase (one-time), then save again.');
         } else {
           setMsg(err2 ? 'Error: ' + err2.message : 'Product saved — live on website (sizes: ' + cleanSizes.join(', ') + ').');
         }
@@ -785,11 +818,16 @@ export default function Admin() {
                 <div className="grid sm:grid-cols-2 gap-3 mt-4">
                   {cats.map((c) => (
                     <div key={c.id} className="admin-card p-4 flex gap-3">
-                      {c.img
-                        ? <img src={c.img} alt="" className="w-16 h-[76px] object-contain rounded-xl border shrink-0" />
-                        : <div className="w-16 h-[76px] rounded-xl border bg-black/5 grid place-items-center text-[10px] text-[#8a7584] shrink-0">No photo</div>}
+                      <CatImg key={c.img} src={c.img} />
                       <div className="flex-1 min-w-0 space-y-2">
                         <label className="label-pro block">Name<input value={c.label} onChange={(e) => persistCats(cats.map((x) => (x.id === c.id ? { ...x, label: e.target.value } : x)))} className="admin-input mt-1" /></label>
+                        {(() => {
+                          const n = catCounts.get(c.id) ?? 0;
+                          const unit = c.kind === 'item' ? (n === 1 ? 'item' : 'items') : (n === 1 ? 'dress' : 'dresses');
+                          return n > 0
+                            ? <p className="text-[11.5px] font-bold text-emerald-700">✓ {n} {unit} match — website par dikhega</p>
+                            : <p className="text-[11.5px] font-bold text-amber-700">⚠ 0 match — keyword badlo ya product me ye tile tick karo</p>;
+                        })()}
                         <div className="grid grid-cols-2 gap-2">
                           <label className="label-pro block">Type
                             <select value={c.kind} onChange={(e) => persistCats(cats.map((x) => (x.id === c.id ? { ...x, kind: e.target.value as 'dress' | 'item', cats: undefined } : x)))} className="admin-input mt-1">
@@ -1087,6 +1125,30 @@ export default function Admin() {
                 </label>
               </div>
               <label className="label-pro block">Name<input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} className="admin-input mt-1.5" placeholder="Mirror-work Chaniya Choli" required /></label>
+              <div>
+                <p className="label-pro">Shop tiles — ye dress kin tiles me dikhega</p>
+                {cats.length === 0 ? (
+                  <p className="text-[12px] text-[#8a7584] mt-1.5">Pehle Categories tab me tiles banao — phir yahan tick kar paoge.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {cats.map((t) => {
+                      const cur = normalizeTags((editing as any).tags);
+                      const id = t.id.toLowerCase();
+                      const on = cur.includes(id);
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setEditing({ ...editing, tags: on ? cur.filter((x) => x !== id) : [...cur, id] } as any)}
+                          title={on ? 'Tap to remove from this tile' : 'Tap to show in this tile'}
+                          className={`text-[12px] font-bold rounded-full px-3 py-1.5 border capitalize transition ${on ? 'bg-[#1a0f1e] text-white border-[#1a0f1e]' : 'bg-white text-[#3d2b36] hover:border-black'}`}
+                        >{t.label} · {t.kind}</button>
+                      );
+                    })}
+                  </div>
+                )}
+                <p className="text-[11.5px] text-[#8a7584] mt-1.5">Kuch tick nahi = naam/description se auto (jaise abhi) · Tick kiya = SIRF wahi tiles me dikhega, keyword ignore. Single-rent items (jewellery wagera) bhi parent dress ke tick se us tile me aayenge.</p>
+              </div>
               <label className="label-pro block">Tagline<input value={editing.hindi} onChange={(e) => setEditing({ ...editing, hindi: e.target.value })} className="admin-input mt-1.5" /></label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {([['rent1', 'Rent ₹ — website Rent button'], ['buy', 'Buy ₹ — website Buy button'], ['deposit', 'Deposit']] as const).map(([k, l]) => (

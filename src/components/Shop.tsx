@@ -3,9 +3,9 @@ import { Gem, Heart, SearchX, ShoppingBasket, SlidersHorizontal, Star, X } from 
 import { useEffect, useMemo, useState } from 'react';
 import { lookFor, spinFramesFor, type Product } from '../data/products';
 import type { LiveProduct } from '../lib/ProductsContext';
-import { categoriesEvent, getCategories, matchesCategory, type ShopCategory } from '../lib/categories';
+import { categoriesEvent, dressInTile, getCategories, itemInTile, type ShopCategory } from '../lib/categories';
 import { itemImgFor } from '../lib/items';
-import { refundableExtra } from '../lib/order';
+import { refundableExtra, getRefundablePct } from '../lib/order';
 import { useProducts } from '../lib/ProductsContext';
 import { getSiteContent, useSiteVersion } from '../lib/siteContent';
 import { useStore } from '../store/useStore';
@@ -29,6 +29,15 @@ export function singlesFor(products: Product[]): SingleItem[] {
       });
   });
   return [...map.values()];
+}
+
+/** Category tile photo — toot/broken link ho to "No photo" box (kabhi broken icon nahi). */
+function TileImg({ src, alt }: { src: string; alt: string }) {
+  const [err, setErr] = useState(false);
+  if (!src || err) {
+    return <div className="absolute inset-0 grid place-items-center text-[10px] text-neutral-400 bg-[#f4f1ea]">No photo</div>;
+  }
+  return <img src={src} alt={alt} loading="lazy" decoding="async" onError={() => setErr(true)} className="absolute inset-0 w-full h-full object-contain" />;
 }
 
 function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
@@ -95,7 +104,7 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
             <b className="block font-display text-[13px] sm:text-[16px] text-[#641629] tabular-nums leading-tight truncate">₹{buyPrice.toLocaleString('en-IN')}</b>
           </div>
         </div>
-        <p className="text-[10.5px] sm:text-[11.5px] font-bold text-[#8a6d1f] mt-1 sm:mt-1.5 leading-snug">Rent + ₹{refundableExtra(price).toLocaleString('en-IN')} refundable · Buy no return</p>
+        <p className="text-[10.5px] sm:text-[11.5px] font-bold text-[#8a6d1f] mt-1 sm:mt-1.5 leading-snug">Rent + ₹{refundableExtra(price).toLocaleString('en-IN')} refundable ({getRefundablePct()}%) · Buy no return</p>
         {freeDandiya && <p className="text-[10.5px] sm:text-[11.5px] font-black text-emerald-700 mt-0.5">✓ FREE Dandiya</p>}
         <div className="grid grid-cols-2 gap-1 sm:gap-1.5 mt-1.5 sm:mt-2">
           <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id, 'rent'); }}
@@ -199,14 +208,8 @@ export default function Shop() {
   const list = useMemo(() => {
     let l = [...PRODUCTS];
     if (activeCat?.kind === 'dress') {
-      // Dress group filter (women/men/kids/…) — then keyword (comma = OR)
-      if (activeCat.cats?.length) l = l.filter((p) => activeCat.cats!.includes(p.category));
-      if (activeCat.query.trim()) {
-        l = l.filter((p) => {
-          const hay = `${p.name} ${p.hindi} ${p.id} ${p.desc} ${p.category} ${p.fabric} ${p.colors.join(' ')} ${(p.accessories ?? []).map((a) => a.name).join(' ')}`.toLowerCase();
-          return matchesCategory(hay, activeCat.query);
-        });
-      }
+      // Tile rule: dress par tags tick hain to sirf ticked tiles — warna keyword + group match
+      l = l.filter((p) => dressInTile(p, activeCat));
     }
     l = l.filter((p) => p.rent1 <= maxPrice);
     if (search.trim()) {
@@ -224,13 +227,16 @@ export default function Shop() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [PRODUCTS, activeCat, search, sort, maxPrice, wishOnly, wishlist, siteV]);
 
-  // Item mode — ONLY single-rent items (no dress mix). Comma = OR, space = AND.
+  // Item mode — ONLY single-rent items (no dress mix). Tile rule: parent dress par
+  // tags tick hain to wahi final, warna item naam se keyword match.
   const itemList = useMemo(() => {
     if (!isItemMode) return [];
-    const q = (activeCat?.query ?? '').trim();
-    let items = singlesFor(PRODUCTS).filter((it) =>
-      !q || matchesCategory(it.name.toLowerCase(), q)
-    );
+    const tile = activeCat;
+    if (!tile) return [];
+    let items = singlesFor(PRODUCTS).filter((it) => {
+      const parent = PRODUCTS.find((p) => p.id === it.productId);
+      return itemInTile(it.name, parent ?? {}, tile);
+    });
     items = items.filter((it) => it.price <= maxPrice);
     if (wishOnly) items = items.filter((it) => wishlist.includes(it.productId));
     if (sort === 'low') items = [...items].sort((a, b) => a.price - b.price);
@@ -240,6 +246,22 @@ export default function Shop() {
   }, [PRODUCTS, activeCat, maxPrice, sort, isItemMode, wishOnly, wishlist, siteV]);
 
   const activeFilters = (maxPrice < 4000 ? 1 : 0) + (sort !== 'pop' ? 1 : 0) + (wishOnly ? 1 : 0);
+
+  // Har tile me kitne designs/items hain — tile par hi dikhta hai
+  const tileCounts = useMemo(() => {
+    const singles = singlesFor(PRODUCTS);
+    const m = new Map<string, number>();
+    cats.forEach((c) => {
+      m.set(c.id, c.kind === 'item'
+        ? singles.filter((it) => {
+            const parent = PRODUCTS.find((p) => p.id === it.productId);
+            return itemInTile(it.name, parent ?? {}, c);
+          }).length
+        : PRODUCTS.filter((p) => dressInTile(p, c)).length);
+    });
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [PRODUCTS, cats, siteV]);
 
   return (
     <section id="shop" className="bg-[#faf8f6] border-b border-[#641629]/10 scroll-mt-[112px]">
@@ -263,14 +285,13 @@ export default function Shop() {
           <div className="flex gap-2.5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
             {cats.map((c) => {
               const on = activeCat?.id === c.id;
+              const n = tileCounts.get(c.id) ?? 0;
               return (
                 <button key={c.id} onClick={() => pickCat(on ? null : c)}
                   className={`relative shrink-0 w-[132px] sm:w-[148px] h-[88px] sm:h-[98px] rounded-2xl overflow-hidden bg-[#f4f1ea] text-left transition-all duration-200 ${on ? 'ring-[3px] ring-[#221114] ring-offset-2 ring-offset-[#faf8f6]' : 'ring-1 ring-black/10 hover:ring-black/30'}`}>
-                  {c.img
-                    ? <img src={c.img} alt={c.label} loading="lazy" decoding="async" className="absolute inset-0 w-full h-full object-contain" />
-                    : <div className="absolute inset-0 grid place-items-center text-[10px] text-neutral-400 bg-[#f4f1ea]">No photo</div>}
+                  <TileImg src={c.img} alt={c.label} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-                  <span className="absolute top-1.5 right-1.5 text-[8.5px] font-bold tracking-wider uppercase bg-white/85 backdrop-blur rounded-full px-1.5 py-0.5">{c.kind === 'item' ? 'Item' : 'Dresses'}</span>
+                  <span className="absolute top-1.5 right-1.5 text-[8.5px] font-bold tracking-wider uppercase bg-white/85 backdrop-blur rounded-full px-1.5 py-0.5">{n} {c.kind === 'item' ? (n === 1 ? 'Item' : 'Items') : (n === 1 ? 'Design' : 'Designs')}</span>
                   <span className="absolute bottom-1.5 left-2 right-2 text-[11.5px] font-bold text-white leading-tight line-clamp-2 drop-shadow">{c.label}</span>
                 </button>
               );

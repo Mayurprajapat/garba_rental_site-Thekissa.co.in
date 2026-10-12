@@ -5,6 +5,8 @@ import Logo from '../components/Logo';
 import { Footer } from '../components/Sections';
 import { STORE } from '../data/store';
 import { getDelivery, listDeliveries, type Delivery } from '../lib/delivery';
+import { getRefundablePct } from '../lib/order';
+import { useSiteVersion } from '../lib/siteContent';
 
 export const BUSINESS = {
   name: STORE.name,
@@ -108,6 +110,8 @@ export function ContactPage() {
 }
 
 export function TermsPage() {
+  useSiteVersion();
+  const pct = getRefundablePct();
   return (
     <Shell title="Terms & Conditions" updated="October 2026">
       <P>
@@ -127,9 +131,9 @@ export function TermsPage() {
           'With half payment, the remaining 50% balance plus a refundable security deposit is collected on delivery/pickup.',
         ]}
       />
-      <H>3. Refundable extra (30%)</H>
+      <H>3. Refundable extra ({pct}%)</H>
       <P>
-        A refundable extra of 30% of the rent (shown per product) is collected on delivery. It is refunded via
+        A refundable extra of {pct}% of the rent (shown per product) is collected on delivery. It is refunded via
         UPI/cash within 24 hours of return and quality check.
       </P>
       <H>4. Damage &amp; loss</H>
@@ -204,6 +208,8 @@ export function PrivacyPage() {
 }
 
 export function RefundsPage() {
+  useSiteVersion();
+  const pct = getRefundablePct();
   return (
     <Shell title="Refund & Cancellation Policy" updated="October 2026">
       <P>
@@ -211,9 +217,9 @@ export function RefundsPage() {
         <a className="underline font-semibold" href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a> or{' '}
         <a className="underline font-semibold" href={BUSINESS.phoneHref}>{BUSINESS.phone}</a> with your Order ID.
       </P>
-      <H>1. Refundable extra (30%) — 100% refundable</H>
+      <H>1. Refundable extra ({pct}%) — 100% refundable</H>
       <P>
-        The refundable extra (30% of the rent) collected on delivery is returned via UPI/cash within 24 hours of outfit return and quality
+        The refundable extra ({pct}% of the rent) collected on delivery is returned via UPI/cash within 24 hours of outfit return and quality
         check.
       </P>
       <H>2. Cancellation by you</H>

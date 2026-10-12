@@ -11,10 +11,15 @@ import { getSiteContent } from './siteContent';
 
 // Refundable extra percentage — read from Admin → Website → Store settings.
 // Falls back to 30 if not set (legacy installations).
-function getRefundablePct(): number {
+// NOTE: always call this fresh — admin can change it from the panel,
+// so never cache it in a module-level const.
+export function getRefundablePct(): number {
   try {
     const c = getSiteContent();
-    if (c && typeof c.refundablePct === 'number' && c.refundablePct > 0) return c.refundablePct;
+    if (c && typeof c.refundablePct === 'number' && Number.isFinite(c.refundablePct)) {
+      const v = Math.round(c.refundablePct);
+      if (v >= 0 && v <= 90) return v;
+    }
   } catch { /* ignore */ }
   return 30;
 }
@@ -32,12 +37,17 @@ export function halfAdvance(total: number): number {
   return Math.round(total / 2);
 }
 
-/** Refundable extra — har dress par rent ka {getRefundablePct()}%, return par wapas. */
-export const REFUNDABLE_PCT = getRefundablePct();
+/** Refundable extra — har dress par rent ka {pct}%, return par wapas. Admin panel se badalta hai. */
+export function refundablePct(): number {
+  return getRefundablePct();
+}
+
+/** @deprecated Use getRefundablePct() — this const goes stale after admin changes the rate. */
+export const REFUNDABLE_PCT = 30;
 
 export function refundableExtra(rent: number): number {
   if (!(rent > 0)) return 0;
-  return Math.round((rent * REFUNDABLE_PCT) / 100);
+  return Math.round((rent * getRefundablePct()) / 100);
 }
 
 export function formatINR(n: number): string {

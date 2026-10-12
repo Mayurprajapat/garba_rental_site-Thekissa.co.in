@@ -43,6 +43,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
             badge: r.badge ?? undefined, desc: r.desc ?? '', fabric: r.fabric ?? '',
             accessories: Array.isArray(r.accessories) ? r.accessories : undefined,
             images: Array.isArray(r.images) ? r.images : undefined,
+            tags: Array.isArray((r as any).tags) ? (r as any).tags : undefined,
             stock: r.stock ?? 5, active: r.active ?? true,
           }))
         );

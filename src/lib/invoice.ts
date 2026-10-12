@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { MyOrder } from './myOrders';
+import { getRefundablePct } from './order';
 
 const MAROON: [number, number, number] = [77, 15, 31];
 const ESPRESSO: [number, number, number] = [43, 7, 14];
@@ -151,11 +152,19 @@ export function downloadInvoicePDF(o: MyOrder, opts?: {
   const extraDue = o.mode === 'upi-qr-full' ? 0 : o.deposit;
   row('Balance on delivery', inr(rentBal + extraDue));
   if (o.deposit > 0) {
-    row('Refundable extra 30%', inr(o.deposit), true, [22, 120, 70]);
+    // Order ke time jo rate laga tha wahi bill par — purane bill rate badalne par bhi sahi rahen.
+    // deposit = rate% of rent, isliye stored values se wapas nikalo; na mile to current rate.
+    let billPct = 0;
+    try { billPct = getRefundablePct(); } catch { billPct = 30; }
+    if (o.total > 0) {
+      const derived = Math.round((o.deposit / o.total) * 100);
+      if (derived >= 0 && derived <= 90) billPct = derived;
+    }
+    row(`Refundable extra ${billPct}%`, inr(o.deposit), true, [22, 120, 70]);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(...MUTED);
-    doc.text(`30% of ${inr(o.total)} — back on return`, labelX, y);
+    doc.text(`${billPct}% of ${inr(o.total)} — back on return`, labelX, y);
     y += 16;
   }
   row('Total collection', inr(o.total + o.deposit), true);

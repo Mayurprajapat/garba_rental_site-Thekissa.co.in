@@ -3,6 +3,7 @@
 // Local rules run on PRODUCTS data, so it never quotes wrong rates/sizes.
 
 import { PRODUCTS } from '../data/products';
+import { getRefundablePct } from './order';
 
 const AI_URL = (import.meta.env.VITE_AI_API_URL as string) || '';
 const AI_KEY = (import.meta.env.VITE_AI_API_KEY as string) || '';
@@ -68,7 +69,8 @@ function localReply(query: string): { text: string; products: ChatProduct[] } {
     return { text: 'Every dress page has a "The model wore this" list. Tick items to add them with the dress — and if you like a single item (e.g. only the jhumkas), press "Only this" to rent it alone without the dress. Which dress are you looking at?', products: pickProducts(query, 3) };
   }
   if (/deposit/.test(q)) {
-    return { text: 'The deposit is 100% refundable — returned via UPI/cash within 24 hours of return and quality check. Normal wear is never charged.', products: [] };
+    const pct = (() => { try { return getRefundablePct(); } catch { return 30; } })();
+    return { text: `The refundable extra (${pct}% of rent) is 100% refundable — returned via UPI/cash within 24 hours of return and quality check. Normal wear is never charged.`, products: [] };
   }
   if (/deliver|delivery|shipping|kitne din|kab aayega/.test(q)) {
     return { text: 'We deliver in 1-2 hours in Indore. Delivery is free on bulk orders.', products: [] };

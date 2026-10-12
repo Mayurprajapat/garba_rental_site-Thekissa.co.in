@@ -33,6 +33,59 @@ export function matchesCategory(hayLower: string, query: string): boolean {
   return parts.some((part) => part.split(/\s+/).filter(Boolean).every((w) => hayLower.includes(w)));
 }
 
+export interface TileProduct {
+  id?: string;
+  name?: string;
+  hindi?: string;
+  category?: string;
+  desc?: string;
+  fabric?: string;
+  colors?: string[];
+  accessories?: { name: string }[];
+  tags?: unknown;
+}
+
+function cleanTags(p: TileProduct): string[] {
+  const t = (p as any)?.tags;
+  if (!Array.isArray(t)) return [];
+  return [...new Set(
+    t.map((x) => String(x ?? '').trim().toLowerCase()).filter(Boolean)
+  )].slice(0, 10);
+}
+
+/** Dress search text — naam + desc + fabric + colour + accessories (website filter jaisa). */
+export function tileHay(p: TileProduct): string {
+  return [
+    p.name ?? '', p.hindi ?? '', p.id ?? '', p.desc ?? '',
+    p.category ?? '', p.fabric ?? '',
+    (p.colors ?? []).join(' '),
+    (p.accessories ?? []).map((a) => a?.name ?? '').join(' '),
+  ].join(' ').toLowerCase();
+}
+
+/**
+ * Dress kisi tile me dikhega ya nahi.
+ * Tags tick hain to WAHI final hain (sirf ticked tiles) — keyword ignore.
+ * Tags khaali = purana keyword + dress-group behaviour.
+ */
+export function dressInTile(p: TileProduct, tile: Pick<ShopCategory, 'id' | 'query' | 'kind' | 'cats'>): boolean {
+  const tags = cleanTags(p);
+  if (tags.length) return tags.includes(tile.id.toLowerCase());
+  if (tile.cats?.length && p.category && !(tile.cats as string[]).includes(p.category)) return false;
+  return matchesCategory(tileHay(p), tile.query);
+}
+
+/**
+ * Single-rent item (bina dress) kisi item-tile me dikhega ya nahi.
+ * Parent dress par tags tick hain to wahi final — warna item naam se keyword match.
+ */
+export function itemInTile(itemName: string, parent: TileProduct, tile: Pick<ShopCategory, 'id' | 'query' | 'kind' | 'cats'>): boolean {
+  const tags = cleanTags(parent);
+  if (tags.length) return tags.includes(tile.id.toLowerCase());
+  const q = tile.query.trim();
+  return !q || matchesCategory(itemName.toLowerCase(), q);
+}
+
 const KEY = 'raasleela-admin-categories';
 const EVT = 'raasleela-categories-updated';
 // Purani 3-tile wali list — isko nayi granular list se auto-upgrade kar do

@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
 import { Lock, Search, ShieldCheck, Star, Truck } from 'lucide-react';
 import { useState } from 'react';
+import { getRefundablePct } from '../lib/order';
 import { getSiteContent, useSiteVersion } from '../lib/siteContent';
+import { waLink } from '../data/products';
 import { useStore } from '../store/useStore';
 
 export default function Hero() {
@@ -12,6 +14,7 @@ export default function Hero() {
   const [q, setQ] = useState('');
   useSiteVersion();
   const hero = getSiteContent().hero;
+  const pct = getRefundablePct();
 
   const goShop = () => {
     document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' });
@@ -61,13 +64,25 @@ export default function Hero() {
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 text-[12.5px] font-semibold text-[#3d2b36]">
             <span className="flex items-center gap-1.5"><Star size={14} className="fill-[#c9960a] text-[#c9960a]" /> 4.9 rated</span>
             <span className="flex items-center gap-1.5"><Truck size={14} className="text-emerald-700" /> Same-day delivery</span>
-            <span className="flex items-center gap-1.5"><ShieldCheck size={14} className="text-emerald-700" /> Refundable deposit</span>
+            <span className="flex items-center gap-1.5"><ShieldCheck size={14} className="text-emerald-700" /> {pct}% extra, 100% refundable</span>
             <span className="flex items-center gap-1.5"><Lock size={14} className="text-emerald-700" /> 100% Secure payments</span>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-4">
+            <button onClick={goShop} className="inline-flex items-center gap-1.5 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] ring-1 ring-[#c9a44a]/40 text-[#f7ead0] text-[13px] font-bold rounded-full px-5 py-2.5 shadow-[0_12px_24px_-12px_rgba(34,17,20,.6)] hover:brightness-125 transition">Shop collection →</button>
+            <a href={waLink('Hi TheKissa.co! I want to rent a Garba outfit')} target="_blank" className="inline-flex items-center gap-1.5 bg-[#1e7a45] text-white text-[13px] font-bold rounded-full px-5 py-2.5 shadow-[0_12px_24px_-12px_rgba(30,122,69,.6)] hover:brightness-110 transition">WhatsApp us</a>
           </div>
           <div className="mt-5 rounded-2xl bg-gradient-to-br from-[#2b070e] via-[#4d0f1f] to-[#6e1a34] text-white px-5 py-4 shadow-[0_20px_45px_-20px_rgba(61,10,38,.6)] ring-1 ring-[#c9a44a]/35 relative overflow-hidden">
             <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e8c66a]/70 to-transparent" />
-            <p className="font-display font-black text-[22px] min-[400px]:text-[26px] sm:text-[32px] leading-tight tracking-tight break-words text-balance text-[#f7ead0]">100% Refundable Deposit</p>
+            <p className="font-display font-black text-[22px] min-[400px]:text-[26px] sm:text-[32px] leading-tight tracking-tight break-words text-balance text-[#f7ead0]">100% Refundable Extra ({pct}%)</p>
             <p className="text-white/70 text-[12.5px] sm:text-[13px] mt-1.5">Returned via UPI/cash within 24 hours of return — no deductions on normal wear</p>
+          </div>
+          {/* Mobile photos — desktop collage yahan nahi dikhta, isliye chhoti strip */}
+          <div className="md:hidden mt-4 grid grid-cols-3 gap-2">
+            {['/images/g-hero.webp', '/images/g-chaniya2.webp', '/images/g-pinkmulti.webp'].map((src) => (
+              <div key={src} className="rounded-2xl overflow-hidden ring-1 ring-black/10 shadow-[0_16px_30px_-20px_rgba(34,17,20,.5)] bg-[#f4f1ea]">
+                <img src={src} alt="Garba rental outfit" loading="lazy" decoding="async" className="w-full h-28 object-cover" />
+              </div>
+            ))}
           </div>
         </motion.div>
 

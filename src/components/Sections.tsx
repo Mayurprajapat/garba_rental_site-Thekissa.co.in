@@ -169,6 +169,12 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-white/10">
+        <div className="container-x pt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-[12px] font-semibold text-white/60">
+          <span className="flex items-center gap-1.5">✓ Dry-cleaned & sanitised</span>
+          <span className="flex items-center gap-1.5">✓ 100% refundable extra</span>
+          <span className="flex items-center gap-1.5">✓ Secure UPI payments</span>
+          <span className="flex items-center gap-1.5">✓ Same-day delivery</span>
+        </div>
         <div className="container-x py-4 flex flex-col sm:flex-row items-center gap-2 text-[11.5px] text-white/40">
           <p>© 2026 TheKissa.co Garba Rental. All rights reserved.</p>
           <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 sm:ml-auto">
