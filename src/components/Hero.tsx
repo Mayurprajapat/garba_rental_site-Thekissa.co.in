@@ -6,6 +6,16 @@ import { getSiteContent, useSiteVersion } from '../lib/siteContent';
 import { waLink } from '../data/products';
 import { useStore } from '../store/useStore';
 
+/* Headline ke aas-paas twinkling sparkles — fixed positions, pure CSS */
+const SPARKLES: { l: string; t: string; s: number; c: string; d: string; du: string }[] = [
+  { l: '6%', t: '18%', s: 6, c: '#e8c66a', d: '0s', du: '2.6s' },
+  { l: '20%', t: '6%', s: 4, c: '#ffffff', d: '0.7s', du: '3.1s' },
+  { l: '44%', t: '12%', s: 5, c: '#c9a44a', d: '1.3s', du: '2.4s' },
+  { l: '68%', t: '6%', s: 7, c: '#e8c66a', d: '0.4s', du: '3.4s' },
+  { l: '88%', t: '34%', s: 5, c: '#7a1f38', d: '1.8s', du: '2.9s' },
+  { l: '56%', t: '2%', s: 4, c: '#ffffff', d: '2.2s', du: '2.6s' },
+];
+
 export default function Hero() {
   const setSearch = useStore((s) => s.setSearch);
   const setCategory = useStore((s) => s.setCategory);
@@ -40,11 +50,23 @@ export default function Hero() {
           <span className="inline-flex items-center gap-1.5 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] text-[#f0d78c] text-[10.5px] font-bold tracking-[0.16em] rounded-full px-3.5 py-1.5 ring-1 ring-[#c9a44a]/50 shadow-[0_8px_20px_-10px_rgba(34,17,20,.6),inset_0_1px_0_rgba(240,215,140,.25)]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#e8c66a] pulse-dot" /> THE FESTIVE EDIT · LIVE
           </span>
-          <h1 className="font-display font-black tracking-tight text-balance text-[32px] min-[400px]:text-[38px] sm:text-[50px] leading-[1.02] mt-3">
-            {hero.titleA}
-            <br />
-            <span className="font-display-i font-normal text-[#641629]">{hero.titleB}</span>
-          </h1>
+          <div className="relative mt-3">
+            <div aria-hidden className="pointer-events-none absolute -top-6 right-2 sm:right-10 flex items-end gap-[3px] select-none">
+              <span className="dandiya-stick stick-l" />
+              <span className="dandiya-stick stick-r" />
+            </div>
+            <div aria-hidden className="pointer-events-none absolute inset-0 select-none">
+              {SPARKLES.map((sp, i) => (
+                <span key={i} className="absolute rounded-full animate-twinkle"
+                  style={{ left: sp.l, top: sp.t, width: sp.s, height: sp.s, background: sp.c, boxShadow: `0 0 7px 1px ${sp.c}`, animationDelay: sp.d, animationDuration: sp.du }} />
+              ))}
+            </div>
+            <h1 className="headline-festive font-display font-black tracking-tight text-balance text-[32px] min-[400px]:text-[38px] sm:text-[50px] leading-[1.02] pt-1">
+              {hero.titleA}
+              <br />
+              <span className="font-display-i font-normal text-[#641629]">{hero.titleB}</span>
+            </h1>
+          </div>
           <p className="text-[#6f5b6a] max-w-xl text-[13.5px] sm:text-[15px] leading-relaxed mt-3">
             {hero.subtitle.includes('{price}') ? (
               <>
