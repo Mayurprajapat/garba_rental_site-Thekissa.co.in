@@ -235,24 +235,34 @@ body {
 /* keyboard users ke liye visible focus */
 :focus-visible { outline: 2px solid #641629; outline-offset: 2px; }
 
-/* Animated shine border — hover par gold light edge ke chaaro taraf ghoomti hai.
+/* Animated shine border — bronze-maroon glow (light card par bhi dikhe).
+   Mobile par hover nahi hota, isliye slow auto-sweep + per-card delay se desync.
    Bina @property support wale browser me static gold ring dikhega (graceful). */
 @property --glow-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
 .card-glow-border { position: relative; }
 .card-glow-border::before {
-  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 2px;
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 3px;
   z-index: 5; pointer-events: none;
-  background: conic-gradient(from var(--glow-angle), transparent 0deg, transparent 285deg, rgba(240,215,140,.95) 330deg, #ffffff 350deg, transparent 360deg);
+  background: conic-gradient(from var(--glow-angle), transparent 0deg, transparent 270deg, #8a6d1f 310deg, #c9a44a 330deg, #7a1f38 350deg, transparent 360deg);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
-  opacity: 0; transition: opacity .35s ease;
+  animation: glowSweep 6.5s linear infinite;
+  animation-delay: var(--glow-delay, 0s);
 }
+/* Ek sweep, phir aaram — har 6.5s me ek chakkar */
+@keyframes glowSweep {
+  0% { --glow-angle: 0deg; opacity: 0; }
+  6% { opacity: 1; }
+  32% { --glow-angle: 360deg; opacity: 1; }
+  40%, 100% { --glow-angle: 360deg; opacity: 0; }
+}
+/* Desktop hover par tez continuous glow */
 .card-glow-border:hover::before { opacity: 1; animation: glowSpin 1.8s linear infinite; }
 @keyframes glowSpin { to { --glow-angle: 360deg; } }
 
 /* reduced-motion: festive animations band */
 @media (prefers-reduced-motion: reduce) {
-  .animate-marquee, .animate-floaty, .animate-diya, .glow-green, .pulse-dot, .card-glow-border:hover::before { animation: none !important; }
+  .animate-marquee, .animate-floaty, .animate-diya, .glow-green, .pulse-dot, .card-glow-border::before { animation: none !important; opacity: 0 !important; }
   html { scroll-behavior: auto; }
 }
 

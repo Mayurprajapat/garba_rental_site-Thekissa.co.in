@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Gem, Heart, Search, SearchX, ShoppingBasket, SlidersHorizontal, Star, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { lookFor, spinFramesFor, type Product } from '../data/products';
 import type { LiveProduct } from '../lib/ProductsContext';
 import { categoriesEvent, dressInTile, getCategories, itemInTile, type ShopCategory } from '../lib/categories';
@@ -57,6 +57,7 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
   return (
     <div
       className="card card-hover card-shine card-glow-border group cursor-pointer h-full overflow-hidden flex flex-col !rounded-[20px] ring-1 ring-[#c9a44a]/35 hover:ring-[#c9a44a]/70"
+      style={{ '--glow-delay': `${-((index % 6) * 1.08)}s` } as CSSProperties}
       onClick={() => setQuickView(p.id)}
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f4f1ea] img-sheen">
@@ -128,12 +129,12 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
   );
 }
 
-function SingleCard({ item }: { item: SingleItem }) {
+function SingleCard({ item, index = 0 }: { item: SingleItem; index?: number }) {
   const addToCart = useStore((s) => s.addToCart);
   const setQuickView = useStore((s) => s.setQuickView);
 
   return (
-    <div className="card card-hover card-shine card-glow-border group h-full overflow-hidden flex flex-col !rounded-[18px] ring-1 ring-[#c9a44a]/30 hover:ring-[#c9a44a]/70">
+    <div className="card card-hover card-shine card-glow-border group h-full overflow-hidden flex flex-col !rounded-[18px] ring-1 ring-[#c9a44a]/30 hover:ring-[#c9a44a]/70" style={{ '--glow-delay': `${-((index % 6) * 1.08)}s` } as CSSProperties}>
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f4f1ea] img-sheen">
         <img src={item.img} alt={item.name} loading="lazy" decoding="async" className="w-full h-full object-contain transition duration-700 group-hover:scale-[1.06]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
@@ -403,8 +404,8 @@ export default function Shop() {
           <>
             <motion.div layout className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
               <AnimatePresence mode="popLayout">
-                {itemList.map((it) => (
-                  <SingleCard key={it.name} item={it} />
+                {itemList.map((it, i) => (
+                  <SingleCard key={it.name} item={it} index={i} />
                 ))}
               </AnimatePresence>
             </motion.div>
