@@ -37,6 +37,7 @@ import {
   verifyAdminPassword,
   type LocalBooking,
 } from '../lib/localAdmin';
+import { dataUrlToBlob, fileToCompressedDataUrl } from '../lib/proof';
 import { getCategories, resetCategories, saveCategories, type ShopCategory } from '../lib/categories';
 import type { Accessory } from '../data/products';
 import { ALL_SIZES, normalizeSizes } from '../data/products';
@@ -496,14 +497,19 @@ export default function Admin() {
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {
+    // Phone se 3-4MB photo aati hai — pehle compress (~1200px, JPEG) taaki
+    // website phone par fast khule aur storage full na ho.
+    const small = await fileToCompressedDataUrl(file, 1200, 0.78);
     if (useCloud && supabase) {
       setUploading(true);
-      const name = `p-${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-      const { error } = await supabase.storage.from('product-images').upload(name, file, { upsert: true });
+      const blob = (small ? dataUrlToBlob(small) : null) ?? (file.type.startsWith('image/') ? file : null);
+      const name = `p-${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from('product-images').upload(name, blob as Blob, { contentType: 'image/jpeg', upsert: true });
       setUploading(false);
       if (error) { setMsg('Upload failed: ' + error.message); return null; }
       return supabase.storage.from('product-images').getPublicUrl(name).data.publicUrl;
     }
+    if (small) return small;
     return await new Promise((res) => {
       const r = new FileReader();
       r.onload = () => res(r.result as string);

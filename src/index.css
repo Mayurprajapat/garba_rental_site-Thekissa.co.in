@@ -210,6 +210,9 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Neeche wale sections (reviews/faq/footer) — screen par aane par hi render, scroll smooth */
+.cv-auto { content-visibility: auto; contain-intrinsic-size: auto 420px; }
+
 /* Honeypot bot-trap — humans kabhi nahi dekhte/bharte, bots bhar dete hain */
 .hp-trap { position: absolute !important; left: -9999px !important; top: auto !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
 

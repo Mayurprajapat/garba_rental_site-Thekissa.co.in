@@ -82,7 +82,7 @@ export function Testimonials() {
   ];
   const [idx, setIdx] = useState(0);
   return (
-    <section id="reviews" className="bg-gradient-to-b from-[#fafafa] to-white border-y border-black/[.07]">
+    <section id="reviews" className="cv-auto bg-gradient-to-b from-[#fafafa] to-white border-y border-black/[.07]">
       <div className="max-w-3xl mx-auto px-4 py-7 text-center">
         <h2 className="premium-heading font-display font-black text-xl sm:text-2xl mt-1">Loved by local families</h2>
         <div className="relative mt-4 min-h-[130px]">
@@ -112,7 +112,7 @@ export function Faq() {
   useSiteVersion();
   const faqs = getSiteContent().faqs;
   return (
-    <section id="faq" className="bg-[#F4EBDD] border-y border-[#4d0f1f]/10">
+    <section id="faq" className="cv-auto bg-[#F4EBDD] border-y border-[#4d0f1f]/10">
       <div className="max-w-3xl mx-auto px-4 py-5">
       <h2 className="premium-heading font-display font-black text-lg sm:text-xl text-center">Frequently asked questions</h2>
       <div className="mt-3 space-y-2">
@@ -149,7 +149,7 @@ export function Footer() {
   useSiteVersion();
   const foot = getSiteContent().footer;
   return (
-    <footer id="contact" className="bg-gradient-to-b from-[#2b070e] via-[#25060d] to-[#160309] text-white/70 relative overflow-hidden">
+    <footer id="contact" className="cv-auto bg-gradient-to-b from-[#2b070e] via-[#25060d] to-[#160309] text-white/70 relative overflow-hidden">
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#c9a44a]/70 to-transparent" />
       <div aria-hidden className="pointer-events-none select-none absolute -bottom-6 left-1/2 -translate-x-1/2 font-display font-black whitespace-nowrap leading-none text-[20vw] sm:text-[10rem] text-white/[.035]">TheKissa.co</div>
       <div className="container-x py-5 grid grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
