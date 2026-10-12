@@ -721,7 +721,7 @@ export default function Admin() {
                         <tr key={p.id} className="hover:bg-[#faf7ef]">
                           <td className="admin-td">
                             <div className="flex items-center gap-2.5">
-                              <img src={p.img} alt="" className="w-11 h-13 h-[52px] object-cover rounded-lg border" />
+                              <img src={p.img} alt="" className="w-11 h-13 h-[52px] object-contain rounded-lg border" />
                               <div><b className="block text-[13px]">{p.name}</b><span className="text-[11.5px] text-[#8a7584]">{p.id}</span></div>
                             </div>
                           </td>
@@ -780,7 +780,7 @@ export default function Admin() {
                   {cats.map((c) => (
                     <div key={c.id} className="admin-card p-4 flex gap-3">
                       {c.img
-                        ? <img src={c.img} alt="" className="w-16 h-[76px] object-cover rounded-xl border shrink-0" />
+                        ? <img src={c.img} alt="" className="w-16 h-[76px] object-contain rounded-xl border shrink-0" />
                         : <div className="w-16 h-[76px] rounded-xl border bg-black/5 grid place-items-center text-[10px] text-[#8a7584] shrink-0">No photo</div>}
                       <div className="flex-1 min-w-0 space-y-2">
                         <label className="label-pro block">Name<input value={c.label} onChange={(e) => persistCats(cats.map((x) => (x.id === c.id ? { ...x, label: e.target.value } : x)))} className="admin-input mt-1" /></label>
@@ -864,7 +864,7 @@ export default function Admin() {
                                     return (
                                       <button key={i} onClick={() => setPreview({ src, name: String(it?.name || it?.id || 'Outfit') })} title={`${String(it?.name || it?.id || 'Outfit')} — tap to view`}
                                         className="relative group shrink-0">
-                                        <img src={src} alt={String(it?.name || '')} loading="lazy" className="w-9 h-11 object-cover rounded-lg border border-black/10 group-hover:opacity-85 transition" />
+                                        <img src={src} alt={String(it?.name || '')} loading="lazy" className="w-9 h-11 object-contain rounded-lg border border-black/10 group-hover:opacity-85 transition" />
                                         {Number(it?.qty) > 1 && <span className="absolute -bottom-1 -right-1 text-[9px] font-black bg-black text-white rounded-full px-1.5 py-px">×{it.qty}</span>}
                                       </button>
                                     );
@@ -883,7 +883,7 @@ export default function Admin() {
                                       return (
                                       <li key={i} className="leading-snug flex gap-1.5 items-center">
                                         {src
-                                          ? <button onClick={() => setPreview({ src, name: String(it?.name || it?.id || 'Outfit') })} title="Tap to view" className="shrink-0"><img src={src} alt="" loading="lazy" className="w-7 h-9 object-cover rounded-md border border-black/10 hover:opacity-85 transition" /></button>
+                                          ? <button onClick={() => setPreview({ src, name: String(it?.name || it?.id || 'Outfit') })} title="Tap to view" className="shrink-0"><img src={src} alt="" loading="lazy" className="w-7 h-9 object-contain rounded-md border border-black/10 hover:opacity-85 transition" /></button>
                                           : null}
                                         <span>• {it?.plan === 'buy' ? <b className="text-[#641629]">BUY</b> : <b className="text-blue-700">RENT</b>} {it?.name || it?.id || 'Outfit'}{it?.qty > 1 ? ` ×${it.qty}` : ''}{Array.isArray(it?.addons) && it.addons.length ? ` (+${it.addons.join(', ')})` : ''}{it?.size ? ` · ${it.size}` : ''}</span>
                                       </li>
@@ -1157,7 +1157,7 @@ export default function Admin() {
                       <div className="flex flex-wrap gap-1.5">
                         {all.map((src, i) => (
                           <div key={`${src}-${i}`} className="relative">
-                            <img src={src} alt="" className={`w-14 h-16 object-cover rounded-xl border-2 ${i === 0 ? 'border-black' : 'border-black/10'}`} />
+                            <img src={src} alt="" className={`w-14 h-16 object-contain rounded-xl border-2 ${i === 0 ? 'border-black' : 'border-black/10'}`} />
                             {i === 0 && <span className="absolute top-0.5 left-0.5 text-[8.5px] font-black bg-black text-white rounded-full px-1.5 py-0.5">MAIN</span>}
                             <button type="button" onClick={() => dropAt(i)} title="Remove photo" className="absolute -top-1.5 -right-1.5 w-5 h-5 grid place-items-center rounded-full bg-rose-600 text-white text-[11px] font-bold">✕</button>
                           </div>

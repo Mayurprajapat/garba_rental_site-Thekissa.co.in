@@ -51,7 +51,7 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
       onClick={() => setQuickView(p.id)}
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f4f1ea] img-sheen">
-        <img src={p.img} alt={p.name} loading="lazy" className="w-full h-full object-cover transition duration-700 group-hover:scale-[1.06]" />
+        <img src={p.img} alt={p.name} loading="lazy" className="w-full h-full object-contain transition duration-700 group-hover:scale-[1.06]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
         {soldOut && <span className="absolute inset-0 grid place-items-center bg-black/45 z-[1]"><span className="bg-white text-black text-[11px] font-black tracking-[0.14em] rounded-full px-3.5 py-1.5">OUT OF STOCK</span></span>}
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 z-[2]">
@@ -121,7 +121,7 @@ function SingleCard({ item }: { item: SingleItem }) {
   return (
     <div className="card card-hover group h-full overflow-hidden flex flex-col !rounded-[18px]">
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f4f1ea] img-sheen">
-        <img src={item.img} alt={item.name} loading="lazy" className="w-full h-full object-cover transition duration-700 group-hover:scale-[1.06]" />
+        <img src={item.img} alt={item.name} loading="lazy" className="w-full h-full object-contain transition duration-700 group-hover:scale-[1.06]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
         <span className="absolute top-3 left-3 z-[2] bg-gradient-to-br from-[#f0d78c] to-[#c9a44a] text-[#1a0f1e] text-[10px] font-black tracking-[0.1em] rounded-full px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)]">ONLY ITEM</span>
       </div>
@@ -265,9 +265,9 @@ export default function Shop() {
               const on = activeCat?.id === c.id;
               return (
                 <button key={c.id} onClick={() => pickCat(on ? null : c)}
-                  className={`relative shrink-0 w-[132px] sm:w-[148px] h-[88px] sm:h-[98px] rounded-2xl overflow-hidden text-left transition-all duration-200 ${on ? 'ring-[3px] ring-[#221114] ring-offset-2 ring-offset-[#faf8f6]' : 'ring-1 ring-black/10 hover:ring-black/30'}`}>
+                  className={`relative shrink-0 w-[132px] sm:w-[148px] h-[88px] sm:h-[98px] rounded-2xl overflow-hidden bg-[#f4f1ea] text-left transition-all duration-200 ${on ? 'ring-[3px] ring-[#221114] ring-offset-2 ring-offset-[#faf8f6]' : 'ring-1 ring-black/10 hover:ring-black/30'}`}>
                   {c.img
-                    ? <img src={c.img} alt={c.label} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                    ? <img src={c.img} alt={c.label} loading="lazy" className="absolute inset-0 w-full h-full object-contain" />
                     : <div className="absolute inset-0 grid place-items-center text-[10px] text-neutral-400 bg-[#f4f1ea]">No photo</div>}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
                   <span className="absolute top-1.5 right-1.5 text-[8.5px] font-bold tracking-wider uppercase bg-white/85 backdrop-blur rounded-full px-1.5 py-0.5">{c.kind === 'item' ? 'Item' : 'Dresses'}</span>

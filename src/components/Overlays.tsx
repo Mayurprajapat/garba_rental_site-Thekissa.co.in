@@ -99,7 +99,7 @@ export function QuickView() {
                   <SpinViewer photos={frames} name={p.name} />
                 ) : (
                 <>
-                <img key={photos[photoIdx] ?? p.img} src={photos[photoIdx] ?? p.img} alt={p.name} className="w-full h-full object-cover" />
+                <img key={photos[photoIdx] ?? p.img} src={photos[photoIdx] ?? p.img} alt={p.name} className="w-full h-full object-contain" />
                 {soldOut && <span className="absolute inset-0 grid place-items-center bg-black/45 z-[2]"><span className="bg-white text-black text-[12px] font-black tracking-[0.14em] rounded-full px-4 py-2">OUT OF STOCK</span></span>}
                 {p.badge && !soldOut && <span className="absolute top-4 left-4 bg-gradient-to-br from-[#f0d78c] to-[#c9a44a] text-[#641629] text-[10px] font-bold tracking-[0.12em] rounded-full px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)] z-[2]">{p.badge}</span>}
                 {photoIdx > 0 && (
@@ -119,7 +119,7 @@ export function QuickView() {
                 {photos.map((src, i) => (
                   <button key={`${src}-${i}`} onClick={() => { setPhotoIdx(i); setSpin(false); }} aria-label={`Photo ${i + 1}`}
                     className={`rounded-lg sm:rounded-xl overflow-hidden border-2 transition shrink-0 ${i === photoIdx ? 'border-black' : 'border-transparent opacity-60 hover:opacity-100'}`}>
-                    <img src={src} alt="" className="w-11 h-13 sm:w-14 sm:h-16 object-cover" />
+                    <img src={src} alt="" className="w-11 h-13 sm:w-14 sm:h-16 object-contain" />
                   </button>
                 ))}
                 <span className="self-center text-[10.5px] sm:text-[11px] text-black/45 font-medium ml-1">Tap to<br />switch angle</span>
@@ -335,7 +335,7 @@ function ProductReviews({ productId, productName }: { productId: string; product
                 <b className="text-[12px] ml-1">{r.name}</b>
               </div>
               <p className="text-[12.5px] text-neutral-600 mt-1 leading-relaxed">{r.text}</p>
-              {r.photo && <a href={r.photo} target="_blank"><img src={r.photo} alt={`${r.name}'s Garba look in ${productName}`} loading="lazy" className="mt-1.5 w-20 h-20 object-cover rounded-xl border hover:opacity-90 transition" /></a>}
+              {r.photo && <a href={r.photo} target="_blank"><img src={r.photo} alt={`${r.name}'s Garba look in ${productName}`} loading="lazy" className="mt-1.5 w-20 h-20 object-contain rounded-xl border hover:opacity-90 transition" /></a>}
             </div>
           ))}
         </div>
@@ -355,7 +355,7 @@ function ProductReviews({ productId, productName }: { productId: string; product
           <label className="block text-[12px] font-bold">Your Garba look photo (optional)
             <input type="file" accept="image/*" onChange={(e) => pickPhoto(e.target.files?.[0])} className="mt-1 w-full text-[13px] file:mr-2 file:rounded-full file:border file:border-black/15 file:bg-black file:text-white file:text-[12px] file:font-bold file:px-3 file:py-1.5" />
           </label>
-          {photo && <img src={photo} alt="Review photo preview" className="w-20 h-20 object-cover rounded-xl border" />}
+          {photo && <img src={photo} alt="Review photo preview" className="w-20 h-20 object-contain rounded-xl border" />}
           {msg && <p className="text-[12px] bg-[#faf7ef] border border-[#c9a44a]/40 rounded-xl px-3 py-2">{msg}</p>}
           <button onClick={submit} disabled={busy} className="btn-primary w-full !py-2.5 !text-[13px] disabled:opacity-50">{busy ? 'Submitting…' : 'Submit review'}</button>
         </div>
@@ -1001,7 +1001,7 @@ export function CartDrawer() {
                     {shotBusy && <p className="text-[12px] text-black/55">Compressing screenshot…</p>}
                     {shot && (
                       <div className="flex items-center gap-3 border border-emerald-200 bg-emerald-50 rounded-2xl p-2.5">
-                        <img src={shot} alt="Payment screenshot" className="w-14 h-14 object-cover rounded-xl border" />
+                        <img src={shot} alt="Payment screenshot" className="w-14 h-14 object-contain rounded-xl border" />
                         <p className="text-[12px] font-bold text-emerald-800 flex-1">Screenshot attached ✓</p>
                         <button onClick={() => setShot(null)} className="text-[12px] font-bold text-rose-700 underline shrink-0">Remove</button>
                       </div>
@@ -1055,7 +1055,7 @@ export function CartDrawer() {
                           <div key={i} className="flex gap-3 text-[12px] bg-white border border-black/10 rounded-2xl p-2 overflow-hidden">
                             {src ? (
                               <button onClick={() => setViewPhoto({ src, name: it.name })} title="Tap to view full photo" className="relative shrink-0 group">
-                                <img src={src} alt={it.name} loading="lazy" className="w-20 h-24 object-cover rounded-xl border border-black/10 group-hover:opacity-90 transition" />
+                                <img src={src} alt={it.name} loading="lazy" className="w-20 h-24 object-contain rounded-xl border border-black/10 group-hover:opacity-90 transition" />
                                 <span className="absolute bottom-1 right-1 bg-black/65 text-white text-[9px] font-bold rounded-full px-2 py-0.5">View ⤢</span>
                               </button>
                             ) : (
@@ -1112,7 +1112,7 @@ export function CartDrawer() {
                   {rows.length === 0 && orders.length === 0 && <p className="text-center text-black/50 py-16">Your list is empty.<br />Add a dress from the shop 👆</p>}
                   {rows.map((r) => (
                     <div key={`${r.id}-${r.size}-${r.plan}-${(r.addons ?? []).join('+')}-${r.single?.name ?? ''}`} className="flex gap-3 bg-white rounded-2xl p-2.5 border border-black/10">
-                      <img src={r.single?.img ?? r.p.img} className="w-16 h-20 object-cover rounded-xl" alt={r.single?.name ?? r.p.name} />
+                      <img src={r.single?.img ?? r.p.img} className="w-16 h-20 object-contain rounded-xl" alt={r.single?.name ?? r.p.name} />
                       <div className="flex-1 text-sm">
                         {r.single ? (
                           <>

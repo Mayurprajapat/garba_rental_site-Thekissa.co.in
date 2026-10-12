@@ -236,7 +236,7 @@ function Payments({ bookings, reload }: { bookings: B[]; reload: () => void }) {
               </div>
               {b.payment_proof ? (
                 <a href={String(b.payment_proof)} target="_blank" title="Open full screenshot" className="flex items-center gap-2.5 mt-2 border border-black/10 bg-white rounded-xl p-2 hover:border-black transition w-fit">
-                  <img src={String(b.payment_proof)} alt="Payment screenshot" className="w-14 h-14 object-cover rounded-lg border" />
+                  <img src={String(b.payment_proof)} alt="Payment screenshot" className="w-14 h-14 object-contain rounded-lg border" />
                   <span className="text-[12px] font-bold underline pr-2">View screenshot →</span>
                 </a>
               ) : (
@@ -447,7 +447,7 @@ function ReviewsAdmin() {
         <span className="text-[#8a7584] text-[11.5px]">{r.product_id}</span>
       </div>
       <p className="text-[#3d2b36] mt-1">{r.text}</p>
-      {r.photo_url && <a href={r.photo_url} target="_blank"><img src={r.photo_url} alt="Customer Garba look" loading="lazy" className="mt-1.5 w-16 h-16 object-cover rounded-xl border hover:opacity-90 transition" /></a>}
+      {r.photo_url && <a href={r.photo_url} target="_blank"><img src={r.photo_url} alt="Customer Garba look" loading="lazy" className="mt-1.5 w-16 h-16 object-contain rounded-xl border hover:opacity-90 transition" /></a>}
       <div className="flex gap-1.5 mt-2">
         {r.status === 'pending' && (
           <button disabled={busy === r.id} onClick={() => setStatus(r.id, 'approved')} className="text-[12px] font-bold bg-emerald-600 text-white rounded-full px-3.5 py-1.5 disabled:opacity-50">Approve</button>

@@ -51,7 +51,7 @@ export default function SpinViewer({ photos, name }: { photos: string[]; name: s
           alt={name}
           draggable={false}
           onDragStart={(e) => e.preventDefault()}
-          className="w-full h-full object-cover pointer-events-none"
+          className="w-full h-full object-contain pointer-events-none"
         />
       </div>
 
