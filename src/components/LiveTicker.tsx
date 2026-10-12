@@ -17,12 +17,12 @@ export default function LiveTicker() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 mt-3">
-      <div className="bg-white border border-[#4a0e2e]/15 rounded-full shadow-sm px-4 py-1.5 flex items-center gap-2.5 overflow-hidden">
+      <div className="mandala-bg bg-gradient-to-r from-[#1c0d12] via-[#2b141b] to-[#1c0d12] border border-[#c9a44a]/40 rounded-full shadow-[0_12px_28px_-18px_rgba(34,17,20,.7)] px-4 py-1.5 flex items-center gap-2.5 overflow-hidden">
         <span className="relative flex h-2.5 w-2.5 shrink-0">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
         </span>
-        <span className="text-[11px] font-extrabold text-emerald-600 tracking-wide shrink-0">LIVE</span>
+        <span className="text-[11px] font-extrabold text-[#e8c66a] tracking-[0.14em] shrink-0">LIVE</span>
         <div className="relative flex-1 h-5 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.p
@@ -31,10 +31,10 @@ export default function LiveTicker() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: -18, opacity: 0 }}
               transition={{ duration: 0.35 }}
-              className="absolute inset-0 text-[12.5px] text-black/60 truncate leading-5"
+              className="absolute inset-0 text-[12.5px] text-white/60 truncate leading-5"
             >
-              <b className="text-black">{NAMES[i % NAMES.length]}</b> ({AREAS[(i + 2) % AREAS.length]}) booked{' '}
-              <b className="text-black">{p.name}</b> • {MINS[(i + 4) % MINS.length]} min ago
+              <b className="text-[#f7ead0]">{NAMES[i % NAMES.length]}</b> ({AREAS[(i + 2) % AREAS.length]}) booked{' '}
+              <b className="text-[#f7ead0]">{p.name}</b> • {MINS[(i + 4) % MINS.length]} min ago
             </motion.p>
           </AnimatePresence>
         </div>

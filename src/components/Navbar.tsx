@@ -65,7 +65,7 @@ export default function Navbar() {
   return (
     <header className={`sticky top-0 z-40 transition-all duration-300 ${scrolled ? 'shadow-[0_16px_40px_-20px_rgba(0,0,0,.35)]' : ''}`}>
       {site.announcement.show && (
-        <div className="bg-[#171013] text-white">
+        <div className="mandala-bg bg-[#171013] text-white">
           <div className="container-x flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 py-1.5 px-3 text-[11px] sm:text-xs tracking-wide text-center">
             <span className="glow-green inline-flex items-center gap-1 rounded-full border border-emerald-300/70 bg-emerald-500/15 text-emerald-200 text-[10px] sm:text-[10.5px] font-bold tracking-[0.08em] px-2.5 py-1 shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" /> {site.announcement.badge}
@@ -75,7 +75,7 @@ export default function Navbar() {
         </div>
       )}
 
-      <div className="glass border-b border-[#c9a44a]/25 shadow-[0_12px_30px_-22px_rgba(60,30,40,.35)]">
+      <div className="glass border-b border-[#c9a44a]/40 shadow-[0_12px_30px_-22px_rgba(60,30,40,.35)]">
         <div className="container-x h-[56px] sm:h-[64px] flex items-center justify-between gap-1.5 sm:gap-3">
           <a href="#top" className="flex items-center gap-2 group min-w-0">
             <span className="group-hover:scale-105 transition drop-shadow-[0_6px_12px_rgba(100,22,41,.3)]"><Logo /></span>

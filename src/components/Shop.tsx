@@ -56,7 +56,7 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
 
   return (
     <div
-      className="card card-hover group cursor-pointer h-full overflow-hidden flex flex-col !rounded-[20px] ring-1 ring-[#c9a44a]/20"
+      className="card card-hover card-shine group cursor-pointer h-full overflow-hidden flex flex-col !rounded-[20px] ring-1 ring-[#c9a44a]/20"
       onClick={() => setQuickView(p.id)}
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f4f1ea] img-sheen">
@@ -128,7 +128,7 @@ function SingleCard({ item }: { item: SingleItem }) {
   const setQuickView = useStore((s) => s.setQuickView);
 
   return (
-    <div className="card card-hover group h-full overflow-hidden flex flex-col !rounded-[18px]">
+    <div className="card card-hover card-shine group h-full overflow-hidden flex flex-col !rounded-[18px]">
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f4f1ea] img-sheen">
         <img src={item.img} alt={item.name} loading="lazy" decoding="async" className="w-full h-full object-contain transition duration-700 group-hover:scale-[1.06]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
@@ -288,7 +288,7 @@ export default function Shop() {
               const n = tileCounts.get(c.id) ?? 0;
               return (
                 <button key={c.id} onClick={() => pickCat(on ? null : c)}
-                  className={`relative shrink-0 w-[132px] sm:w-[148px] h-[88px] sm:h-[98px] rounded-2xl overflow-hidden bg-[#f4f1ea] text-left transition-all duration-200 ${on ? 'ring-[3px] ring-[#221114] ring-offset-2 ring-offset-[#faf8f6]' : 'ring-1 ring-black/10 hover:ring-black/30'}`}>
+                  className={`relative shrink-0 w-[132px] sm:w-[148px] h-[88px] sm:h-[98px] rounded-2xl overflow-hidden bg-[#f4f1ea] text-left transition-all duration-200 ${on ? 'ring-[3px] ring-[#c9a44a] ring-offset-2 ring-offset-[#faf8f6] shadow-[0_14px_30px_-14px_rgba(201,164,74,.7)]' : 'ring-1 ring-black/10 hover:ring-[#c9a44a]/60'}`}>
                   <TileImg src={c.img} alt={c.label} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
                   <span className="absolute top-1.5 right-1.5 text-[8.5px] font-bold tracking-wider uppercase bg-white/85 backdrop-blur rounded-full px-1.5 py-0.5">{n} {c.kind === 'item' ? (n === 1 ? 'Item' : 'Items') : (n === 1 ? 'Design' : 'Designs')}</span>
@@ -316,7 +316,7 @@ export default function Shop() {
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex bg-black/[.05] ring-1 ring-black/5 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold text-black shrink-0">1-day rental</div>
+            <div className="chip-gold shrink-0">1-day rental</div>
             <button onClick={() => setShowFilters((v) => !v)}
               className="shrink-0 relative flex items-center gap-1.5 text-[12.5px] font-semibold border border-black/10 rounded-full px-3.5 py-1.5 hover:border-black/40 bg-white transition">
               <SlidersHorizontal size={14} /> <span className="hidden sm:inline">Filters</span>
