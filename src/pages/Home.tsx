@@ -1,6 +1,5 @@
 import AiAssistant from '../components/AiAssistant';
 import Hero from '../components/Hero';
-import LiveTicker from '../components/LiveTicker';
 import Navbar from '../components/Navbar';
 import { CartDrawer, QuickView, Toasts, TrackFloat } from '../components/Overlays';
 import { Faq, FeatureBanner, Footer, Looks, MobileBar, Process } from '../components/Sections';
@@ -11,7 +10,6 @@ export default function Home() {
     <div className="min-h-screen bg-[#faf8f6]">
       <Navbar />
       <Hero />
-      <LiveTicker />
       <FeatureBanner />
       {/* Shop placed near the top — customers don't need to scroll */}
       <Shop />
