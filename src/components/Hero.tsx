@@ -43,7 +43,7 @@ export default function Hero() {
           <h1 className="font-display font-black tracking-tight text-balance text-[32px] min-[400px]:text-[38px] sm:text-[50px] leading-[1.02] mt-3">
             {hero.titleA}
             <br />
-            <span className="font-display-i font-normal gold-text-deep">{hero.titleB}</span>
+            <span className="font-display-i font-normal text-[#641629]">{hero.titleB}</span>
           </h1>
           <p className="text-[#6f5b6a] max-w-xl text-[13.5px] sm:text-[15px] leading-relaxed mt-3">
             {hero.subtitle.includes('{price}') ? (

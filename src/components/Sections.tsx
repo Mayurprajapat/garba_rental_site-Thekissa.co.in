@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, MapPin, Navigation, Quote, ShieldCheck, Sparkles } from 'lucide-react';
+import { ChevronDown, MapPin, Navigation, ShieldCheck, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { waLink } from '../data/products';
 import { STORE } from '../data/store';
@@ -42,7 +42,6 @@ export function Process() {
         {proc.steps.map((s, i) => (
           <motion.div key={`${s.n}-${i}`} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.07 }}
             className="card card-hover p-3.5 relative overflow-hidden">
-            <span aria-hidden className="pointer-events-none select-none absolute -top-2 right-1 font-display font-black text-[64px] leading-none text-[#c9a44a]/15">{s.n}</span>
             <span className="chip-gold !text-[10px] !tracking-[0.18em]">{s.n}</span>
             <h3 className="font-semibold text-[13.5px] mt-2">{s.h}</h3>
             <p className="text-[12px] text-[#6f5b6a] mt-1 leading-relaxed">{s.p}</p>
@@ -70,42 +69,7 @@ export function Looks() {
             className="rounded-2xl h-28 sm:h-36 w-auto shrink-0 snap-start object-cover card-shadow ring-1 ring-[#c9a44a]/30 hover:ring-[#c9a44a]/70 hover:scale-[1.03] transition" />
         ))}
       </div>
-      <p className="text-center text-[11px] text-[#8a7584] mt-2">{looks.note}</p>
-    </section>
-  );
-}
-
-export function Testimonials() {
-  const data = [
-    ['The mirror-work chaniya fit perfectly — fresh and crisp. Size exchange at my doorstep, zero tension.', 'Priya S. · Vijay Nagar'],
-    ['The bridal lehenga looked straight out of a boutique, delivered on time with full jewellery set.', 'Amita P. · Palasia'],
-    ['The fit was perfect and the colour looked exactly like the photos — delivery and return both at my doorstep.', 'Kinjal M. · Rajwada'],
-  ];
-  const [idx, setIdx] = useState(0);
-  return (
-    <section id="reviews" className="cv-auto mandala-bg bg-gradient-to-b from-[#2b070e] via-[#3d0a1e] to-[#1c0d12] border-y border-[#c9a44a]/30 relative overflow-hidden">
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e8c66a]/70 to-transparent" />
-      <div className="max-w-3xl mx-auto px-4 py-8 text-center relative">
-        <p className="eyebrow eyebrow-light">Customer love</p>
-        <h2 className="premium-heading font-display font-black text-xl sm:text-2xl mt-1.5 text-[#f7ead0]">Loved by local families</h2>
-        <div className="relative mt-4 min-h-[130px]">
-          <AnimatePresence mode="wait">
-            <motion.div key={idx} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
-              className="bg-white/[.06] backdrop-blur border border-[#c9a44a]/35 rounded-[1.25rem] p-5 sm:p-6 shadow-[0_24px_48px_-30px_rgba(0,0,0,.6)]">
-              <Quote size={20} className="mx-auto text-[#e8c66a]/70" />
-              <p className="mt-3 text-[15px] leading-relaxed text-[#f7ead0]">“{data[idx][0]}”</p>
-              <b className="block mt-4 text-[13px] text-[#e8c66a]">— {data[idx][1]} · ★★★★★</b>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-        <div className="flex justify-center gap-0.5 mt-4">
-          {data.map((_, i) => (
-            <button key={i} aria-label={`Review ${i + 1}`} onClick={() => setIdx(i)} className="p-2.5">
-              <span className={`block h-2 rounded-full transition-all ${i === idx ? 'w-8 bg-[#e8c66a]' : 'w-2 bg-white/25'}`} />
-            </button>
-          ))}
-        </div>
-      </div>
+      <p className="text-center text-[11px] text-[#6f5b6a] mt-2">{looks.note}</p>
     </section>
   );
 }
@@ -178,7 +142,7 @@ export function Footer() {
           <span className="flex items-center gap-1.5">✓ Secure UPI payments</span>
           <span className="flex items-center gap-1.5">✓ Same-day delivery</span>
         </div>
-        <div className="container-x py-4 flex flex-col sm:flex-row items-center gap-2 text-[11.5px] text-white/40">
+        <div className="container-x py-4 flex flex-col sm:flex-row items-center gap-2 text-[11.5px] text-white/60">
           <p>© 2026 TheKissa.co Garba Rental. All rights reserved.</p>
           <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 sm:ml-auto">
             <a href="/terms" className="hover:text-white underline underline-offset-2">Terms &amp; Conditions</a>

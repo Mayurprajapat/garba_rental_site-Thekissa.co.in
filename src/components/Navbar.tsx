@@ -58,7 +58,6 @@ export default function Navbar() {
   const links: [string, string][] = [
     ['Collection', '#shop'],
     ['How it works', '#process'],
-    ['Reviews', '#reviews'],
     ['Contact', '#contact'],
   ];
 

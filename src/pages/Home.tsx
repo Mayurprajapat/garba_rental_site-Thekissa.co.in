@@ -3,7 +3,7 @@ import Hero from '../components/Hero';
 import LiveTicker from '../components/LiveTicker';
 import Navbar from '../components/Navbar';
 import { CartDrawer, QuickView, Toasts, TrackFloat } from '../components/Overlays';
-import { Faq, FeatureBanner, Footer, Looks, MobileBar, Process, Testimonials } from '../components/Sections';
+import { Faq, FeatureBanner, Footer, Looks, MobileBar, Process } from '../components/Sections';
 import Shop from '../components/Shop';
 
 export default function Home() {
@@ -17,7 +17,6 @@ export default function Home() {
       <Shop />
       <Process />
       <Looks />
-      <Testimonials />
       <Faq />
       <Footer />
       <div className="h-16 sm:hidden" />
