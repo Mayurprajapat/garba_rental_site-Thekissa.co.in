@@ -56,7 +56,7 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
 
   return (
     <div
-      className="card card-hover card-shine group cursor-pointer h-full overflow-hidden flex flex-col !rounded-[20px] ring-1 ring-[#c9a44a]/35 hover:ring-[#c9a44a]/70"
+      className="card card-hover card-shine card-glow-border group cursor-pointer h-full overflow-hidden flex flex-col !rounded-[20px] ring-1 ring-[#c9a44a]/35 hover:ring-[#c9a44a]/70"
       onClick={() => setQuickView(p.id)}
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f4f1ea] img-sheen">
@@ -133,7 +133,7 @@ function SingleCard({ item }: { item: SingleItem }) {
   const setQuickView = useStore((s) => s.setQuickView);
 
   return (
-    <div className="card card-hover card-shine group h-full overflow-hidden flex flex-col !rounded-[18px] ring-1 ring-[#c9a44a]/30 hover:ring-[#c9a44a]/70">
+    <div className="card card-hover card-shine card-glow-border group h-full overflow-hidden flex flex-col !rounded-[18px] ring-1 ring-[#c9a44a]/30 hover:ring-[#c9a44a]/70">
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f4f1ea] img-sheen">
         <img src={item.img} alt={item.name} loading="lazy" decoding="async" className="w-full h-full object-contain transition duration-700 group-hover:scale-[1.06]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
