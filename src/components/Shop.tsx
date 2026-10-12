@@ -56,12 +56,17 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
 
   return (
     <div
-      className="card card-hover card-shine group cursor-pointer h-full overflow-hidden flex flex-col !rounded-[20px] ring-1 ring-[#c9a44a]/20"
+      className="card card-hover card-shine group cursor-pointer h-full overflow-hidden flex flex-col !rounded-[20px] ring-1 ring-[#c9a44a]/35 hover:ring-[#c9a44a]/70"
       onClick={() => setQuickView(p.id)}
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f4f1ea] img-sheen">
         <img src={p.img} alt={p.name} loading="lazy" decoding="async" className="w-full h-full object-contain transition duration-700 group-hover:scale-[1.06]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
+        <div aria-hidden className="pointer-events-none absolute inset-2 rounded-xl ring-1 ring-inset ring-[#e8c66a]/60 z-[2]" />
+        <span aria-hidden className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#c9a44a] rounded-tl-lg z-[2]" />
+        <span aria-hidden className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#c9a44a] rounded-tr-lg z-[2]" />
+        <span aria-hidden className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-[#c9a44a] rounded-bl-lg z-[2]" />
+        <span aria-hidden className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-[#c9a44a] rounded-br-lg z-[2]" />
         {soldOut && <span className="absolute inset-0 grid place-items-center bg-black/45 z-[1]"><span className="bg-white text-black text-[11px] font-black tracking-[0.14em] rounded-full px-3.5 py-1.5">OUT OF STOCK</span></span>}
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 z-[2]">
           {rank && <span className="bg-gradient-to-br from-[#f5e3ae] via-[#e8c66a] to-[#b98a2e] text-[#3d0a1a] text-[10px] font-black tracking-[0.1em] rounded-full px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.6),0_6px_14px_-6px_rgba(120,85,20,.5)]">{rank}</span>}
@@ -95,8 +100,8 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
         </div>
         <div className="hairline-premium my-1.5 sm:my-2" />
         <div className="grid grid-cols-2 gap-1 sm:gap-1.5 mt-auto">
-          <div className="rounded-lg sm:rounded-xl border border-[#c9a44a]/40 bg-[#faf3ea] px-1 py-1 sm:py-1.5 text-center min-w-0 overflow-hidden">
-            <span className="block text-[7.5px] sm:text-[8.5px] font-black tracking-[0.06em] text-[#8a6d1f] whitespace-nowrap">RENT</span>
+          <div className="rounded-lg sm:rounded-xl border border-[#c9a44a]/60 bg-gradient-to-b from-[#fdf6e3] to-[#f5e3ae] px-1 py-1 sm:py-1.5 text-center min-w-0 overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,.7)]">
+            <span className="block text-[7.5px] sm:text-[8.5px] font-black tracking-[0.06em] text-[#8a6d1f] whitespace-nowrap">RENT · 1-DAY</span>
             <b className="block font-display text-[13px] sm:text-[16px] text-[#4d0f1f] tabular-nums leading-tight truncate">₹{price.toLocaleString('en-IN')}</b>
           </div>
           <div className="rounded-lg sm:rounded-xl border border-[#641629]/25 bg-[#641629]/[.05] px-1 py-1 sm:py-1.5 text-center min-w-0 overflow-hidden">
@@ -128,10 +133,11 @@ function SingleCard({ item }: { item: SingleItem }) {
   const setQuickView = useStore((s) => s.setQuickView);
 
   return (
-    <div className="card card-hover card-shine group h-full overflow-hidden flex flex-col !rounded-[18px]">
+    <div className="card card-hover card-shine group h-full overflow-hidden flex flex-col !rounded-[18px] ring-1 ring-[#c9a44a]/30 hover:ring-[#c9a44a]/70">
       <div className="relative aspect-[3/4] overflow-hidden bg-[#f4f1ea] img-sheen">
         <img src={item.img} alt={item.name} loading="lazy" decoding="async" className="w-full h-full object-contain transition duration-700 group-hover:scale-[1.06]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
+        <div aria-hidden className="pointer-events-none absolute inset-2 rounded-xl ring-1 ring-inset ring-[#e8c66a]/60 z-[1]" />
         <span className="absolute top-3 left-3 z-[2] bg-gradient-to-br from-[#f0d78c] to-[#c9a44a] text-[#1a0f1e] text-[10px] font-black tracking-[0.1em] rounded-full px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)]">ONLY ITEM</span>
       </div>
       <div className="p-3 sm:p-3.5 flex flex-col flex-1">
