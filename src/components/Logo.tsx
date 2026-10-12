@@ -1,5 +1,5 @@
-// Store logo — ek jagah, har jagah (navbar, footer, login, tracking pages, favicon file).
-// Logo badalna ho to public/images/logo.png replace kar do. Original: logo-full.png.
+// Store logo — one place, used everywhere (navbar, footer, login, tracking pages, favicon file).
+// To change the logo, replace public/images/logo.png. Original: logo-full.png.
 
 export default function Logo({ className = 'w-9 h-9 sm:w-10 sm:h-10' }: { className?: string }) {
   return (

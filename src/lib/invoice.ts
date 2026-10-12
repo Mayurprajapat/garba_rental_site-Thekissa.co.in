@@ -57,7 +57,7 @@ export function downloadInvoicePDF(o: MyOrder, opts?: {
   doc.text('G A R B A   &   F E S T I V E   R E N T A L S', M, 70);
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
-  doc.text('TAX INVOICE / RENTAL BILL', M, 92);
+  doc.text('TAX INVOICE', M, 92);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
@@ -144,18 +144,20 @@ export function downloadInvoicePDF(o: MyOrder, opts?: {
     doc.text(value, valX, y, { align: 'right' });
     y += bold ? 20 : 17;
   };
-  row('Total rent', inr(o.total), true);
-  row(o.mode === 'upi-qr-full' ? 'Paid now (rent + extra)' : 'Paid now', inr(o.token));
+  row('Total', inr(o.total), true);
+  row(o.mode === 'upi-qr-full' ? 'Paid now' : 'Paid now', inr(o.token));
   // Full me token me extra bhi hai — rent balance kabhi negative nahi
   const rentBal = o.mode === 'upi-qr-full' ? 0 : Math.max(0, o.total - o.token);
   const extraDue = o.mode === 'upi-qr-full' ? 0 : o.deposit;
   row('Balance on delivery', inr(rentBal + extraDue));
-  row('Refundable extra 30%', inr(o.deposit), true, [22, 120, 70]);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...MUTED);
-  doc.text(`30% of ${inr(o.total)} rent — back on return`, labelX, y);
-  y += 16;
+  if (o.deposit > 0) {
+    row('Refundable extra 30%', inr(o.deposit), true, [22, 120, 70]);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...MUTED);
+    doc.text(`30% of ${inr(o.total)} — back on return`, labelX, y);
+    y += 16;
+  }
   row('Total collection', inr(o.total + o.deposit), true);
   if (opts?.paymentId) {
     doc.setFont('helvetica', 'normal');
@@ -178,10 +180,13 @@ export function downloadInvoicePDF(o: MyOrder, opts?: {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...MUTED);
-  const notes = [
-    `30% of ${inr(o.total)} rent = ${inr(o.deposit)} refundable — you will get ${inr(o.deposit)} back via UPI/cash within 24 hours of return and quality check.`,
-    'Every rental is 1 day (pickup / event / return). Late returns are charged per extra day.',
-    'Thank you for renting with us! For help, contact us on call or WhatsApp.',
+  const notes = o.deposit > 0 ? [
+    `Refundable extra ${inr(o.deposit)} — you will get it back via UPI/cash within 24 hours of return and quality check.`,
+    'Rentals are 1 day (pickup / event / return). Buy items are yours forever — no return needed.',
+    'Thank you for shopping with us! For help, contact us on call or WhatsApp.',
+  ] : [
+    'Buy order — yours forever, no return needed.',
+    'Thank you for shopping with us! For help, contact us on call or WhatsApp.',
   ];
   notes.forEach((n) => {
     const lines = doc.splitTextToSize(`•  ${n}`, W - M * 2);

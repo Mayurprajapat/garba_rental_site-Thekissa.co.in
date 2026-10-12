@@ -1,18 +1,18 @@
-// Customer ke orders — isi device par website me save rehte hain (My Orders).
-// Checkout confirm hote hi snapshot judta hai. WhatsApp/Email store ko jaata hai,
-// My Orders customer ke paas rehta hai — order website se kabhi gayab nahi hota.
+// Customer orders — saved on this device in the website (My Orders).
+// A snapshot is added as soon as checkout is confirmed. WhatsApp/Email goes to the store,
+// My Orders stays with the customer — an order never disappears from the website.
 //
-// IMPORTANT: KEY kabhi mat badalna — purane customers ka data isi key me hai.
-// Backup key sirf safety ke liye (primary fail ho to restore).
+// IMPORTANT: NEVER change the KEY — existing customers' data lives under this key.
+// The backup key is only for safety (restore if the primary fails).
 
 export interface MyOrderItem {
   name: string;
   detail: string;
   qty: number;
   price: number;
-  /** Dress / accessory ki photo (catalog img URL) — booking list me thumbnail + full view ke liye */
+  /** Dress / accessory photo (catalog img URL) — thumbnail in the booking list + full view */
   img?: string;
-  /** Catalog product id (purane orders ke liye photo fallback match karne me kaam aata hai) */
+  /** Catalog product id (helps match a photo fallback for old orders) */
   pid?: string;
 }
 
@@ -27,22 +27,22 @@ export interface MyOrder {
   deposit: number;
   token: number;
   mode: string;
-  /** Order status — naya order 'new' (pending). Admin confirm/cancel/onway/delivered
-   *  kare to wahi customer ko dikhta hai (downgrade-guard ke saath). */
+  /** Order status — a new order is 'new' (pending). Whatever the admin sets
+   *  (confirm/cancel/onway/delivered) is what the customer sees (with a downgrade guard). */
   status?: string;
   note?: string;
   /** UPI payment verification: verified / rejected / unverified (admin panel se) */
   payStatus?: string;
-  /** Payment screenshot (compressed dataURL ya cloud URL) — order confirm ke liye compulsory */
+  /** Payment screenshot (compressed dataURL or cloud URL) — required to confirm the order */
   proof?: string;
-  /** Admin ne order kab tak ready hoga ye date di ho (YYYY-MM-DD) */
+  /** Date by which the admin says the order will be ready (YYYY-MM-DD) */
   readyDate?: string;
 }
 
 const KEY = 'raasleela-my-orders';
 const BACKUP_KEY = 'raasleela-my-orders-backup-v1';
 export const ORDERS_EVENT = 'raasleela-orders-updated';
-/** Navbar se seedha My Orders kholne ke liye */
+/** Open My Orders directly from the navbar */
 export const OPEN_ORDERS_EVENT = 'raasleela-open-orders';
 
 function parseList(raw: string | null): MyOrder[] {
@@ -58,7 +58,7 @@ export function getMyOrders(): MyOrder[] {
   try {
     const primary = parseList(localStorage.getItem(KEY));
     if (primary.length) return primary;
-    // Primary khaali ho to backup se restore (data loss se bachao)
+    // If the primary is empty, restore from backup (prevent data loss)
     const backup = parseList(localStorage.getItem(BACKUP_KEY));
     if (backup.length) {
       try { localStorage.setItem(KEY, JSON.stringify(backup)); } catch { /* ignore */ }
@@ -74,13 +74,13 @@ export function saveMyOrder(o: MyOrder) {
     const all = [o, ...getMyOrders().filter((x) => x.id !== o.id)].slice(0, 20);
     const payload = JSON.stringify(all);
     localStorage.setItem(KEY, payload);
-    // Backup copy — kabhi primary clear ho jaye to wapas la sakein
+    // Backup copy — so we can bring it back if the primary ever gets cleared
     try { localStorage.setItem(BACKUP_KEY, payload); } catch { /* ignore */ }
     window.dispatchEvent(new Event(ORDERS_EVENT));
   } catch { /* ignore */ }
 }
 
-/** Cloud/supabase se aaye orders ko local me merge karo (dedupe by id). Data kabhi overwrite nahi hota, sirf judta hai. */
+/** Merge orders from cloud/supabase into local storage (dedupe by id). Data is never overwritten, only added. */
 export function mergeMyOrders(incoming: MyOrder[]) {
   try {
     if (!incoming.length) return;
@@ -90,9 +90,9 @@ export function mergeMyOrders(incoming: MyOrder[]) {
       if (!o || !o.id) continue;
       if (!byId.has(o.id)) byId.set(o.id, o);
       else {
-        // Cloud me naya status/note/payment ho to update kar do, items/total same rehne do
+        // If cloud has a newer status/note/payment, apply it; keep items/total as-is
         const prev = byId.get(o.id)!;
-        // Photo merge — purane snapshot me img na ho to cloud wali img laga do (same name/position match)
+        // Photo merge — if the old snapshot lacks an img, attach the cloud img (same name/position match)
         let items = prev.items;
         try {
           const incomingItems = Array.isArray((o as MyOrder).items) ? (o as MyOrder).items : [];
@@ -112,8 +112,8 @@ export function mergeMyOrders(incoming: MyOrder[]) {
         byId.set(o.id, {
           ...prev,
           items,
-          // Downgrade guard: cloud ka purana 'new' local confirmed/onway/delivered/
-          // returned/cancelled ko overwrite na kare. Admin ka naya decision hamesha jeetega.
+          // Downgrade guard: a stale cloud 'new' must not overwrite a local confirmed/onway/delivered/
+          // returned/cancelled. The admin's latest decision always wins.
           status: (() => {
             const incoming = o.status;
             const prevS = prev.status;
@@ -137,7 +137,7 @@ export function mergeMyOrders(incoming: MyOrder[]) {
   } catch { /* ignore */ }
 }
 
-/** Dusre tab/browser me change ho to ye listener pakad lega (cross-tab sync). */
+/** This listener catches changes from another tab/browser (cross-tab sync). */
 export function subscribeMyOrders(cb: () => void): () => void {
   const onCustom = () => cb();
   const onStorage = (e: StorageEvent) => {
@@ -151,7 +151,7 @@ export function subscribeMyOrders(cb: () => void): () => void {
   };
 }
 
-/** Mobile number se is device par mile orders (last-10-digit match). */
+/** Orders on this device for a mobile number (last-10-digit match). */
 export function findLocalOrdersByPhone(phone: string): MyOrder[] {
   const digits = String(phone || '').replace(/\D/g, '').slice(-10);
   if (digits.length < 10) return [];
@@ -169,13 +169,13 @@ export function findLocalOrderById(id: string): MyOrder | null {
 export function clearMyOrders() {
   try {
     localStorage.removeItem(KEY);
-    // Backup turant mat hatao — galti se clear ho to agli baar restore ho sake.
-    // Sirf explicit double-clear par backup bhi saaf karo (neeche alag fn).
+    // Do not remove the backup right away — so an accidental clear can be restored next time.
+    // Only an explicit double-clear wipes the backup too (separate fn below).
     window.dispatchEvent(new Event(ORDERS_EVENT));
   } catch { /* ignore */ }
 }
 
-/** Dono copies saaf karo — sirf tab jab user khud 2 baar confirm kare. */
+/** Clear both copies — only when the user confirms twice themselves. */
 export function clearMyOrdersFully() {
   try {
     localStorage.removeItem(KEY);

@@ -12,19 +12,19 @@ function noteRpcError(e: any) {
   if (/could not find the function|PGRST202|does not exist/i.test(m)) lookupDiag = 'missing';
 }
 
-// Booking save — hamesha local me (admin panel me dikhega),
-// Supabase laga ho to waha bhi.
+// Booking save — always local (visible in the admin panel),
+// plus Supabase when configured.
 //
-// MANUAL CONFIRM: naya order hamesha 'new' (pending) save hota hai —
-// admin genuine payment dekhkar 1 tap me confirm karta hai, nakli UTR /
-// galat screenshot wala 1 tap me cancel. Typed UTR ko 100% auto-verify
-// koi system nahi kar sakta (UTR me checksum nahi hota), isliye
-// confirmation admin ke haath me hai. payment_status alag rehta hai
-// ('unverified') — Reports → Payments me jab time mile tab verify karo.
+// MANUAL CONFIRM: every new order is saved as 'new' (pending) —
+// the admin confirms genuine payments with 1 tap, and cancels fake UTR /
+// wrong-screenshot ones with 1 tap. No system can 100% auto-verify a typed
+// UTR (UTRs have no checksum), so confirmation stays with the admin.
+// payment_status is kept separately ('unverified') — verify it in
+// Reports → Payments whenever you get time.
 //
-// Resilient: agar cloud schema purana ho (migration pending) to
-// pehle full row try karo, column error aaye to legacy minimal row retry.
-// Isse migration run kiye bina bhi booking kabhi fail nahi hoti.
+// Resilient: if the cloud schema is old (migration pending),
+// try the full row first, then retry with a legacy minimal row on column error.
+// So bookings never fail even before the migration runs.
 export async function saveBooking(payload: {
   name: string;
   phone: string;
@@ -43,7 +43,7 @@ export async function saveBooking(payload: {
   payment_mode?: string;
   payment_id?: string;
   payment_status?: string;
-  /** Checkout me laga promo code (uppercase, optional) */
+  /** Promo code applied at checkout (uppercase, optional) */
   promo_code?: string | null;
   /** Payment screenshot (cloud URL ya compressed dataURL) */
   payment_proof?: string | null;
@@ -53,10 +53,10 @@ export async function saveBooking(payload: {
   admin_note?: string | null;
   /** Customer's delivery address (filled at checkout) */
   address?: string | null;
-  /** Bot-trap — bhara ho to booking silently drop (spam se bachao) */
+  /** Bot-trap — if filled, drop the booking silently (spam protection) */
   honeypot?: string;
 }) {
-  // Honeypot bhara = bot. Success jaisa response, par save mat karo.
+  // Honeypot filled = bot. Return a success-like response, but do not save.
   if (payload.honeypot && payload.honeypot.trim()) return { ok: true as const, mode: 'local' as const };
   try {
     addLocalBooking({
@@ -114,12 +114,12 @@ export async function saveBooking(payload: {
   };
   let { error } = await supabase.from('bookings').insert(row);
   if (error && isMissingColumnError(error.message)) {
-    // Cloud me naye columns nahi hain (migration pending) — unke bina retry
+    // New columns missing in cloud (migration pending) — retry without them
     const { ready_date: _r, admin_note: _n, address: _a, promo_code: _p, payment_proof: _f, ...withoutNew } = row;
     ({ error } = await supabase.from('bookings').insert(withoutNew));
   }
   if (error && isMissingColumnError(error.message)) {
-    // Purana cloud schema — sirf base columns ke saath retry
+    // Old cloud schema — retry with base columns only
     const legacy = {
       name: row.name,
       phone: row.phone,
@@ -143,7 +143,7 @@ function isMissingColumnError(msg: string): boolean {
   return /column|schema cache|does not exist|unknown column|deposit|order_id|token_amount|payment_mode/i.test(msg);
 }
 
-/** Supabase booking row → MyOrder (customer view). Items ka shape alag ho to bhi safe. */
+/** Supabase booking row → MyOrder (customer view). Safe even if the items shape differs. */
 function bookingRowToMyOrder(r: any): MyOrder | null {
   try {
     const orderId = String(r.order_id || '').trim() || `#${String(r.id ?? '').slice(-6)}`;
@@ -158,19 +158,19 @@ function bookingRowToMyOrder(r: any): MyOrder | null {
           .filter(Boolean).join(' · ') || '1-day rental',
         qty: Number(it?.qty || 1),
         price: Number(it?.price ?? it?.rent ?? 0) || 0,
-        // Photo — checkout par save hui img, warna single accessory ki img
+        // Photo — img saved at checkout, else the single accessory's img
         img: imgRaw || undefined,
         pid: pidRaw || undefined,
       };
     });
-    // Purane rows me items khaali ho sakte hain — tab note se ek line banao taaki order khaali na lage
+    // Old rows may have empty items — then build one line from the note so the order never looks empty
     const safeItems = items.length ? items : [{
       name: 'Festive outfit rental',
       detail: String(r.note || r.category || '1-day rental').slice(0, 120),
       qty: 1,
       price: Number(r.total || r.subtotal || 0),
     }];
-    // Cloud/admin ka status jaisa hai waisa — customer ko wahi dikhega
+    // Keep the cloud/admin status as-is — the customer sees the same status
     // (confirmed / onway / delivered / returned / cancelled).
     const status = String(r.status || 'new');
     return {
@@ -194,10 +194,10 @@ function bookingRowToMyOrder(r: any): MyOrder | null {
 }
 
 /**
- * Mobile number se orders dhoondo — pehle is device (local), phir cloud (Supabase).
- * Cloud me naya secure RPC ho to wahi use hota hai (poori table public nahi khulti);
- * purane setup par direct select try hota hai, RLS block kare to local result hi wapas.
- * Mile hue cloud orders local me merge bhi ho jate hain taaki agli baar bina net ke dikhein.
+ * Find orders by mobile number — first this device (local), then cloud (Supabase).
+ * Uses the new secure RPC in the cloud when available (never opens the whole table);
+ * falls back to a direct select on older setups, returning just the local result if RLS blocks.
+ * Cloud orders found are also merged locally so they show offline next time.
  */
 export async function fetchOrdersByPhone(phone: string): Promise<{ orders: MyOrder[]; source: 'local' | 'cloud' | 'both' }> {
   const digits = String(phone || '').replace(/\D/g, '').slice(-10);
@@ -206,7 +206,7 @@ export async function fetchOrdersByPhone(phone: string): Promise<{ orders: MyOrd
   const localByPhone = getMyOrders().filter((o) =>
     String(o.phone || '').replace(/\D/g, '').slice(-10) === digits
   );
-  // Same device par admin-bookings me bhi ho sakta hai (local mode)
+  // May also exist in admin-bookings on the same device (local mode)
   try {
     for (const b of getLocalBookings()) {
       if (String(b.phone || '').replace(/\D/g, '').slice(-10) !== digits) continue;
@@ -218,7 +218,7 @@ export async function fetchOrdersByPhone(phone: string): Promise<{ orders: MyOrd
   if (!isSupabaseConfigured || !supabase) return { orders: localByPhone, source: 'local' };
 
   try {
-    // 1) Secure function (migration_customer_orders_lookup.sql) — sirf apne number ke orders
+    // 1) Secure function (migration_customer_orders_lookup.sql) — only this number's orders
     const rpc = await supabase.rpc('get_my_orders_by_phone', { p_phone: digits });
     if (!rpc.error && Array.isArray(rpc.data)) {
       lookupDiag = 'ok';
@@ -232,7 +232,7 @@ export async function fetchOrdersByPhone(phone: string): Promise<{ orders: MyOrd
       return { orders: localByPhone, source: localByPhone.length ? 'local' : 'cloud' };
     }
     if (rpc.error) noteRpcError(rpc.error);
-    // 2) Fallback — purana setup (RLS allow kare to hi chalega)
+    // 2) Fallback — old setup (works only if RLS allows)
     const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false }).limit(100);
     if (!error && Array.isArray(data)) {
       const mine = (data as any[])
@@ -246,12 +246,12 @@ export async function fetchOrdersByPhone(phone: string): Promise<{ orders: MyOrd
         return { orders: [...merged.values()], source: 'both' };
       }
     }
-  } catch { /* network/RLS — local hi sahi */ }
+  } catch { /* network/RLS — local is fine */ }
   return { orders: localByPhone, source: 'local' };
 }
 
-/** UTR pehle kisi order me use hua ya nahi (secure RPC — sirf true/false, koi data leak nahi).
- *  RPC/column missing ho to false (genuine order kabhi block nahi hoga). */
+/** Whether a UTR was already used on another order (secure RPC — only true/false, no data leak).
+ *  Returns false when the RPC/column is missing (a genuine order is never blocked). */
 export async function isUtrUsed(utr: string): Promise<boolean> {
   const needle = String(utr || '').trim();
   if (!/^\d{12}$/.test(needle)) return false;
@@ -267,7 +267,7 @@ export async function isUtrUsed(utr: string): Promise<boolean> {
   }
 }
 
-/** Is mobile number se aaj kitne orders bheje gaye (spam rokne ke liye). Fail-open. */
+/** How many orders were sent from this mobile number today (spam guard). Fail-open. */
 export async function todayOrderCount(phone: string): Promise<number> {
   const digits = String(phone || '').replace(/\D/g, '').slice(-10);
   if (digits.length < 10) return 0;
@@ -279,8 +279,8 @@ export async function todayOrderCount(phone: string): Promise<number> {
     return 0;
   }
 }
-/** Order ID se ek order dhoondo (local + cloud).
- *  refresh:true ho to local milne par bhi cloud se taza status lao (sync ke liye). */
+/** Find one order by order ID (local + cloud).
+ *  With refresh:true, fetch the fresh status from cloud even when found locally (for sync). */
 export async function fetchOrderById(orderId: string, opts?: { refresh?: boolean }): Promise<MyOrder | null> {
   const needle = String(orderId || '').trim().toUpperCase();
   if (!needle) return null;

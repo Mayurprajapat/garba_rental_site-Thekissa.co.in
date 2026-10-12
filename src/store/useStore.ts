@@ -3,10 +3,12 @@ import { persist } from 'zustand/middleware';
 import type { Category } from '../data/products';
 import { getSiteContent } from '../lib/siteContent';
 
+export type Plan = '1day' | 'buy';
+
 export interface CartItem {
   id: string;
   size: string;
-  plan: '1day';
+  plan: Plan;
   qty: number;
   addons?: string[];
   // Bina dress ke sirf accessory rent ho to ye set hota hai (price snapshot)
@@ -31,6 +33,7 @@ interface Store {
   sort: 'pop' | 'low' | 'high' | 'rating';
   maxPrice: number;
   quickView: string | null;
+  quickViewMode: 'rent' | 'buy';
   cartOpen: boolean;
   activeCat: ActiveCat | null;
   setActiveCat: (c: ActiveCat | null) => void;
@@ -43,13 +46,13 @@ interface Store {
   setSearch: (s: string) => void;
   setSort: (s: Store['sort']) => void;
   setMaxPrice: (n: number) => void;
-  setQuickView: (id: string | null) => void;
+  setQuickView: (id: string | null, mode?: 'rent' | 'buy') => void;
   setCartOpen: (b: boolean) => void;
   setEventDate: (d: string) => void;
   setPromo: (p: string) => void;
-  addToCart: (id: string, size: string, plan: '1day', addons?: string[], single?: { name: string; price: number; img?: string }, qty?: number) => void;
-  removeFromCart: (id: string, size: string, plan: '1day', addons?: string[], singleName?: string) => void;
-  setQty: (id: string, size: string, plan: '1day', addons: string[] | undefined, singleName: string | undefined, qty: number) => void;
+  addToCart: (id: string, size: string, plan: Plan, addons?: string[], single?: { name: string; price: number; img?: string }, qty?: number) => void;
+  removeFromCart: (id: string, size: string, plan: Plan, addons?: string[], singleName?: string) => void;
+  setQty: (id: string, size: string, plan: Plan, addons: string[] | undefined, singleName: string | undefined, qty: number) => void;
   clearCart: () => void;
   toggleWish: (id: string) => void;
   pushToast: (msg: string) => void;
@@ -70,6 +73,7 @@ export const useStore = create<Store>()(
       sort: 'pop',
       maxPrice: 4000,
       quickView: null,
+      quickViewMode: 'rent',
       cartOpen: false,
       activeCat: null,
       setActiveCat: (activeCat) => set({ activeCat }),
@@ -82,7 +86,7 @@ export const useStore = create<Store>()(
       setSearch: (search) => set({ search }),
       setSort: (sort) => set({ sort }),
       setMaxPrice: (maxPrice) => set({ maxPrice }),
-      setQuickView: (quickView) => set({ quickView }),
+      setQuickView: (quickView, mode) => set(() => ({ quickView, quickViewMode: mode ?? 'rent' })),
       setCartOpen: (cartOpen) => set({ cartOpen }),
       setEventDate: (eventDate) => set({ eventDate }),
       setPromo: (promo) => set({ promo }),

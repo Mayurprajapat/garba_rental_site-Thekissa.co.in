@@ -10,14 +10,14 @@ export default function AgentDeliver() {
   const [msg, setMsg] = useState('Loading…');
   const [sharing, setSharing] = useState(false);
   const watchId = useRef<number | null>(null);
-  // Latest delivery ka ref — GPS callback purana status na bheje
+  // Ref to the latest delivery — so the GPS callback doesn't send a stale status
   const dRef = useRef(d);
   dRef.current = d;
 
   const load = async () => {
     const row = await getDelivery(code);
     if (row) { setD(row); setMsg(''); return; }
-    // Alag phone: link ke snapshot se delivery kholo
+    // Different phone: open the delivery from the link snapshot
     const snap = snapshotFromHash<Delivery>();
     setD(snap && snap.destLat ? snap : null);
     setMsg(snap && snap.destLat ? '' : 'Invalid delivery code.');
@@ -30,7 +30,7 @@ export default function AgentDeliver() {
     const next = { ...cur, agentLat: lat, agentLng: lng, status: (status || cur.status || 'onway') as Delivery['status'], updatedAt: new Date().toISOString() };
     setD(next);
     await upsertDelivery(next);
-    // Live: customer ka map turant update (bina account ke)
+    // Live: customer's map updates instantly (no account needed)
     void publishPing(code, { lat, lng, status: next.status, ts: next.updatedAt });
   };
 
@@ -54,7 +54,7 @@ export default function AgentDeliver() {
 
   const simulate = async () => {
     if (!d) return;
-    // Demo: store se customer tak 5 steps me move karo
+    // Demo: move from the store to the customer in 5 steps
     const steps = 5;
     for (let i = 1; i <= steps; i++) {
       const lat = STORE_POS.lat + ((d.destLat - STORE_POS.lat) * i) / steps;

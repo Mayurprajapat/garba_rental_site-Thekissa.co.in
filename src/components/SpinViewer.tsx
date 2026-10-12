@@ -1,6 +1,6 @@
-// 360° spin viewer — photo par ungli/mouse se drag karo, dress ghoomegi.
-// Frames = product ki photos (pehli = front, aage wali = angles, order me).
-// Zyada angles = smooth spin. Admin → Products → Photos me lines add karo.
+// 360° spin viewer — drag with finger/mouse on the photo to rotate the dress.
+// Frames = product photos (first = front, following ones = angles, in order).
+// More angles = smoother spin. Add lines in Admin → Products → Photos.
 
 import { useEffect, useRef, useState } from 'react';
 

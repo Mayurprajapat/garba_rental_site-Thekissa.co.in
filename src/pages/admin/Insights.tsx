@@ -1,6 +1,6 @@
 // Admin Reports — Dispatch list, Customers, Payment queue, Calendar, Promo report.
-// Sirf ADDITIVE hai: existing views/logic ko haath nahi lagata.
-// Data wahi bookings state se (cloud ya local) — English labels only.
+// Additive only: doesn't touch existing views/logic.
+// Data comes from the same bookings state (cloud or local) — English labels only.
 
 import { useEffect, useMemo, useState } from 'react';
 import { BellRing, CalendarDays, CheckCircle2, Copy, Download, Search, Star, Users, Wallet } from 'lucide-react';
@@ -59,7 +59,7 @@ function Dispatch({ bookings }: { bookings: B[] }) {
   const pretty = (() => { try { return new Date(day + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return day; } })();
 
   const text = `Dispatch list — ${pretty} (${list.length} deliveries)\n` + list.map((b, i) => {
-    // Naye full orders me token me 30% extra bhi hai; purane full me sirf rent
+    // New full orders include the 30% extra in the token; old full orders include rent only
     const extraInToken = String(b.payment_mode) === 'upi-qr-full' ? Math.max(0, Number(b.token_amount || 0) - Number(b.total || b.subtotal || 0)) : 0;
     const rentBal = String(b.payment_mode) === 'upi-qr-full' ? 0 : Math.max(0, Number(b.total || b.subtotal || 0) - Number(b.token_amount || 0));
     const extraDue = Math.max(0, Number(b.deposit || 0) - extraInToken);
@@ -250,13 +250,13 @@ function Payments({ bookings, reload }: { bookings: B[]; reload: () => void }) {
                 </a>
               </div>
               <div className="flex gap-1.5 mt-2">
-                <button disabled={busy === b.id} onClick={() => setPayStatus(b, 'verified')} title="Amount + UTR bank statement se match ho to dabao"
+                <button disabled={busy === b.id} onClick={() => setPayStatus(b, 'verified')} title="Press when the amount + UTR match the bank statement"
                   className="flex-1 text-[12px] font-bold bg-emerald-600 text-white rounded-full px-3 py-1.5 disabled:opacity-50 hover:brightness-110 transition flex items-center justify-center gap-1">
-                  <CheckCircle2 size={13} /> {busy === b.id ? '…' : '✓ Sahi hai — Verify'}
+                  <CheckCircle2 size={13} /> {busy === b.id ? '…' : '✓ Correct — Verify'}
                 </button>
-                <button disabled={busy === b.id} onClick={() => setPayStatus(b, 'rejected')} title="UTR galat / payment nahi mila to dabao — customer ko signal jayega"
+                <button disabled={busy === b.id} onClick={() => setPayStatus(b, 'rejected')} title="Press if the UTR is wrong / payment not received — the customer will be notified"
                   className="flex-1 text-[12px] font-bold border border-rose-300 text-rose-700 rounded-full px-3 py-1.5 disabled:opacity-50 hover:bg-rose-600 hover:text-white transition">
-                  {busy === b.id ? '…' : '✕ Galat hai — Flag'}
+                  {busy === b.id ? '…' : '✕ Wrong — Flag'}
                 </button>
               </div>
               {b.payment_status === 'rejected' && <p className="text-[11.5px] text-rose-700 font-semibold mt-1.5">Flagged wrong — customer sees “payment needs attention” in My Orders.</p>}
@@ -264,7 +264,7 @@ function Payments({ bookings, reload }: { bookings: B[]; reload: () => void }) {
           ))}
         </div>
       )}
-      <p className="text-[11.5px] text-[#8a7584] mt-2">Flow: Copy UTR → bank/UPI app me check karo → Sahi = Verify, Galat = Flag. UTR yahi se copy hota hai.</p>
+      <p className="text-[11.5px] text-[#8a7584] mt-2">Flow: Copy UTR → check it in your bank/UPI app → Correct = Verify, Wrong = Flag. Copy the UTR from here.</p>
     </div>
   );
 }

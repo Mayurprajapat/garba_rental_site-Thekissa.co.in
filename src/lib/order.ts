@@ -7,6 +7,18 @@ export function makeOrderId(): string {
   return `RL-${year}-${rand}`;
 }
 
+import { getSiteContent } from './siteContent';
+
+// Refundable extra percentage — read from Admin → Website → Store settings.
+// Falls back to 30 if not set (legacy installations).
+function getRefundablePct(): number {
+  try {
+    const c = getSiteContent();
+    if (c && typeof c.refundablePct === 'number' && c.refundablePct > 0) return c.refundablePct;
+  } catch { /* ignore */ }
+  return 30;
+}
+
 export function tokenAdvance(total: number): number {
   if (total <= 0) return 0;
   // Legacy: 20% ya minimum ₹499 — jo bada ho, total se zyada nahi
@@ -20,8 +32,8 @@ export function halfAdvance(total: number): number {
   return Math.round(total / 2);
 }
 
-/** Refundable extra — har dress par rent ka 30%, return par wapas. */
-export const REFUNDABLE_PCT = 30;
+/** Refundable extra — har dress par rent ka {getRefundablePct()}%, return par wapas. */
+export const REFUNDABLE_PCT = getRefundablePct();
 
 export function refundableExtra(rent: number): number {
   if (!(rent > 0)) return 0;

@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { BadgeCheck, Check, CheckCircle2, CreditCard, Download, Heart, Mail, MapPin, MessageCircle, Minus, Plus, ReceiptText, ShieldCheck, ShoppingBasket, Sparkles, Star, Trash2, Truck, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { addonTotal, lookFor, photosFor, spinFramesFor, STORE, waLink, type Accessory, type Category } from '../data/products';
+import { addonTotal, lookFor, normalizeSizes, photosFor, spinFramesFor, STORE, waLink, type Accessory, type Category } from '../data/products';
 import { itemImgFor } from '../lib/items';
 import { fetchOrderById, fetchOrdersByPhone, cloudLookupDiag, isUtrUsed, saveBooking } from '../lib/db';
 import { looksFakeUtr } from '../lib/utr';
@@ -26,6 +26,7 @@ export function QuickView() {
   const { products } = useProducts();
   const siteV = useSiteVersion();
   const id = useStore((s) => s.quickView);
+  const initialMode = useStore((s) => s.quickViewMode);
   const setQuickView = useStore((s) => s.setQuickView);
   const addToCart = useStore((s) => s.addToCart);
   const toggleWish = useStore((s) => s.toggleWish);
@@ -36,11 +37,12 @@ export function QuickView() {
   const [spin, setSpin] = useState(false);
   const [qty, setQty] = useState(1);
   const [size, setSize] = useState('');
-  // Date availability checker (additive — Add to list flow same rehta hai)
+  const [mode, setMode] = useState<'rent' | 'buy'>('rent');
+  // Date availability checker (additive — Add to list flow stays the same)
   const [availDate, setAvailDate] = useState('');
   const [avail, setAvail] = useState<{ checking: boolean; qty: number } | null>(null);
-  useEffect(() => { setPicked([]); setPhotoIdx(0); setSpin(false); setQty(1); setSize(''); setAvailDate(''); setAvail(null); }, [id]);
-  // Modal khula ho to background page lock — saara scroll card ke andar
+  useEffect(() => { setPicked([]); setPhotoIdx(0); setSpin(false); setQty(1); setSize(''); setMode(initialMode ?? 'rent'); setAvailDate(''); setAvail(null); }, [id, initialMode]);
+  // When the modal is open, lock the background page — all scrolling stays inside the card
   useEffect(() => {
     if (!p) return;
     const prev = document.body.style.overflow;
@@ -54,7 +56,7 @@ export function QuickView() {
   const lookSubtitle = completeLook?.subtitle?.trim() || 'The complete look is right here — nothing to search for.';
   const lookHint = completeLook?.hint?.trim() || 'Tick = joins the dress · Only this = rent the item alone, without the dress.';
   const look = useMemo(() => (p ? lookFor(p) : []), [p, siteV]);
-  const sizes = useMemo(() => (p?.sizes?.length ? p.sizes : ['Free size']), [p]);
+  const sizes = useMemo(() => normalizeSizes((p as any)?.sizes), [p]);
   const selSize = sizes.includes(size) ? size : sizes[0];
   const photos = useMemo(() => (p ? photosFor(p) : []), [p]);
   const frames = useMemo(() => (p ? spinFramesFor(p) : []), [p]);
@@ -62,11 +64,14 @@ export function QuickView() {
   const paidAddons = look.filter((a) => a.tag === 'addon');
   const pickedTotal = p ? addonTotal(p, picked) : 0;
   const soldOut = (p?.stock ?? 1) <= 0;
+  const isBuy = mode === 'buy';
+  const basePrice = p ? (isBuy ? p.buy : p.rent1) : 0;
+  const lineTotal = basePrice + pickedTotal;
   const togglePick = (name: string) =>
     setPicked((prev) => (prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name]));
   const addDress = () => {
     if (!p || soldOut) return;
-    addToCart(p.id, selSize, '1day', picked.length ? picked : undefined, undefined, qty);
+    addToCart(p.id, selSize, isBuy ? 'buy' : '1day', picked.length ? picked : undefined, undefined, qty);
     setQuickView(null);
   };
   const checkAvail = async (d: string) => {
@@ -170,8 +175,27 @@ export function QuickView() {
                 </div>
               )}
               <div className="mt-4">
-                <p className="label-pro">Rental plan</p>
-                <div className="mt-2 border border-[#641629] bg-[#faf7ef] rounded-2xl p-3"><b className="text-sm">1-day · ₹{p.rent1.toLocaleString('en-IN')}</b><p className="text-[11px] text-[#6f5b6a] mt-0.5">Single event + returns · same price for all days</p></div>
+                <p className="label-pro">Rent or Buy — you choose</p>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <button type="button" onClick={() => setMode('rent')}
+                    className={`text-left border rounded-2xl p-3 transition ${!isBuy ? 'border-[#641629] bg-[#faf7ef] ring-2 ring-[#641629]/20' : 'border-black/10 bg-white hover:border-black/30'}`}>
+                    <span className="flex items-center gap-1.5 text-[13px] font-bold">
+                      <span className={`w-4 h-4 rounded-full border-2 grid place-items-center ${!isBuy ? 'border-[#641629]' : 'border-black/25'}`}>{!isBuy && <span className="w-2 h-2 rounded-full bg-[#641629]" />}</span>
+                      Rent
+                    </span>
+                    <b className="block text-[15px] mt-1">₹{p.rent1.toLocaleString('en-IN')}</b>
+                    <span className="block text-[11px] text-[#6f5b6a]">1-day · return after event</span>
+                  </button>
+                  <button type="button" onClick={() => setMode('buy')}
+                    className={`text-left border rounded-2xl p-3 transition ${isBuy ? 'border-[#641629] bg-[#faf7ef] ring-2 ring-[#641629]/20' : 'border-black/10 bg-white hover:border-black/30'}`}>
+                    <span className="flex items-center gap-1.5 text-[13px] font-bold">
+                      <span className={`w-4 h-4 rounded-full border-2 grid place-items-center ${isBuy ? 'border-[#641629]' : 'border-black/25'}`}>{isBuy && <span className="w-2 h-2 rounded-full bg-[#641629]" />}</span>
+                      Buy
+                    </span>
+                    <b className="block text-[15px] mt-1">₹{p.buy.toLocaleString('en-IN')}</b>
+                    <span className="block text-[11px] text-[#6f5b6a]">Yours forever · no return</span>
+                  </button>
+                </div>
               </div>
               <div className="mt-3">
                 <p className="label-pro">Select size</p>
@@ -185,6 +209,7 @@ export function QuickView() {
                   ))}
                 </div>
               </div>
+              {!isBuy && (
               <div className="mt-3 rounded-2xl border border-[#c9a44a]/50 bg-[#fffdf9] p-3.5">
                 <p className="label-pro">Check date availability</p>
                 <input type="date" value={availDate} min={new Date().toISOString().slice(0, 10)} onChange={(e) => checkAvail(e.target.value)} className="input-pro !py-2 text-[13px] mt-2" />
@@ -198,8 +223,11 @@ export function QuickView() {
                   </p>
                 )}
               </div>
-              <div className="flex items-baseline gap-2 mt-3"><b className="font-display text-[22px]">₹{p.rent1.toLocaleString('en-IN')}</b><s className="text-[#8a7584] text-sm">₹{p.buy.toLocaleString('en-IN')}</s>{p.buy > p.rent1 && <span className="text-[11px] font-black text-white bg-emerald-600 rounded-full px-2 py-0.5">SAVE {Math.round((1 - p.rent1 / p.buy) * 100)}%</span>}</div>
-              <p className="text-[11.5px] text-emerald-700 font-semibold mt-0.5">+ ₹{refundableExtra(p.rent1).toLocaleString('en-IN')} refundable extra (30% — you get it back)</p>
+              )}
+              <div className="flex items-baseline gap-2 mt-3"><b className="font-display text-[22px]">₹{(lineTotal * qty).toLocaleString('en-IN')}</b>{!isBuy && p.buy > p.rent1 && <><s className="text-[#8a7584] text-sm">₹{p.buy.toLocaleString('en-IN')}</s><span className="text-[11px] font-black text-white bg-emerald-600 rounded-full px-2 py-0.5">SAVE {Math.round((1 - p.rent1 / p.buy) * 100)}%</span></>}{isBuy && <span className="text-[11px] font-black text-white bg-[#641629] rounded-full px-2 py-0.5">BUY · NO RETURN</span>}</div>
+              {!isBuy
+                ? <p className="text-[11.5px] text-emerald-700 font-semibold mt-0.5">+ ₹{refundableExtra(p.rent1).toLocaleString('en-IN')} refundable extra (30% — you get it back)</p>
+                : <p className="text-[11.5px] text-black/55 font-medium mt-0.5">One-time price · no deposit, no return needed</p>}
               <div className="flex items-center justify-between mt-4 border border-black/10 rounded-2xl px-3.5 py-2.5">
                 <span className="text-[12.5px] font-bold">Quantity <span className="block text-[11px] font-normal text-black/50">How many dresses do you need?</span></span>
                 <span className="flex items-center gap-2">
@@ -209,11 +237,11 @@ export function QuickView() {
                 </span>
               </div>
               <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-2 mt-3">
-                <button onClick={addDress} disabled={soldOut} className="btn-primary !py-3 !text-[13px] disabled:opacity-40"><ShoppingBasket size={15} /> {soldOut ? 'Out of stock' : <>Add {qty > 1 ? `${qty} ` : ''}to list{pickedTotal ? ` +₹${pickedTotal.toLocaleString('en-IN')}` : ''}</>}</button>
+                <button onClick={addDress} disabled={soldOut} className="btn-primary !py-3 !text-[13px] disabled:opacity-40"><ShoppingBasket size={15} /> {soldOut ? 'Out of stock' : <>{isBuy ? 'Buy now' : 'Rent now'}{qty > 1 ? ` ${qty}` : ''}{pickedTotal ? ` +₹${pickedTotal.toLocaleString('en-IN')}` : ''}</>}</button>
                 <button onClick={() => toggleWish(p.id)} className="btn-outline-dark !py-3 !text-[13px]"><Heart size={15} className={wishlist.includes(p.id) ? 'fill-[#641629] text-[#641629]' : ''} /> Wishlist</button>
               </div>
               {soldOut && <p className="text-[12px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 mt-2 text-center">This outfit is currently out of stock. Please check back soon or ask on WhatsApp.</p>}
-              <a href={waLink(`Hi TheKissa.co! Is ${p.name} (${p.id}), size ${selSize}, 1-day available?`)} target="_blank" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 border border-[#641629]/15 rounded-full py-3 text-[13px] font-semibold hover:border-[#641629] transition"><MessageCircle size={15} /> Ask on WhatsApp</a>
+              <a href={waLink(`Hi TheKissa.co! I want to ${isBuy ? 'BUY' : 'RENT'} ${p.name} (${p.id}), size ${selSize} — ${isBuy ? `buy ₹${p.buy}` : '1-day rent'} available?`)} target="_blank" className="mt-2 w-full inline-flex items-center justify-center gap-1.5 border border-[#641629]/15 rounded-full py-3 text-[13px] font-semibold hover:border-[#641629] transition"><MessageCircle size={15} /> Ask on WhatsApp</a>
               <ProductReviews productId={p.id} productName={p.name} />
               <div className="grid grid-cols-3 gap-2 mt-5 text-[11px] font-medium text-[#6f5b6a] border-t border-[#641629]/8 pt-4">
                 <span className="flex items-center gap-1.5"><ShieldCheck size={13} className="text-emerald-600" /> Sanitised</span>
@@ -247,7 +275,7 @@ function ProductReviews({ productId, productName }: { productId: string; product
         if (!on) return;
         const seen = new Set(cloud.map((r) => r.id));
         setList([...cloud, ...getLocalReviews(productId).filter((r) => !seen.has(r.id))].slice(0, 10));
-      } catch { /* local list hi sahi */ }
+      } catch { /* local list is fine */ }
     })();
     return () => { on = false; };
   }, [productId]);
@@ -355,17 +383,17 @@ export function CartDrawer() {
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [utr, setUtr] = useState('');
-  // Payment screenshot — UTR ke saath compulsory (compressed dataURL preview)
+  // Payment screenshot — required along with UTR (compressed dataURL preview)
   const [shot, setShot] = useState<string | null>(null);
   const [shotBusy, setShotBusy] = useState(false);
   const [copied, setCopied] = useState(false);
-  // Honeypot bot-trap — humans kabhi nahi bharte (off-screen field)
+  // Honeypot bot-trap — humans never fill it (off-screen field)
   const [company, setCompany] = useState('');
   const [paying, setPaying] = useState(false);
   const [err, setErr] = useState('');
   const [tab, setTab] = useState<'list' | 'orders'>('list');
   const [orders, setOrders] = useState<MyOrder[]>([]);
-  // Dusre phone/browser se order wapas lane ke liye (mobile number / Order ID)
+  // To restore orders from another phone/browser (mobile number / Order ID)
   const [lookupPhone, setLookupPhone] = useState('');
   const [lookupId, setLookupId] = useState('');
   const [lookupBusy, setLookupBusy] = useState(false);
@@ -373,9 +401,9 @@ export function CartDrawer() {
   const [order, setOrder] = useState<{ id: string; paymentId: string; mode: string; token: number; total: number; deposit: number; lines: string[]; items: MyOrder['items'] } | null>(null);
   const [payChoice, setPayChoice] = useState<'half' | 'full'>('full');
   const [promo, setPromo] = useState('');
-  // Booking list me order photo full-view (lightbox)
+  // Full-view (lightbox) for order photos in the booking list
   const [viewPhoto, setViewPhoto] = useState<{ src: string; name: string } | null>(null);
-  // Purane orders me img save nahi thi — catalog se fallback photo dhoondo (pid → name → detail me id)
+  // Older orders did not save img — find a fallback photo from the catalog (pid → name → id in detail)
   const orderImgFor = (it: MyOrderItem): string | undefined => {
     if (it.img) return it.img;
     try {
@@ -397,7 +425,7 @@ export function CartDrawer() {
     setTimeout(() => { setStep('cart'); setOrder(null); setErr(''); setUtr(''); setShot(null); setPayChoice('full'); setPromo(''); setName(''); setPhone(''); setEmail(''); setAddress(''); setLookupMsg(''); }, 400);
   };
 
-  // Screenshot pick → turant compress (8MB tak ki photo chalegi)
+  // Compress screenshot immediately on pick (photos up to 8MB are OK)
   const onShot = async (f: File | undefined) => {
     if (!f) return;
     if (!f.type.startsWith('image/')) { setErr('Please attach an image file (JPG/PNG) of your payment.'); return; }
@@ -412,7 +440,7 @@ export function CartDrawer() {
       setShotBusy(false);
     }
   };
-  // Drawer khule aur list khaali ho par orders hon — seedha My Orders dikhao (user ko View order dhoondhna na pade)
+  // If the drawer opens with an empty list but orders exist — show My Orders directly (so the user doesn't have to hunt for View order)
   useEffect(() => {
     if (open && !wasOpen.current) {
       try {
@@ -422,7 +450,7 @@ export function CartDrawer() {
     }
     wasOpen.current = open;
   }, [open, cart.length]);
-  // Navbar "My Orders" button se seedha orders tab kholo
+  // Open the orders tab directly from the Navbar "My Orders" button
   useEffect(() => {
     const openOrders = () => {
       setStep('cart');
@@ -433,10 +461,10 @@ export function CartDrawer() {
     return () => window.removeEventListener(OPEN_ORDERS_EVENT, openOrders);
   }, [setOpen]);
 
-  const rowPrice = (r: { p: { rent1: number; category: Category; desc: string; accessories?: Accessory[] }; plan: '1day'; addons?: string[]; single?: { price: number } }) =>
-    r.single ? r.single.price : (r.p.rent1 + addonTotal(r.p, r.addons));
+  const rowPrice = (r: { p: { rent1: number; buy: number; category: Category; desc: string; accessories?: Accessory[] }; plan: '1day' | 'buy'; addons?: string[]; single?: { price: number } }) =>
+    r.single ? r.single.price : ((r.plan === 'buy' ? r.p.buy : r.p.rent1) + addonTotal(r.p, r.addons));
 
-  // Drawer khula ho to background page lock + Escape se band
+  // Lock the background page when the drawer is open + close on Escape
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -449,9 +477,9 @@ export function CartDrawer() {
   useEffect(() => {
     const refreshOrders = () => {
       const list = getMyOrders();
-      // Admin ne decision / ready date di ho to booking record se lao (same device par turant dikhega)
-      // Downgrade guard: confirmed/onway/delivered/returned/cancelled order ko
-      // wapas 'new' mat karo (purana booking record).
+      // If the admin gave a decision / ready date, pull it from the booking record (shows instantly on the same device)
+      // Downgrade guard: never revert a confirmed/onway/delivered/returned/cancelled order
+      // back to 'new' (old booking record).
       try {
         const byId = new Map(getLocalBookings().map((b) => [b.order_id, b]));
         list.forEach((o) => {
@@ -461,14 +489,14 @@ export function CartDrawer() {
           if (b.status) {
             const incoming = String(b.status);
             const prev = String(o.status || '');
-            // 'new' kabhi confirmed/delivered/returned/cancelled ko overwrite nahi karega
+            // 'new' must never overwrite confirmed/delivered/returned/cancelled
             if (!(incoming === 'new' && prev && prev !== 'new')) {
               (o as MyOrder).status = b.status;
             }
           }
           if (b.admin_note) (o as MyOrder).note = b.admin_note;
           if ((b as any).payment_status) (o as MyOrder).payStatus = (b as any).payment_status;
-          // Purane snapshot me photo na ho to booking record wali photo laga do
+          // If the old snapshot lacks a photo, attach the one from the booking record
           try {
             const bItems: any[] = Array.isArray((b as any).items) ? (b as any).items : [];
             if (bItems.length === o.items.length) {
@@ -493,9 +521,9 @@ export function CartDrawer() {
     return unsub;
   }, []);
 
-  // Cloud se latest status lao (admin ne cancel/confirm kiya ho to customer ko dikhe).
-  // Drawer khulne par + My Orders tab par ek baar silent sync — same-device local merge ke upar.
-  // Naya status PURANE ko replace karta hai (confirm ke baad cancel → sirf cancel dikhega).
+  // Fetch the latest status from the cloud (so the customer sees an admin cancel/confirm).
+  // Silent sync once on drawer open + on the My Orders tab — on top of the same-device local merge.
+  // A new status replaces the OLD one (cancel after confirm → only cancel is shown).
   const syncing = useRef(false);
   const [syncingUi, setSyncingUi] = useState(false);
   const syncCloudStatuses = async (silent = true): Promise<number> => {
@@ -507,7 +535,7 @@ export function CartDrawer() {
     if (!silent) setSyncingUi(true);
     try {
       await Promise.allSettled(mine.slice(0, 20).map((o) => fetchOrderById(o.id, { refresh: true })));
-    } catch { /* offline ho to local hi sahi */ }
+    } catch { /* if offline, the local copy is fine */ }
     syncing.current = false;
     if (!silent) setSyncingUi(false);
     let changed = 0;
@@ -527,8 +555,8 @@ export function CartDrawer() {
     else setLookupMsg('✓ Already up to date — no new update from the store.');
     setTab('orders');
   };
-  // Admin ka decision (confirm/onway/delivered/returned/cancelled/note/ready-date)
-  // turant lao — ek halki phone-RPC call me saare orders. Badle hue orders wapas.
+  // Fetch the admin decision (confirm/onway/delivered/returned/cancelled/note/ready-date)
+  // instantly — all orders in one lightweight phone-RPC call. Returns the changed orders.
   const fastSyncPhones = async (): Promise<MyOrder[]> => {
     try {
       const mine = getMyOrders();
@@ -555,10 +583,10 @@ export function CartDrawer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, tab]);
 
-  // Fast live status — admin panel me change hote hi (max ~10s) customer ke
-  // My Orders me PARTICULAR status + toast. Ek halki call per tick (phone se
-  // saare orders ek saath), sirf tab visible ho tabhi. Same browser me to
-  // events se same-second update hota hi hai.
+  // Fast live status — as soon as the admin panel changes (max ~10s), the customer gets a
+  // PARTICULAR status + toast in My Orders. One lightweight call per tick (all orders by
+  // phone at once), only when the tab is visible. The same browser already updates
+  // same-second via events.
   const pushToast = useStore((s) => s.pushToast);
   useEffect(() => {
     let stop = false;
@@ -576,7 +604,7 @@ export function CartDrawer() {
         if (changed.length && !stop) {
           changed.slice(0, 2).forEach((o) => pushToast(`Order ${o.id}: ${statusText(o.status)}`));
         }
-      } catch { /* offline ho to agli tick */ }
+      } catch { /* if offline, retry on the next tick */ }
     };
     const onVisible = () => {
       if (document.visibilityState === 'visible') fastTick();
@@ -596,17 +624,23 @@ export function CartDrawer() {
 
   const rows = useMemo(() => cart.map((c) => ({ ...c, p: products.find((x) => x.id === c.id)! })).filter((r) => r.p), [cart, products]);
   const subtotal = rows.reduce((a, r) => a + rowPrice(r) * r.qty, 0);
-  const deposit = rows.reduce((a, r) => a + (r.single ? 0 : refundableExtra(rowPrice(r) * r.qty)), 0);
+  // Deposit sirf rent par — buy + single accessory par zero
+  const deposit = rows.reduce((a, r) => a + (r.single || r.plan === 'buy' ? 0 : refundableExtra(rowPrice(r) * r.qty)), 0);
+  const hasBuy = rows.some((r) => !r.single && r.plan === 'buy');
+  const hasRent = rows.some((r) => !r.single && r.plan !== 'buy');
   const disc = promo.trim() ? promoDiscount(subtotal, promo) : 0;
   const total = subtotal - disc;
   const half = halfAdvance(total);
-  // Full = rent + 30% extra ek saath (delivery par kuch nahi, extra baad me wapas).
-  // Half = 50% rent now, baaki rent + 30% extra delivery par.
-  const payAmount = payChoice === 'full' ? total + deposit : half;
-  const rentBalance = payChoice === 'full' ? 0 : total - half;
-  const extraDue = payChoice === 'full' ? 0 : deposit;
+  // Buy ho to sirf full payment — half sirf rent ke liye
+  const effectivePayChoice = hasBuy ? 'full' as const : payChoice;
+  // Full = rent + 30% extra together (nothing on delivery, extra returned later).
+  // Half = 50% rent now, remaining rent + 30% extra on delivery.
+  // Buy items hon to half band — sirf full.
+  const payAmount = effectivePayChoice === 'full' ? total + deposit : half;
+  const rentBalance = effectivePayChoice === 'full' ? 0 : total - half;
+  const extraDue = effectivePayChoice === 'full' ? 0 : deposit;
 
-  // Dusre phone / cache-clear ke baad order wapas lao (same mobile number ya Order ID se)
+  // Restore orders after another phone / cache-clear (via the same mobile number or Order ID)
   const runLookupByPhone = async () => {
     const digits = lookupPhone.replace(/\D/g, '').slice(-10);
     if (digits.length < 10) { setLookupMsg('Please enter your 10-digit mobile number.'); return; }
@@ -647,7 +681,7 @@ export function CartDrawer() {
     }
   };
 
-  // Designer invoice PDF — store details bill footer ke liye (PDF lib lazy-load: site slow nahi hogi)
+  // Designer invoice PDF — store details for the bill footer (PDF lib lazy-loads: the site won't slow down)
   const invoiceOpts = () => ({ brand: STORE.brand, phone: STORE.phoneDisplay, email: STORE.email, address: STORE.addressLong });
   const downloadDoneInvoice = async () => {
     if (!order) return;
@@ -676,14 +710,14 @@ export function CartDrawer() {
     return '';
   };
 
-  const rowLabel = (r: { plan: '1day'; size: string; qty: number; addons?: string[] }) => {
-    const base = `1-day · ${r.size} x${r.qty}`;
+  const rowLabel = (r: { plan: '1day' | 'buy'; size: string; qty: number; addons?: string[] }) => {
+    const base = r.plan === 'buy' ? `Buy · ${r.size} x${r.qty}` : `1-day · ${r.size} x${r.qty}`;
     return r.addons?.length ? `${base} + ${r.addons.join(', ')}` : base;
   };
 
-  // Website par order hamesha rahe — My Orders snapshot.
-  // MANUAL CONFIRM: status 'new' = payment bheja, admin confirmation baaki.
-  // Admin genuine payment dekhkar confirm karega, nakli UTR wala cancel.
+  // The order always stays on the website — My Orders snapshot.
+  // MANUAL CONFIRM: status 'new' = payment sent, admin confirmation pending.
+  // The admin confirms after seeing a genuine payment, and cancels fake-UTR ones.
   const snapOrder = (orderId: string, token: number, mode: string, proof?: string) => saveMyOrder({
     id: orderId,
     date: new Date().toISOString(),
@@ -707,24 +741,24 @@ export function CartDrawer() {
   });
 
   const buildCustomerMsg = (o: { id: string; total: number; deposit: number; token: number; mode: string }) =>
-    `Your order has been placed successfully!\n\nOrder ID: ${o.id}\nName: ${name}\nEvent: ${eventDate || 'TBD'}\nTotal rent: ${formatINR(o.total)}\nPaid now: ${formatINR(o.token)}${o.mode === 'upi-qr-full' ? ' (rent + 30% extra — nothing due on delivery)' : ''}\nRefundable extra 30%: ${formatINR(o.deposit)} — you will get this back when you return the outfit.\n\nThank you for renting with TheKissa.co! Delivery updates will be shared with you on WhatsApp/SMS.`;
+    `Your order has been placed successfully!\n\nOrder ID: ${o.id}\nName: ${name}\nEvent: ${eventDate || 'TBD'}\nTotal${hasRent ? ' rent' : ''}${hasBuy && hasRent ? ' + buy' : hasBuy ? ' (buy)' : ''}: ${formatINR(o.total)}\nPaid now: ${formatINR(o.token)}${o.mode === 'upi-qr-full' ? (o.deposit > 0 ? ' (rent + 30% extra — nothing due on delivery)' : ' (full payment — nothing due on delivery)') : ''}${o.deposit > 0 ? `\nRefundable extra 30%: ${formatINR(o.deposit)} — you will get this back when you return the outfit.` : ''}\n\nThank you for shopping with TheKissa.co! Delivery updates will be shared with you on WhatsApp/SMS.`;
 
   const orderLines = () => rows.map((r, i) => r.single
     ? `${i + 1}. ${r.single.name} (accessory only — ${r.p.id} look) x${r.qty} = ${formatINR(r.single.price * r.qty)}`
     : `${i + 1}. ${r.p.name} (${r.p.id}) — ${rowLabel(r)} = ${formatINR(rowPrice(r) * r.qty)}`);
 
   // Store notification — ALWAYS goes to the client's number/email.
-  // Earning (rent) vs refundable deposit vs total collection — teeno alag line me,
-  // taaki store ko ek nazar me samajh aaye kitna rakhna hai, kitna wapas dena hai.
-  // Order 'new' hai — UTR + screenshot check karke admin confirm/cancel kare.
+  // Earning (rent+buy) vs refundable deposit vs total collection — on three separate lines,
+  // so the store sees at a glance how much to keep and how much to return.
+  // The order is 'new' — the admin confirms/cancels after checking the UTR + screenshot.
   const buildStoreMsg = (o: { id: string; mode: string; token: number; total: number; deposit: number; lines: string[]; paymentId: string }) =>
-    `New order ${o.id} — TheKissa.co\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\n\nRent (your earning): ${formatINR(o.total)}\n${o.mode === 'upi-qr-full' ? `Payment: Full ${formatINR(o.token)} (rent + 30% extra) received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments, then confirm` : o.mode === 'upi-qr-half' ? `Payment: Half ${formatINR(o.token)} received via QR (UTR ${o.paymentId}), balance ${formatINR(o.total - o.token)} + 30% extra ${formatINR(o.deposit)} on delivery — VERIFY in Reports → Payments, then confirm` : `Payment: Token ${formatINR(o.token)} received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments, then confirm`}\nRefundable extra 30%: ${formatINR(o.deposit)}${o.mode === 'upi-qr-full' ? ' (already received — return on outfit return)' : ' — collect on delivery, return on outfit return'}\nTotal collection: ${formatINR(o.total + o.deposit)} (${formatINR(o.token)} received + ${formatINR(Math.max(0, o.total - o.token + (o.mode === 'upi-qr-full' ? 0 : o.deposit)))} on delivery)`;
+    `New order ${o.id} — TheKissa.co\n\n${(o.lines.length ? o.lines : ['(full item list in Admin → Bookings)']).join('\n')}\n\nName: ${name}\nMobile: ${phone}\nEvent: ${eventDate || 'TBD'}\n\nTotal (your earning): ${formatINR(o.total)}\n${o.mode === 'upi-qr-full' ? `Payment: Full ${formatINR(o.token)}${o.deposit > 0 ? ' (rent + 30% extra)' : ''} received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments, then confirm` : o.mode === 'upi-qr-half' ? `Payment: Half ${formatINR(o.token)} received via QR (UTR ${o.paymentId}), balance ${formatINR(o.total - o.token)} + 30% extra ${formatINR(o.deposit)} on delivery — VERIFY in Reports → Payments, then confirm` : `Payment: Token ${formatINR(o.token)} received via QR (UTR ${o.paymentId}) — VERIFY in Reports → Payments, then confirm`}${o.deposit > 0 ? `\nRefundable extra 30%: ${formatINR(o.deposit)}${o.mode === 'upi-qr-full' ? ' (already received — return on outfit return)' : ' — collect on delivery, return on outfit return'}` : '\nNo deposit — buy order, no return needed.'}\nTotal collection: ${formatINR(o.total + o.deposit)} (${formatINR(o.token)} received + ${formatINR(Math.max(0, o.total - o.token + (o.mode === 'upi-qr-full' ? 0 : o.deposit)))} on delivery)`;
 
   const goQr = () => {
     const v = validateDetails();
     if (v) { setErr(v); return; }
     setErr('');
-    const amt = payChoice === 'full' ? total + deposit : half;
+    const amt = effectivePayChoice === 'full' ? total + deposit : half;
     if (amt < 1) {
       setErr('Amount is below ₹1 — please contact store on WhatsApp.');
       return;
@@ -733,7 +767,7 @@ export function CartDrawer() {
   };
 
   const upiId = merchantUpi();
-  const upiLink = upiId && isValidVpa(upiId) ? upiUrl(upiId, getSiteContent().store.brand || 'TheKissa.co', payAmount, `Order ${payChoice === 'full' ? 'full payment' : 'half payment'} ${name.trim()}`) : '';
+  const upiLink = upiId && isValidVpa(upiId) ? upiUrl(upiId, getSiteContent().store.brand || 'TheKissa.co', payAmount, `Order ${effectivePayChoice === 'full' ? 'full payment' : 'half payment'} ${name.trim()}`) : '';
 
   const copyUpi = async () => {
     try { await navigator.clipboard.writeText(upiId); } catch {
@@ -750,20 +784,20 @@ export function CartDrawer() {
 
   const confirmQrPaid = async () => {
     if (paying) return;
-    // Payment ke bina order save nahi — UTR + screenshot dono compulsory.
-    // Order 'new' (pending) save hoga — admin UTR/screenshot dekhkar confirm ya cancel karega.
+    // No order is saved without payment — both UTR + screenshot are compulsory.
+    // The order is saved as 'new' (pending) — the admin confirms or cancels after checking the UTR/screenshot.
     if (!/^\d{12}$/.test(utr.trim())) { setErr('Please enter the 12-digit UTR from your UPI app after payment — it is required.'); return; }
     if (looksFakeUtr(utr.trim())) { setErr('This UTR looks invalid (repeated or sequential digits). Please copy the exact 12-digit UTR from your UPI app.'); return; }
     if (!shot) { setErr('Please attach your payment screenshot — it is required to place the order.'); return; }
     setErr('');
-    // Ek UTR sirf ek order me — reuse turant block (genuine check, fail-open).
-    // Order count ki koi limit nahi — har payment wala order 'new' save hota hai, admin confirm/cancel karega.
+    // One UTR per order only — reuse is blocked instantly (genuine check, fail-open).
+    // No limit on order count — every paid order is saved as 'new'; the admin confirms/cancels.
     try {
       if (await isUtrUsed(utr.trim())) { setErr('This UTR has already been used for another order. Please check the number in your UPI app.'); return; }
     } catch { /* guard fail ho to order mat roko */ }
     setPaying(true);
-    const amt = payChoice === 'full' ? total + deposit : half;
-    const mode = payChoice === 'full' ? 'upi-qr-full' : 'upi-qr-half';
+    const amt = effectivePayChoice === 'full' ? total + deposit : half;
+    const mode = effectivePayChoice === 'full' ? 'upi-qr-full' : 'upi-qr-half';
     try {
       let orderId = makeOrderId();
       try {
@@ -861,11 +895,13 @@ export function CartDrawer() {
                     <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Order ID</span><b className="text-right break-words min-w-0">{order.id}</b></div>
                     <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Name</span><b className="text-right break-words min-w-0">{name}</b></div>
                     {address.trim() && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Delivery</span><b className="text-[12.5px] text-right break-words min-w-0">{address.trim()}</b></div>}
-                    <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Payment</span><b className="text-right break-words min-w-0">{order.mode === 'upi-qr-full' ? `Full claimed via QR ${formatINR(order.token)} (rent + 30% extra) · verification pending` : order.mode === 'upi-qr-half' ? `Half claimed via QR ${formatINR(order.token)} · Balance ${formatINR(order.total - order.token)} + 30% extra ${formatINR(order.deposit)} on delivery · verification pending` : order.mode === 'upi-qr' ? `Token claimed via QR ${formatINR(order.token)} · verification pending` : 'Pay on delivery'}</b></div>
+                    <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Payment</span><b className="text-right break-words min-w-0">{order.mode === 'upi-qr-full' ? `Full claimed via QR ${formatINR(order.token)}${order.deposit > 0 ? ' (rent + 30% extra)' : ''} · verification pending` : order.mode === 'upi-qr-half' ? `Half claimed via QR ${formatINR(order.token)} · Balance ${formatINR(order.total - order.token)} + 30% extra ${formatINR(order.deposit)} on delivery · verification pending` : order.mode === 'upi-qr' ? `Token claimed via QR ${formatINR(order.token)} · verification pending` : 'Pay on delivery'}</b></div>
                     {order.paymentId && <div className="flex justify-between gap-3"><span className="text-black/55 shrink-0">Txn ID</span><b className="text-[12px] text-right break-all">{order.paymentId}</b></div>}
-                    <div className="border-t border-black/10 my-2 pt-2 flex justify-between"><span>Total rent</span><b>{formatINR(order.total)}</b></div>
-                    <div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Refundable extra 30% (you get back on return)</span><b>{formatINR(order.deposit)}</b></div>
-                    <p className="text-[11px] text-black/50 pt-1">You will get {formatINR(order.deposit)} back via UPI/cash within 24h of return.</p>
+                    <div className="border-t border-black/10 my-2 pt-2 flex justify-between"><span>Total</span><b>{formatINR(order.total)}</b></div>
+                    {order.deposit > 0
+                      ? <><div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Refundable extra 30% (you get back on return)</span><b>{formatINR(order.deposit)}</b></div>
+                    <p className="text-[11px] text-black/50 pt-1">You will get {formatINR(order.deposit)} back via UPI/cash within 24h of return.</p></>
+                      : <p className="text-[11px] text-black/50 pt-1">Buy order — no deposit, no return needed.</p>}
                   </div>
                 </div>
                 <p className="text-[12px] font-bold mt-4 text-center">Send this order to the store:</p>
@@ -903,23 +939,28 @@ export function CartDrawer() {
                     <input value={promo} onChange={(e) => setPromo(e.target.value.toUpperCase())} placeholder="Promo code (e.g. NAVRATRI20)" className="flex-1 min-w-0 border border-black/15 rounded-xl px-3 py-2 text-[13px] font-semibold tracking-wide outline-none focus:border-black uppercase placeholder:normal-case placeholder:font-normal placeholder:tracking-normal" maxLength={20} />
                   </div>
                   {promo.trim() && disc <= 0 && <p className="text-[11.5px] text-rose-700 font-medium">This code is not valid for this order.</p>}
-                  <div className="flex justify-between text-[15px]"><span>Total rent</span><b>{formatINR(total)}</b></div>
-                  <div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Refundable extra 30% (you get back on return)</span><b>{formatINR(deposit)}</b></div>
-                  <p className="text-[11px] text-black/50">You will get {formatINR(deposit)} back via UPI/cash within 24h of return · QR scan & pay via any UPI app</p>
+                  <div className="flex justify-between text-[15px]"><span>Total{hasBuy && hasRent ? ' (rent + buy)' : hasBuy ? ' (buy)' : ' rent'}</span><b>{formatINR(total)}</b></div>
+                  {deposit > 0
+                    ? <><div className="flex justify-between text-[13px] text-emerald-700 font-semibold"><span>Refundable extra 30% (you get back on return)</span><b>{formatINR(deposit)}</b></div>
+                  <p className="text-[11px] text-black/50">You will get {formatINR(deposit)} back via UPI/cash within 24h of return · QR scan & pay via any UPI app</p></>
+                    : <p className="text-[11px] text-black/50">Buy order — no deposit, no return needed · QR scan & pay via any UPI app</p>}
                 </div>
                 <p className="text-xs font-bold">PAYMENT OPTION *</p>
                 <div className="grid gap-2">
-                  <button type="button" onClick={() => setPayChoice('full')} className={`text-left border rounded-2xl p-3.5 text-sm transition ${payChoice === 'full' ? 'border-[#641629] bg-[#faf7ef] ring-2 ring-[#641629]/20' : 'border-black/10 bg-white hover:border-black/30'}`}>
-                    <span className="flex items-center gap-2 font-bold"><span className={`w-4 h-4 rounded-full border-2 grid place-items-center ${payChoice === 'full' ? 'border-[#641629]' : 'border-black/25'}`}>{payChoice === 'full' && <span className="w-2 h-2 rounded-full bg-[#641629]" />}</span> Full payment <span className="ml-auto text-[10px] font-bold bg-emerald-600 text-white rounded-full px-2 py-0.5">RECOMMENDED</span></span>
-                    <span className="block text-[12.5px] mt-1">Pay now <b>{formatINR(total + deposit)}</b> (rent + 30% extra) · Nothing due on delivery · <b>{formatINR(deposit)}</b> back on return</span>
+                  <button type="button" onClick={() => setPayChoice('full')} className={`text-left border rounded-2xl p-3.5 text-sm transition ${effectivePayChoice === 'full' ? 'border-[#641629] bg-[#faf7ef] ring-2 ring-[#641629]/20' : 'border-black/10 bg-white hover:border-black/30'}`}>
+                    <span className="flex items-center gap-2 font-bold"><span className={`w-4 h-4 rounded-full border-2 grid place-items-center ${effectivePayChoice === 'full' ? 'border-[#641629]' : 'border-black/25'}`}>{effectivePayChoice === 'full' && <span className="w-2 h-2 rounded-full bg-[#641629]" />}</span> Full payment <span className="ml-auto text-[10px] font-bold bg-emerald-600 text-white rounded-full px-2 py-0.5">RECOMMENDED</span></span>
+                    <span className="block text-[12.5px] mt-1">Pay now <b>{formatINR(total + deposit)}</b>{deposit > 0 ? ' (rent + 30% extra)' : ' (full amount)'} · Nothing due on delivery{deposit > 0 ? <> · <b>{formatINR(deposit)}</b> back on return</> : ''}</span>
                   </button>
+                  {!hasBuy && (
                   <button type="button" onClick={() => setPayChoice('half')} className={`text-left border rounded-2xl p-3.5 text-sm transition ${payChoice === 'half' ? 'border-[#641629] bg-[#faf7ef] ring-2 ring-[#641629]/20' : 'border-black/10 bg-white hover:border-black/30'}`}>
                     <span className="flex items-center gap-2 font-bold"><span className={`w-4 h-4 rounded-full border-2 grid place-items-center ${payChoice === 'half' ? 'border-[#641629]' : 'border-black/25'}`}>{payChoice === 'half' && <span className="w-2 h-2 rounded-full bg-[#641629]" />}</span> Half payment <span className="ml-auto text-[10px] font-bold bg-black text-white rounded-full px-2 py-0.5">50% NOW</span></span>
                     <span className="block text-[12.5px] mt-1">Pay now <b>{formatINR(half)}</b> (50%) · Balance <b>{formatINR(total - half)}</b> + 30% extra <b>{formatINR(deposit)}</b> on delivery</span>
                   </button>
+                  )}
+                  {hasBuy && <p className="text-[11.5px] text-black/55">Buy items me sirf full payment hota hai — half payment sirf rent ke liye hai.</p>}
                 </div>
                 {err && <p className="text-[12.5px] text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{err}</p>}
-                <button disabled={paying} onClick={goQr} className="w-full bg-[#221114] text-white font-semibold rounded-full py-3.5 text-sm disabled:opacity-50 flex items-center justify-center gap-2"><CreditCard size={15} /> {paying ? 'Processing…' : `Pay ${formatINR(payAmount)} ${payChoice === 'full' ? 'Full' : 'Half'} via QR`}</button>
+                <button disabled={paying} onClick={goQr} className="w-full bg-[#221114] text-white font-semibold rounded-full py-3.5 text-sm disabled:opacity-50 flex items-center justify-center gap-2"><CreditCard size={15} /> {paying ? 'Processing…' : `Pay ${formatINR(payAmount)} ${effectivePayChoice === 'full' ? 'Full' : 'Half'} via QR`}</button>
                 <p className="text-[11px] text-black/45 text-center">GPay · PhonePe · Paytm · BHIM — QR scan & pay</p>
                 <p className="text-[11px] text-black/45 text-center">By confirming you agree to our <a href="/terms" target="_blank" className="underline">Terms</a> &amp; <a href="/refunds" target="_blank" className="underline">Refund Policy</a></p>
                 <p className="text-[11px] text-black/45 text-center flex items-center justify-center gap-1"><ShieldCheck size={12} /> Your details stay private · No spam calls</p>
@@ -935,10 +976,10 @@ export function CartDrawer() {
                 ) : (
                   <>
                     <div className="border border-black/10 rounded-2xl p-4 text-center">
-                      <p className="text-[11px] font-bold tracking-[0.14em]">SCAN & PAY {payChoice === 'full' ? 'FULL AMOUNT' : 'HALF AMOUNT'}</p>
+                      <p className="text-[11px] font-bold tracking-[0.14em]">SCAN & PAY {effectivePayChoice === 'full' ? 'FULL AMOUNT' : 'HALF AMOUNT'}</p>
                       <b className="font-display text-[32px] text-[#641629] leading-none mt-1 block">{formatINR(payAmount)}</b>
-                      {payChoice === 'full'
-                        ? <p className="text-[11.5px] text-emerald-700 font-semibold mt-1">Full — rent + 30% extra paid, nothing due on delivery</p>
+                      {effectivePayChoice === 'full'
+                        ? <p className="text-[11.5px] text-emerald-700 font-semibold mt-1">{deposit > 0 ? 'Full — rent + 30% extra paid, nothing due on delivery' : 'Full payment — nothing due on delivery'}</p>
                         : <p className="text-[11.5px] text-black/55 mt-1">Half payment (50%) — balance {formatINR(rentBalance)} + 30% extra {formatINR(extraDue)} due on delivery</p>}
                       <div className="mx-auto mt-3 w-fit bg-white p-3 rounded-2xl border border-black/10">
                         <QRCodeSVG value={upiLink} size={200} />
@@ -1030,8 +1071,8 @@ export function CartDrawer() {
                           );
                         })}
                       </div>
-                      <div className="border-t border-black/10 mt-2 pt-2 flex justify-between text-[13px]"><span>Total rent</span><b>{formatINR(o.total)}</b></div>
-                      <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)} (rent + 30% extra) claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} + 30% extra ${formatINR(o.deposit)} on delivery${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : 'Pay on delivery'} · Refundable extra 30% {formatINR(o.deposit)} — you get it back on return</p>
+                      <div className="border-t border-black/10 mt-2 pt-2 flex justify-between text-[13px]"><span>Total</span><b>{formatINR(o.total)}</b></div>
+                      <p className="text-[11px] text-black/55 mt-0.5">{o.mode === 'upi-qr-full' ? `Full ${formatINR(o.token)}${o.deposit > 0 ? ' (rent + 30% extra)' : ''} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr-half' ? `Half ${formatINR(o.token)} claimed via QR · Balance ${formatINR(o.total - o.token)} + 30% extra ${formatINR(o.deposit)} on delivery${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : o.mode === 'upi-qr' ? `Token ${formatINR(o.token)} claimed via QR${o.payStatus === 'verified' ? ' · payment verified ✓' : o.payStatus === 'rejected' ? ' · payment needs attention — store will contact you' : ' · verification pending'}` : 'Pay on delivery'}{o.deposit > 0 ? ` · Refundable extra 30% ${formatINR(o.deposit)} — you get it back on return` : ' · Buy order — no return needed'}</p>
                       <span className={`inline-block mt-1 text-[10.5px] font-bold rounded-full px-2 py-0.5 border ${o.status === 'cancelled' ? 'text-white bg-rose-600 border-rose-600' : o.status === 'delivered' || o.status === 'returned' ? 'text-violet-800 bg-violet-50 border-violet-200' : o.status === 'confirmed' ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : o.status === 'onway' ? 'text-orange-800 bg-orange-50 border-orange-200' : 'text-amber-800 bg-amber-50 border-amber-200'}`}>
                         {o.status === 'cancelled' ? '✕ Cancelled' : o.status === 'delivered' ? '✓ Delivered' : o.status === 'returned' ? '✓ Returned' : o.status === 'confirmed' ? '✓ Confirmed' : o.status === 'onway' ? '🚚 On the way — arriving soon' : '⏳ Payment sent — awaiting store confirmation'}
                       </span>
@@ -1081,13 +1122,15 @@ export function CartDrawer() {
                           </>
                         ) : (
                           <>
-                            <b className="text-[13px] leading-tight block">{r.p.name}</b>
-                            <p className="text-[11px] text-black/55">Size {r.size} • 1-day • x{r.qty}</p>
+                            <span className={`inline-block text-[10px] font-bold tracking-wide rounded-full px-2 py-0.5 border ${r.plan === 'buy' ? 'bg-[#641629] text-white border-[#641629]' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>{r.plan === 'buy' ? 'BUY' : 'RENT · 1-day'}</span>
+                            <b className="text-[13px] leading-tight block mt-1">{r.p.name}</b>
+                            <p className="text-[11px] text-black/55">Size {r.size} • {r.plan === 'buy' ? 'buy — yours forever' : '1-day rent'} • x{r.qty}</p>
                           </>
                         )}
                         {!!r.addons?.length && <p className="text-[11px] text-emerald-700 font-medium">+ {r.addons.join(', ')}</p>}
                         <b className="text-[14px]">{formatINR(rowPrice(r) * r.qty)}</b>
-                        {!r.single && <p className="text-[11px] text-emerald-700 font-semibold">+ {formatINR(refundableExtra(rowPrice(r) * r.qty))} refundable extra (30%)</p>}
+                        {!r.single && r.plan !== 'buy' && <p className="text-[11px] text-emerald-700 font-semibold">+ {formatINR(refundableExtra(rowPrice(r) * r.qty))} refundable extra (30%)</p>}
+                        {!r.single && r.plan === 'buy' && <p className="text-[11px] text-black/50 font-medium">No deposit · no return</p>}
                         <div className="flex items-center gap-2 mt-1.5">
                           <span className="text-[11px] font-bold text-black/55">Qty:</span>
                           <span className="flex items-center gap-1.5 border border-black/10 rounded-full px-1 py-0.5">
@@ -1104,9 +1147,11 @@ export function CartDrawer() {
                 <div className="p-4 border-t border-black/10 bg-white space-y-2.5" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
                   <div className="text-sm space-y-1">
                     <div className="flex justify-between"><span>Subtotal</span><b>{formatINR(subtotal)}</b></div>
-                    <div className="flex justify-between text-[17px]"><span>Total rent</span><b>{formatINR(total)}</b></div>
-                    <div className="flex justify-between text-emerald-700"><span>Refundable extra 30% (you get back)</span><b>{formatINR(deposit)}</b></div>
-                    <p className="text-[11px] text-black/50">{payChoice === 'full' ? `Nothing due on delivery — you will get ${formatINR(deposit)} back via UPI/cash within 24h of return.` : `Balance rent + 30% extra due on delivery. You will get ${formatINR(deposit)} back via UPI/cash within 24h of return.`}</p>
+                    <div className="flex justify-between text-[17px]"><span>Total{hasBuy && hasRent ? ' (rent + buy)' : hasBuy ? ' (buy)' : ' rent'}</span><b>{formatINR(total)}</b></div>
+                    {deposit > 0
+                      ? <><div className="flex justify-between text-emerald-700"><span>Refundable extra 30% (you get back)</span><b>{formatINR(deposit)}</b></div>
+                    <p className="text-[11px] text-black/50">{effectivePayChoice === 'full' ? `Nothing due on delivery — you will get ${formatINR(deposit)} back via UPI/cash within 24h of return.` : `Balance rent + 30% extra due on delivery. You will get ${formatINR(deposit)} back via UPI/cash within 24h of return.`}</p></>
+                      : <p className="text-[11px] text-black/50">Buy order — full payment now, no deposit, no return needed.</p>}
                   </div>
                   <button disabled={rows.length === 0} onClick={() => setStep('details')} className="w-full bg-[#221114] text-white font-semibold rounded-full py-3.5 text-sm disabled:opacity-40 flex items-center justify-center gap-2"><ShoppingBasket size={15} /> Proceed to Checkout →</button>
                   <button onClick={clear} className="w-full text-xs text-black/50 underline">Clear list</button>

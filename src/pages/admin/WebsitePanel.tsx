@@ -1,5 +1,5 @@
-// Admin → Website tab: poori site ka text/photo/number yahi se badlo.
-// Client ko code kabhi haath nahi lagana — Save dabao, website live.
+// Admin → Website tab: change all site text, photos and numbers from here.
+// Clients never need to touch code — press Save and the website updates instantly.
 
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
@@ -131,10 +131,10 @@ export default function WebsitePanel() {
           </Field>
         </Card>
 
-        <Card title="Complete look (dress card)" hint="Dress open karne par 'THE MODEL WORE THIS' box — heading, lines aur default items. Kisi ek dress ka alag look ho to Products me us dress ko edit karo.">
+        <Card title="Complete look (dress card)" hint="When a dress is opened, the 'THE MODEL WORE THIS' box — heading, lines and default items. To set a different look for one dress, edit that dress in Products.">
           <Field label="Box heading"><input value={c.completeLook.title} onChange={(e) => setC((p) => ({ ...p, completeLook: { ...p.completeLook, title: e.target.value } }))} className="admin-input" placeholder="THE MODEL WORE THIS" /></Field>
-          <Field label="Subtitle (heading ke neeche)"><input value={c.completeLook.subtitle} onChange={(e) => setC((p) => ({ ...p, completeLook: { ...p.completeLook, subtitle: e.target.value } }))} className="admin-input" placeholder="The complete look is right here…" /></Field>
-          <Field label="Bottom hint (addon wali line)"><input value={c.completeLook.hint} onChange={(e) => setC((p) => ({ ...p, completeLook: { ...p.completeLook, hint: e.target.value } }))} className="admin-input" /></Field>
+          <Field label="Subtitle (below the heading)"><input value={c.completeLook.subtitle} onChange={(e) => setC((p) => ({ ...p, completeLook: { ...p.completeLook, subtitle: e.target.value } }))} className="admin-input" placeholder="The complete look is right here…" /></Field>
+          <Field label="Bottom hint (add-on line)"><input value={c.completeLook.hint} onChange={(e) => setC((p) => ({ ...p, completeLook: { ...p.completeLook, hint: e.target.value } }))} className="admin-input" /></Field>
           {LOOK_CATS.map((cat) => (
             <Field key={cat} label={`Default lines — ${cat}${cat === 'women' || cat === 'premium' ? ' (active)' : ''} · one per line: name | included / free / price`}>
               <textarea
@@ -146,7 +146,7 @@ export default function WebsitePanel() {
               />
             </Field>
           ))}
-          <p className="text-[11.5px] text-[#8a7584]">included = dress ke saath · free = muft gift · sirf number (jaise 99) = paid add-on. Line delete = item hat jayega, nayi line = naya item jud jayega.</p>
+          <p className="text-[11.5px] text-[#8a7584]">included = included with the dress · free = free gift · only a number (e.g. 99) = paid add-on. Deleting a line removes the item, a new line adds a new item.</p>
         </Card>
 
         <Card title="FAQs" hint="Questions and answers — add or delete as many as you like.">

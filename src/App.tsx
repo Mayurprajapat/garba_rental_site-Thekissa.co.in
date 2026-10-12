@@ -32,7 +32,7 @@ export default function App() {
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
-            {/* Admin sirf secret path par — /admin kholne par 404 milega */}
+            {/* Admin only on the secret path — opening /admin shows a 404 */}
             <Route path={`/${ADMIN_PATH}`} element={<Admin />} />
             <Route path="/d/:code" element={<AgentDeliver />} />
             <Route path="/t/:code" element={<CustomerTrack />} />

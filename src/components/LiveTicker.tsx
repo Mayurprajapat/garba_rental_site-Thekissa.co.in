@@ -6,7 +6,7 @@ const NAMES = ['Priya', 'Amit', 'Kinjal', 'Rahul', 'Sneha', 'Hetal', 'Pooja', 'K
 const AREAS = ['Vijay Nagar', 'Palasia', 'Rajwada', 'Sapna Sangeeta', 'Annapurna', 'Sudama Nagar', 'Tilak Nagar', 'Bholaram'];
 const MINS = [2, 4, 6, 8, 11, 14, 17, 21];
 
-/** Live booking ticker — "X ne Y book kiya • N min ago", har 4s rotate. */
+/** Live booking ticker — "X booked Y • N min ago", rotates every 4s. */
 export default function LiveTicker() {
   const [i, setI] = useState(0);
   useEffect(() => {

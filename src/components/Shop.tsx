@@ -17,7 +17,7 @@ export interface SingleItem {
   productId: string;
 }
 
-/** Bina dress ke akela rent hone wale items (addon accessories) — naam se dedupe. */
+/** Items rented alone without a dress (addon accessories) — dedupe by name. */
 export function singlesFor(products: Product[]): SingleItem[] {
   const map = new Map<string, SingleItem>();
   products.forEach((p) => {
@@ -37,6 +37,7 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
   const setQuickView = useStore((s) => s.setQuickView);
   const wished = wishlist.includes(p.id);
   const price = p.rent1;
+  const buyPrice = p.buy;
   const rank = index < 3 ? `N°0${index + 1}` : null;
   const savePct = p.buy > price ? Math.round((1 - price / p.buy) * 100) : 0;
   const freeDandiya = lookFor(p).some((a) => a.tag === 'free' && /dandiya/i.test(a.name));
@@ -84,17 +85,30 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
           <span className="ml-auto text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">1-day</span>
         </div>
         <div className="hairline-premium my-2" />
-        <div className="flex items-baseline gap-2 mt-auto">
-          <b className="font-display text-[19px] sm:text-[20px] text-[#4d0f1f] tabular-nums leading-none">₹{price.toLocaleString('en-IN')}</b>
-          <span className="text-[11.5px] font-semibold text-neutral-500">/ 1-day rent</span>
+        <div className="grid grid-cols-2 gap-1.5 mt-auto">
+          <div className="rounded-xl border border-[#c9a44a]/40 bg-[#faf3ea] px-2.5 py-2 text-center">
+            <span className="block text-[9.5px] font-black tracking-[0.08em] text-[#8a6d1f]">RENT · 1-DAY</span>
+            <b className="block font-display text-[16px] text-[#4d0f1f] tabular-nums leading-tight">₹{price.toLocaleString('en-IN')}</b>
+          </div>
+          <div className="rounded-xl border border-[#641629]/25 bg-[#641629]/[.05] px-2.5 py-2 text-center">
+            <span className="block text-[9.5px] font-black tracking-[0.08em] text-[#641629]">BUY · YOURS</span>
+            <b className="block font-display text-[16px] text-[#641629] tabular-nums leading-tight">₹{buyPrice.toLocaleString('en-IN')}</b>
+          </div>
         </div>
-        <p className="text-[12px] font-bold text-[#8a6d1f] mt-1">+ ₹{refundableExtra(price).toLocaleString('en-IN')} Refundable (30%)</p>
+        <p className="text-[11.5px] font-bold text-[#8a6d1f] mt-1.5">Rent + ₹{refundableExtra(price).toLocaleString('en-IN')} refundable · Buy no return</p>
         {freeDandiya && <p className="text-[11.5px] font-black text-emerald-700 mt-0.5">✓ FREE Dandiya pair included</p>}
-        <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id); }}
-          disabled={soldOut}
-          className="mt-3 w-full inline-flex items-center justify-center gap-2 text-[#f7ead0] text-[13px] font-bold rounded-full py-2.5 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] ring-1 ring-[#c9a44a]/40 shadow-[0_12px_22px_-12px_rgba(34,17,20,.55),inset_0_1px_0_rgba(240,215,140,.25)] hover:brightness-125 hover:-translate-y-px active:translate-y-0 transition disabled:opacity-40 disabled:hover:brightness-100 disabled:hover:translate-y-0">
-          <ShoppingBasket size={14} /> {soldOut ? 'Out of Stock' : 'Rent or Buy Outfit'}
-        </button>
+        <div className="grid grid-cols-2 gap-1.5 mt-2.5">
+          <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id, 'rent'); }}
+            disabled={soldOut}
+            className="inline-flex items-center justify-center gap-1.5 text-white text-[12.5px] font-bold rounded-full py-2.5 bg-[#1e7a45] shadow-[0_12px_22px_-12px_rgba(30,122,69,.6)] hover:brightness-110 transition disabled:opacity-40">
+            <ShoppingBasket size={13} /> {soldOut ? 'Out of Stock' : `Rent ₹${price.toLocaleString('en-IN')}`}
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id, 'buy'); }}
+            disabled={soldOut}
+            className="inline-flex items-center justify-center gap-1.5 text-[#f7ead0] text-[12.5px] font-bold rounded-full py-2.5 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] ring-1 ring-[#c9a44a]/40 shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 transition disabled:opacity-40">
+            <ShoppingBasket size={13} /> {soldOut ? 'Out of Stock' : `Buy ₹${buyPrice.toLocaleString('en-IN')}`}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -185,7 +199,7 @@ export default function Shop() {
   const list = useMemo(() => {
     let l = [...PRODUCTS];
     if (activeCat?.kind === 'dress') {
-      // Dress group filter (women/men/kids/…) — phir keyword (comma = OR)
+      // Dress group filter (women/men/kids/…) — then keyword (comma = OR)
       if (activeCat.cats?.length) l = l.filter((p) => activeCat.cats!.includes(p.category));
       if (activeCat.query.trim()) {
         l = l.filter((p) => {
@@ -210,7 +224,7 @@ export default function Shop() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [PRODUCTS, activeCat, search, sort, maxPrice, wishOnly, wishlist, siteV]);
 
-  // Item mode — SIRF single-rent items (dress mix nahi). Comma = OR, space = AND.
+  // Item mode — ONLY single-rent items (no dress mix). Comma = OR, space = AND.
   const itemList = useMemo(() => {
     if (!isItemMode) return [];
     const q = (activeCat?.query ?? '').trim();
@@ -243,7 +257,7 @@ export default function Shop() {
         </div>
       </div>
 
-      {/* Photo category strip — har kapda/item alag tile, tap = filter */}
+      {/* Photo category strip — each garment/item gets its own tile, tap = filter */}
       {cats.length > 0 && (
         <div className="container-x pb-2">
           <div className="flex gap-2.5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
@@ -265,7 +279,7 @@ export default function Shop() {
         </div>
       )}
 
-      {/* Sticky filter bar — collection scroll ho, filters haath me rahen */}
+      {/* Sticky filter bar — filters stay in reach while the collection scrolls */}
       <div className="sticky top-[116px] sm:top-[100px] z-30 glass border-y border-black/[.07] shadow-[0_12px_28px_-22px_rgba(0,0,0,.45)]">
         <div className="container-x py-2 flex flex-col gap-2">
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">

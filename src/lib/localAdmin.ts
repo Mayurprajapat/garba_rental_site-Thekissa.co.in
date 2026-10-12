@@ -1,4 +1,4 @@
-import { PRODUCTS } from '../data/products';
+import { PRODUCTS, normalizeSizes } from '../data/products';
 import type { LiveProduct } from './ProductsContext';
 
 const P_KEY = 'raasleela-admin-products';
@@ -104,7 +104,7 @@ export function clearAdminFails() {
 }
 
 export function getLocalProducts(): LiveProduct[] {
-  const fresh = () => PRODUCTS.map((p) => ({ ...p, stock: 5, active: true }));
+  const fresh = () => PRODUCTS.map((p) => ({ ...p, sizes: normalizeSizes((p as any).sizes), stock: 5, active: true }));
   // Hataye hue demo products (ladies-only site) — saved list me hon to saaf kar do
   const REMOVED_IDS = ['RL-02', 'RL-03', 'RL-04', 'RL-07', 'RL-10', 'RL-11', 'RL-12', 'RL-14', 'RL-18', 'RL-19', 'RL-20', 'RL-21', 'RL-22'];
   const MERGED_KEY = 'raasleela-products-merged-v1';
@@ -115,23 +115,25 @@ export function getLocalProducts(): LiveProduct[] {
     if (raw) {
       let arr = JSON.parse(raw);
       if (Array.isArray(arr) && arr.length) {
+        const withSizes = (list: any[]) =>
+          list.map((p: any) => ({ ...p, sizes: normalizeSizes(p?.sizes) }));
         if (arr.some((p: any) => REMOVED_IDS.includes(p?.id))) {
           arr = arr.filter((p: any) => !REMOVED_IDS.includes(p?.id));
           try { localStorage.setItem(P_KEY, JSON.stringify(arr)); } catch { /* ignore */ }
           if (!arr.length) { markMerged(); return fresh(); }
         }
         // Pehli baar ke baad merge band — taki admin ka hataya product wapas na aaye
-        if (alreadyMerged) return arr;
+        if (alreadyMerged) return withSizes(arr);
         // Naye demo products jo saved list me nahi hain — upar merge kar do (admin edits safe)
         const ids = new Set(arr.map((p: any) => p.id));
-        const missing = PRODUCTS.filter((p) => !ids.has(p.id)).map((p) => ({ ...p, stock: 5, active: true }));
+        const missing = PRODUCTS.filter((p) => !ids.has(p.id)).map((p) => ({ ...p, sizes: normalizeSizes((p as any).sizes), stock: 5, active: true }));
         markMerged();
         if (missing.length) {
-          const merged = [...missing, ...arr];
+          const merged = [...missing, ...withSizes(arr)];
           try { localStorage.setItem(P_KEY, JSON.stringify(merged)); } catch { /* ignore */ }
           return merged as LiveProduct[];
         }
-        return arr;
+        return withSizes(arr);
       }
     }
   } catch { /* ignore */ }

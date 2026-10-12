@@ -3,6 +3,20 @@ export type Category = 'women' | 'men' | 'kids' | 'combo' | 'premium';
 /** Store-wide full size list — har product par yehi sizes available rehte hain. */
 export const ALL_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 
+/**
+ * Sizes ko safe banao — admin save / cloud row / purana local data kuch bhi ho,
+ * website + admin edit modal kabhi crash na ho. Empty / missing = ALL_SIZES fallback.
+ */
+export function normalizeSizes(input: unknown): string[] {
+  if (!Array.isArray(input)) return [...ALL_SIZES];
+  const clean = [...new Set(
+    input
+      .map((s) => String(s ?? '').trim().toUpperCase().slice(0, 10))
+      .filter(Boolean)
+  )].slice(0, 12);
+  return clean.length ? clean : [...ALL_SIZES];
+}
+
 export interface Accessory {
   name: string;
   tag: 'included' | 'free' | 'addon';

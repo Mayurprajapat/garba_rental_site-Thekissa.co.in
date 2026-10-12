@@ -30,11 +30,11 @@ export default function DeliveryMap({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
-  // Persistent layers — GPS ping par move karo, delete/recreate mat karo (flicker fix)
+  // Persistent layers — move on GPS ping, don't delete/recreate (flicker fix)
   const staticRef = useRef<L.LayerGroup | null>(null);
   const agentRef = useRef<L.Marker | null>(null);
   const lineRef = useRef<L.Polyline | null>(null);
-  // Pehle fix par hi center — customer pan kare to map jump na kare
+  // Center only on the first fix — so the map doesn't jump when the customer pans
   const centered = useRef(false);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function DeliveryMap({
     };
   }, []);
 
-  // Static markers (hub + customer) — sirf destination badle to rebuild
+  // Static markers (hub + customer) — rebuild only when the destination changes
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -66,7 +66,7 @@ export default function DeliveryMap({
     return () => { g.remove(); };
   }, [dest.lat, dest.lng]);
 
-  // Agent marker + route line — position update karo, DOM recreate nahi
+  // Agent marker + route line — update position, don't recreate DOM
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;

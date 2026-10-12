@@ -17,14 +17,14 @@ export default function CustomerTrack() {
     const load = async () => {
       const row = await getDelivery(code);
       if (row) { setD(row); return; }
-      // Alag phone/browser: link ke snapshot se first paint
+      // Different phone/browser: first paint from the link snapshot
       const snap = snapshotFromHash<Delivery>();
       if (snap && snap.destLat) setD(snap);
       else setD(null);
     };
     load();
     const i = setInterval(load, 6000);
-    // Live GPS stream (bina account ke) — agent hilte hi map update
+    // Live GPS stream (no account needed) — map updates as the agent moves
     const unsub = subscribeTrack(code, (p) => {
       setLive(true);
       setD((prev) => (prev ? { ...prev, agentLat: p.lat, agentLng: p.lng, status: p.status as Delivery['status'], updatedAt: p.ts } : prev));

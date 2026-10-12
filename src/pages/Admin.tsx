@@ -39,7 +39,7 @@ import {
 } from '../lib/localAdmin';
 import { getCategories, resetCategories, saveCategories, type ShopCategory } from '../lib/categories';
 import type { Accessory } from '../data/products';
-import { ALL_SIZES } from '../data/products';
+import { ALL_SIZES, normalizeSizes } from '../data/products';
 import type { LiveProduct } from '../lib/ProductsContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import DeliveriesPanel from './admin/DeliveriesPanel';
@@ -91,7 +91,7 @@ function downloadCSV(name: string, rows: Record<string, any>[]) {
   URL.revokeObjectURL(a.href);
 }
 
-/** Customer ko WhatsApp par order decision bhejo — number booking se, message ready-made */
+/** Send the order decision to the customer on WhatsApp — number from the booking, pre-made message */
 function waCustomerLink(b: BookingRow): string | null {
   const digits = String(b.phone || '').replace(/\D/g, '').replace(/^91(?=\d{10}$)/, '');
   if (!/^[6-9]\d{9}$/.test(digits)) return null;
@@ -100,7 +100,7 @@ function waCustomerLink(b: BookingRow): string | null {
 
 const inr = (n: any) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
-/** Booking items ko chhoti line me — "Lehenga x1, Blouse" */
+/** Booking items in a short line — "Lehenga x1, Blouse" */
 function itemsShort(b: BookingRow): string {
   const items = Array.isArray(b.items) ? b.items : [];
   if (!items.length) return 'your festive outfit';
@@ -110,7 +110,7 @@ function itemsShort(b: BookingRow): string {
 
 export type NotifyKind = 'update' | 'verified' | 'dispatched' | 'ready';
 
-/** Admin → customer ready-made WhatsApp messages (booking data se auto-bharta hai) */
+/** Admin → customer ready-made WhatsApp messages (auto-filled from booking data) */
 export function buildNotifyMsg(kind: NotifyKind, b: BookingRow): string {
   const nm = b.name || 'Customer';
   const oid = b.order_id || '';
@@ -143,7 +143,7 @@ export function buildNotifyMsg(kind: NotifyKind, b: BookingRow): string {
   return parts.join(' ');
 }
 
-/** Per-booking reply cell — dena hai ya nahi + wajah + WhatsApp notify */
+/** Per-booking reply cell — give or not + reason + WhatsApp notify */
 function ReplyCell({ b, reload, notify }: { b: BookingRow; reload: () => void; notify: (m: string) => void }) {
   const [note, setNote] = useState(String(b.admin_note || ''));
   useEffect(() => { setNote(String(b.admin_note || '')); }, [b.id, b.admin_note]);
@@ -232,7 +232,7 @@ export default function Admin() {
   const [pwConfirm, setPwConfirm] = useState('');
   const [pwMsg, setPwMsg] = useState('');
   const [pwCustom, setPwCustom] = useState(() => hasCustomPassword());
-  // Order photo preview (Bookings list me thumbnail tap par badi photo)
+  // Order photo preview (large photo on thumbnail tap in the Bookings list)
   const [preview, setPreview] = useState<{ src: string; name: string } | null>(null);
   // Booking item → photo: saved img → single img → catalog lookup (id/pid/name)
   const bookingImgFor = (it: any): string | undefined => {
@@ -252,7 +252,7 @@ export default function Admin() {
     } catch { /* ignore */ }
     return undefined;
   };
-  // New-booking alert — naya order aate hi sound + banner (sirf additive, purana flow same)
+  // New-booking alert — sound + banner as soon as a new order arrives (additive only, old flow unchanged)
   const [alertsOn, setAlertsOn] = useState(true);
   const [newCount, setNewCount] = useState(0);
   const knownIds = useRef<Set<string> | null>(null);
@@ -280,9 +280,9 @@ export default function Admin() {
   const loadProducts = async () => {
     if (useCloud && supabase) {
       const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-      if (data) setProducts(data as any);
+      if (data) setProducts((data as any[]).map((r: any) => ({ ...r, sizes: normalizeSizes(r?.sizes) })) as ProductRow[]);
     } else {
-      setProducts(getLocalProducts() as ProductRow[]);
+      setProducts((getLocalProducts() as ProductRow[]).map((p) => ({ ...p, sizes: normalizeSizes((p as any)?.sizes) })));
     }
   };
   const loadBookings = async () => {
@@ -296,9 +296,9 @@ export default function Admin() {
 
   useEffect(() => { if (loggedIn) { loadProducts(); loadBookings(); setCats(getCategories()); } }, [loggedIn]);
 
-  // Live bookings — customer ka naya order / status change turant dikhe.
-  // Same-tab event → turant, dusra tab → storage event, tab-switch → focus refresh.
-  // 45s poll sirf fallback hai (edits safe, display-only).
+  // Live bookings — the customer's new order / status change shows instantly.
+  // Same-tab event → instant, other tab → storage event, tab-switch → focus refresh.
+  // 45s poll is only a fallback (edits safe, display-only).
   useEffect(() => {
     if (!loggedIn) return;
     const onLive = () => { loadBookings(); };
@@ -310,7 +310,7 @@ export default function Admin() {
     window.addEventListener('storage', onLive);
     window.addEventListener('focus', onLive);
     document.addEventListener('visibilitychange', onVisible);
-    // Cloud mode: naye bookings / status turant (Supabase Realtime)
+    // Cloud mode: new bookings / status instantly (Supabase Realtime)
     let cleanupRealtime: (() => void) | undefined;
     const sb = supabase;
     if (useCloud && sb) {
@@ -322,7 +322,7 @@ export default function Admin() {
         cleanupRealtime = () => {
           try { sb.removeChannel(ch); } catch { /* ignore */ }
         };
-      } catch { /* realtime na mile to event+poll fallback kaafi */ }
+      } catch { /* if realtime is unavailable, event+poll fallback is enough */ }
     }
     return () => {
       clearInterval(t);
@@ -334,7 +334,7 @@ export default function Admin() {
     };
   }, [loggedIn]);
 
-  // Naye bookings aate hi gin + sound (pehli load ko baseline maano)
+  // Count incoming new bookings + sound (treat the first load as the baseline)
   useEffect(() => {
     const ids = new Set(bookings.map((b) => String(b.id)));
     if (knownIds.current === null) { knownIds.current = ids; return; }
@@ -354,11 +354,11 @@ export default function Admin() {
           o.start(); o.stop(ctx.currentTime + 0.3);
           setTimeout(() => { try { ctx.close(); } catch { /* ignore */ } }, 500);
         }
-      } catch { /* audio blocked hone par sirf banner dikhega */ }
+      } catch { /* if audio is blocked, only the banner shows */ }
     }
   }, [bookings, alertsOn]);
 
-  // Admin route kabhi search me index na ho
+  // Never let the admin route be indexed in search
   useEffect(() => {
     const m = document.createElement('meta');
     m.name = 'robots';
@@ -367,7 +367,7 @@ export default function Admin() {
     return () => { document.head.removeChild(m); };
   }, []);
 
-  // Photo preview Escape se band
+  // Close the photo preview with Escape
   useEffect(() => {
     if (!preview) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPreview(null); };
@@ -438,13 +438,13 @@ export default function Admin() {
   const persistProducts = (list: ProductRow[]) => {
     setProducts(list);
     if (!useCloud) {
-      // saveLocalProducts khud live event bhejta hai (same-tab + dusre tab)
+      // saveLocalProducts sends the live event itself (same-tab + other tabs)
       saveLocalProducts(list);
     }
   };
 
-  // Cloud mode me product badalte hi website ko turant khabar (same browser).
-  // Dusre device ke liye website par Supabase Realtime laga hai (ProductsContext).
+  // In cloud mode, the website is notified instantly when a product changes (same browser).
+  // For other devices, Supabase Realtime is attached on the website (ProductsContext).
   const emitProductsLive = () => {
     try {
       window.dispatchEvent(new Event('raasleela-products-updated'));
@@ -455,7 +455,7 @@ export default function Admin() {
     e.preventDefault();
     if (!editing) return;
     if (!editing.id.trim() || !editing.name.trim()) { setMsg('Product ID and name are required.'); return; }
-    // Complete-look rows saaf karo — khaali naam wali lines hatao (max 30)
+    // Clean complete-look rows — drop lines with empty names (max 30)
     const cleanLook: Accessory[] = (editing.accessories ?? [])
       .map((a) => {
         const out: Accessory = { name: a.name.trim().slice(0, 80), tag: a.tag };
@@ -465,22 +465,24 @@ export default function Admin() {
       })
       .filter((a) => !!a.name)
       .slice(0, 30);
-    const toSave = { ...editing, accessories: cleanLook };
+    // Sizes — kabhi empty/undefined save mat karo, warna website par gayab lagega
+    const cleanSizes = normalizeSizes(editing.sizes);
+    const toSave = { ...editing, sizes: cleanSizes, accessories: cleanLook };
     if (useCloud && supabase) {
       const { error } = await supabase.from('products').upsert({ ...toSave, badge: toSave.badge || null }, { onConflict: 'id' });
       if (error && /column|schema cache|does not exist/i.test(error.message)) {
-        // Purana cloud schema (bina accessories/images column) — unke bina retry
-        const { accessories: _a, images: _i, ...legacy } = toSave as any;
+        // Old cloud schema (without accessories/images/rent1 columns) — retry without them
+        const { accessories: _a, images: _i, rent1: _r, ...legacy } = toSave as any;
         const { error: err2 } = await supabase.from('products').upsert({ ...legacy, badge: toSave.badge || null }, { onConflict: 'id' });
-        if (!err2 && (cleanLook.length || (toSave.images ?? []).length)) {
-          setMsg('Product saved, but Complete look / photos did not save — Supabase me supabase/migration_accessories.sql run karo (one-time), phir dobara save karo.');
+        if (!err2 && (cleanLook.length || (toSave.images ?? []).length || (editing as any).rent1 != null)) {
+          setMsg('Product saved, but Complete look / photos / 1-day rent did not save — run supabase/SETUP_ONCE.sql in Supabase (one-time), then save again.');
         } else {
-          setMsg(err2 ? 'Error: ' + err2.message : 'Product saved — live on website.');
+          setMsg(err2 ? 'Error: ' + err2.message : 'Product saved — live on website (sizes: ' + cleanSizes.join(', ') + ').');
         }
         if (!err2) { setEditing(null); loadProducts(); emitProductsLive(); }
         return;
       }
-      setMsg(error ? 'Error: ' + error.message : 'Product saved — live on website.');
+      setMsg(error ? 'Error: ' + error.message : 'Product saved — live on website (sizes: ' + cleanSizes.join(', ') + ').');
       if (!error) { setEditing(null); loadProducts(); emitProductsLive(); }
     } else {
       const i = products.findIndex((p) => p.id === toSave.id);
@@ -488,7 +490,7 @@ export default function Admin() {
       if (i >= 0) next[i] = toSave; else next.unshift(toSave);
       persistProducts(next);
       setEditing(null);
-      setMsg('Product saved — live on website.');
+      setMsg('Product saved — live on website (sizes: ' + cleanSizes.join(', ') + ').');
       setTimeout(() => setMsg(''), 3000);
     }
   };
@@ -621,7 +623,7 @@ export default function Admin() {
                   </div>
                 )}
                 <div className="flex items-center gap-2 mb-3">
-                  <button onClick={() => setAlertsOn((v) => !v)} title="Naye order par sound + banner"
+                  <button onClick={() => setAlertsOn((v) => !v)} title="Sound + banner on new orders"
                     className={`flex items-center gap-1.5 text-[12px] font-bold rounded-full px-3.5 py-1.5 border transition ${alertsOn ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-black/60'}`}>
                     <BellRing size={13} /> New-order alert {alertsOn ? 'ON' : 'OFF'}
                   </button>
@@ -686,10 +688,10 @@ export default function Admin() {
                   <button onClick={() => setEditing({ ...emptyProduct, id: `RL-${Date.now().toString().slice(-4)}` })} className="bg-[#1a0f1e] text-white text-[13px] font-semibold rounded-xl px-4 py-2.5 flex items-center justify-center gap-1.5"><Plus size={14} /> New product</button>
                   <button onClick={() => downloadCSV('products.csv', filteredProducts)} className="text-[13px] font-semibold border rounded-xl px-4 py-2.5">Export CSV</button>
                   <button
-                    title={`Har product par ${ALL_SIZES.join(', ')} sizes laga do`}
+                    title={`Apply sizes ${ALL_SIZES.join(', ')} to every product`}
                     onClick={async () => {
                       if (!products.length) { setMsg('No products to update.'); return; }
-                      if (!confirm(`All ${products.length} products par sizes ${ALL_SIZES.join(', ')} laga du?`)) return;
+                      if (!confirm(`Apply sizes ${ALL_SIZES.join(', ')} to all ${products.length} products?`)) return;
                       if (useCloud && supabase) {
                         const { error } = await supabase.from('products').update({ sizes: ALL_SIZES }).neq('id', '__none__');
                         if (error) { setMsg('Error: ' + error.message); return; }
@@ -712,8 +714,8 @@ export default function Admin() {
                 </div>
 
                 <div className="admin-card mt-4 overflow-x-auto">
-                  <table className="w-full min-w-[760px]">
-                    <thead><tr className="border-b border-[#1a0f1e]/8"><th className="admin-th">Product</th><th className="admin-th">Category</th><th className="admin-th">Rent</th><th className="admin-th">Stock</th><th className="admin-th">Status</th><th className="admin-th text-right">Actions</th></tr></thead>
+                  <table className="w-full min-w-[820px]">
+                    <thead><tr className="border-b border-[#1a0f1e]/8"><th className="admin-th">Product</th><th className="admin-th">Category</th><th className="admin-th">Rent / Buy</th><th className="admin-th">Stock</th><th className="admin-th">Status</th><th className="admin-th text-right">Actions</th></tr></thead>
                     <tbody>
                       {filteredProducts.map((p) => (
                         <tr key={p.id} className="hover:bg-[#faf7ef]">
@@ -724,14 +726,14 @@ export default function Admin() {
                             </div>
                           </td>
                           <td className="admin-td capitalize text-[#3d2b36]">{p.category}</td>
-                          <td className="admin-td font-semibold">₹{((p as any).rent1 ?? p.rent3).toLocaleString('en-IN')} <span className="font-normal text-[#8a7584]">/ 1-day</span></td>
+                          <td className="admin-td font-semibold">₹{((p as any).rent1 ?? p.rent3).toLocaleString('en-IN')} <span className="font-normal text-[#8a7584]">rent</span><span className="block text-[12px] text-[#641629]">₹{(p.buy ?? 0).toLocaleString('en-IN')} <span className="font-normal text-[#8a7584]">buy</span></span></td>
                           <td className="admin-td"><span className={`font-bold ${p.stock <= 2 ? 'text-rose-700' : ''}`}>{p.stock}</span>
                             <span className="block w-20 h-1.5 bg-black/10 rounded-full mt-1.5 overflow-hidden"><span className={`block h-full rounded-full ${p.stock <= 2 ? 'bg-rose-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(100, (p.stock / 10) * 100)}%` }} /></span>
                           </td>
                           <td className="admin-td"><span className={`status-pill ${!p.active ? 'bg-black/5 text-black/50 border' : (p.stock ?? 0) <= 0 ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>{!p.active ? 'Hidden' : (p.stock ?? 0) <= 0 ? 'Out of stock' : 'Live'}</span></td>
                           <td className="admin-td">
                             <div className="flex justify-end gap-1">
-                              <button onClick={() => setEditing(p)} title="Edit" className="w-8 h-8 grid place-items-center rounded-lg border hover:bg-[#1a0f1e] hover:text-white transition"><Pencil size={13} /></button>
+                              <button onClick={() => setEditing({ ...p, sizes: normalizeSizes((p as any)?.sizes) })} title="Edit" className="w-8 h-8 grid place-items-center rounded-lg border hover:bg-[#1a0f1e] hover:text-white transition"><Pencil size={13} /></button>
                               <button onClick={async () => {
                                 const nextStock = (p.stock ?? 0) > 0 ? 0 : 5;
                                 if (useCloud && supabase) { await supabase.from('products').update({ stock: nextStock }).eq('id', p.id); loadProducts(); emitProductsLive(); }
@@ -854,7 +856,7 @@ export default function Admin() {
                           <td className="admin-td !px-2.5 !py-2 font-bold text-[#4d0f1f] max-w-[230px]">{b.order_id || `#${String(b.id).slice(-6)}`}<span className="block text-[11px] font-normal text-[#8a7584]">#{String(b.id).slice(-6)}</span>
                             {Array.isArray(b.items) && b.items.length > 0 && (
                               <>
-                                {/* Order photos — kya buy/rent kiya, ek nazar me */}
+                                {/* Order photos — what was bought/rented, at a glance */}
                                 <span className="flex gap-1 mt-1.5 flex-wrap">
                                   {b.items.slice(0, 4).map((it: any, i: number) => {
                                     const src = bookingImgFor(it);
@@ -870,7 +872,7 @@ export default function Admin() {
                                   {b.items.length > 4 && <span className="self-center text-[10px] font-bold text-[#8a7584]">+{b.items.length - 4}</span>}
                                 </span>
                                 <span className="block text-[11.5px] font-semibold text-[#3d2b36] mt-1 leading-snug">
-                                  {b.items.slice(0, 2).map((it: any) => `${it?.name || it?.id || 'Outfit'}${it?.qty > 1 ? ` ×${it.qty}` : ''}`).join(' · ')}
+                                  {b.items.slice(0, 2).map((it: any) => `${it?.plan === 'buy' ? '[BUY] ' : ''}${it?.name || it?.id || 'Outfit'}${it?.qty > 1 ? ` ×${it.qty}` : ''}`).join(' · ')}
                                   {b.items.length > 2 ? ` +${b.items.length - 2} more` : ''}
                                 </span>
                                 <details className="mt-1">
@@ -883,7 +885,7 @@ export default function Admin() {
                                         {src
                                           ? <button onClick={() => setPreview({ src, name: String(it?.name || it?.id || 'Outfit') })} title="Tap to view" className="shrink-0"><img src={src} alt="" loading="lazy" className="w-7 h-9 object-cover rounded-md border border-black/10 hover:opacity-85 transition" /></button>
                                           : null}
-                                        <span>• {it?.name || it?.id || 'Outfit'}{it?.qty > 1 ? ` ×${it.qty}` : ''}{Array.isArray(it?.addons) && it.addons.length ? ` (+${it.addons.join(', ')})` : ''}{it?.size ? ` · ${it.size}` : ''}</span>
+                                        <span>• {it?.plan === 'buy' ? <b className="text-[#641629]">BUY</b> : <b className="text-blue-700">RENT</b>} {it?.name || it?.id || 'Outfit'}{it?.qty > 1 ? ` ×${it.qty}` : ''}{Array.isArray(it?.addons) && it.addons.length ? ` (+${it.addons.join(', ')})` : ''}{it?.size ? ` · ${it.size}` : ''}</span>
                                       </li>
                                       );
                                     })}
@@ -1081,25 +1083,27 @@ export default function Admin() {
               <label className="label-pro block">Name<input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} className="admin-input mt-1.5" placeholder="Mirror-work Chaniya Choli" required /></label>
               <label className="label-pro block">Tagline<input value={editing.hindi} onChange={(e) => setEditing({ ...editing, hindi: e.target.value })} className="admin-input mt-1.5" /></label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {([['rent1', '1-day rent'], ['buy', 'Buy price'], ['deposit', 'Deposit']] as const).map(([k, l]) => (
+                {([['rent1', 'Rent ₹ — website Rent button'], ['buy', 'Buy ₹ — website Buy button'], ['deposit', 'Deposit']] as const).map(([k, l]) => (
                   <label key={k} className="label-pro">{l}<input type="number" min={0} value={(editing as any)[k]} onChange={(e) => setEditing({ ...editing, [k]: Number(e.target.value) } as any)} className="admin-input mt-1.5" /></label>
                 ))}
               </div>
+              <p className="text-[11.5px] text-[#8a7584]">Rent aur Buy dono website par live hain — customer dress page par Rent / Buy choose karta hai. Price badlo → Save → turant live.</p>
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
-                  <p className="label-pro">Sizes — website par customer ko yehi dikhenge</p>
+                  <p className="label-pro">Sizes — customers will see these on the website ({normalizeSizes(editing.sizes).length} selected)</p>
                   <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    {Array.from(new Set([...ALL_SIZES, ...editing.sizes.filter((s) => !ALL_SIZES.includes(s))])).map((s) => {
-                      const on = editing.sizes.includes(s);
+                    {Array.from(new Set([...ALL_SIZES, ...normalizeSizes(editing.sizes).filter((s) => !ALL_SIZES.includes(s))])).map((s) => {
+                      const cur = normalizeSizes(editing.sizes);
+                      const on = cur.includes(s);
                       return (
                         <button
                           key={s}
                           type="button"
                           onClick={() => {
-                            if (on && editing.sizes.length <= 1) return;
-                            setEditing({ ...editing, sizes: on ? editing.sizes.filter((x) => x !== s) : [...editing.sizes, s] });
+                            if (on && cur.length <= 1) return;
+                            setEditing({ ...editing, sizes: on ? cur.filter((x) => x !== s) : [...cur, s] });
                           }}
-                          title={on ? 'Hatane ke liye tap karo' : 'Lagane ke liye tap karo'}
+                          title={on ? 'Tap to remove' : 'Tap to add'}
                           className={`min-w-11 px-3.5 py-2 rounded-xl text-[13px] font-bold border transition ${on ? 'bg-[#1a0f1e] text-white border-[#1a0f1e]' : 'bg-white hover:border-black text-black/50'}`}
                         >{s}</button>
                       );
@@ -1114,7 +1118,8 @@ export default function Admin() {
                           e.preventDefault();
                           const el = e.target as HTMLInputElement;
                           const v = el.value.trim().toUpperCase().slice(0, 10);
-                          if (v && !editing.sizes.includes(v)) setEditing({ ...editing, sizes: [...editing.sizes, v] });
+                          const cur = normalizeSizes(editing.sizes);
+                          if (v && !cur.includes(v)) setEditing({ ...editing, sizes: [...cur, v] });
                           el.value = '';
                         }
                       }}
@@ -1125,7 +1130,8 @@ export default function Admin() {
                         const wrap = (e.currentTarget as HTMLElement).closest('div');
                         const inp = wrap?.querySelector('input') as HTMLInputElement | null;
                         const v = inp?.value.trim().toUpperCase().slice(0, 10) ?? '';
-                        if (v && !editing.sizes.includes(v)) setEditing({ ...editing, sizes: [...editing.sizes, v] });
+                        const cur = normalizeSizes(editing.sizes);
+                        if (v && !cur.includes(v)) setEditing({ ...editing, sizes: [...cur, v] });
                         if (inp) inp.value = '';
                       }}
                       className="shrink-0 text-[12.5px] font-bold border rounded-xl px-3.5 hover:bg-black hover:text-white transition"
@@ -1211,7 +1217,7 @@ export default function Admin() {
                         value={a.tag}
                         onChange={(e) => setEditing({ ...editing, accessories: (editing.accessories ?? []).map((x, j) => (j === i ? { ...x, tag: e.target.value as Accessory['tag'], price: e.target.value === 'addon' ? (x.price ?? 0) : undefined } : x)) })}
                         className="admin-input !w-auto shrink-0"
-                        title="Included = dress ke saath · Free = muft · Paid = alag se charge"
+                        title="Included = included with the dress · Free = free gift · Paid = charged separately"
                       >
                         <option value="included">Included</option>
                         <option value="free">Free</option>
@@ -1236,7 +1242,7 @@ export default function Admin() {
                   ))}
                 </div>
                 {(editing.accessories ?? []).length >= 30
-                  ? <p className="text-[12px] font-semibold text-amber-700 mt-2">Max 30 items — website box me isse zyada suit nahi karenge.</p>
+                  ? <p className="text-[12px] font-semibold text-amber-700 mt-2">Max 30 items — more won't fit the website box.</p>
                   : <button
                       type="button"
                       onClick={() => setEditing({ ...editing, accessories: [...(editing.accessories ?? []), { name: '', tag: 'included' as const }] })}

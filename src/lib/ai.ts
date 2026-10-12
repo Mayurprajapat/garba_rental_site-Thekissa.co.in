@@ -1,15 +1,15 @@
-// AI Assistant brain — demo mode (bina API key ke chalega)
-// Agar VITE_AI_API_URL + VITE_AI_API_KEY mile to live LLM call, warna local smart rules.
-// Local rules PRODUCTS data par chalte hai, isliye galat rate/size nahi bolta.
+// AI Assistant brain — demo mode (runs without an API key)
+// If VITE_AI_API_URL + VITE_AI_API_KEY are set, calls the live LLM; otherwise local smart rules.
+// Local rules run on PRODUCTS data, so it never quotes wrong rates/sizes.
 
 import { PRODUCTS } from '../data/products';
 
 const AI_URL = (import.meta.env.VITE_AI_API_URL as string) || '';
 const AI_KEY = (import.meta.env.VITE_AI_API_KEY as string) || '';
 
-// NOTE: Ye key frontend bundle me PUBLIC ho jati hai — real provider secret
-// kabhi yaha mat dalo. Live LLM ke liye apna backend proxy URL use karo,
-// secret hamesha server-side rakho.
+// NOTE: This key becomes PUBLIC in the frontend bundle — never put a real provider secret
+// here. Use your backend proxy URL for the live LLM and
+// always keep secrets server-side.
 if (AI_KEY && typeof location !== 'undefined' && !/localhost|127\.0\.0\.1/.test(location.hostname)) {
   console.warn('[ai] VITE_AI_API_KEY is bundled publicly in the frontend. Use a backend proxy and keep real provider keys server-side.');
 }
@@ -93,7 +93,7 @@ function localReply(query: string): { text: string; products: ChatProduct[] } {
 }
 
 export async function askAssistant(query: string): Promise<{ text: string; products: ChatProduct[]; live: boolean }> {
-  // Live LLM ho to waha bhejo (products context ke saath)
+  // If a live LLM is configured, send it there (with products context)
   if (AI_URL && AI_KEY) {
     try {
       const res = await fetch(AI_URL, {

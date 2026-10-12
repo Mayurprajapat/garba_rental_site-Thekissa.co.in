@@ -92,13 +92,13 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
   const setStatus = async (d: Delivery, status: Delivery['status']) => {
     const next = { ...d, status, updatedAt: new Date().toISOString() };
     await upsertDelivery(next);
-    // Customer ka map live update (status bhi)
+    // Customer's map updates live (status too)
     void publishPing(d.code, { lat: d.agentLat ?? STORE_POS.lat, lng: d.agentLng ?? STORE_POS.lng, status, ts: next.updatedAt });
     refresh();
   };
 
-  // Live control — agent link khole bina, admin panel se hi location chalao.
-  // Isi browser ka GPS agent location banta hai, customer ka map live update hota hai.
+  // Live control — drive the location from the admin panel, without opening the agent link.
+  // This browser's GPS becomes the agent location; the customer's map updates live.
   const watchId = useRef<number | null>(null);
   const [sharing, setSharing] = useState(false);
   const [shareCode, setShareCode] = useState<string | null>(null);
@@ -132,7 +132,7 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
     );
   };
 
-  // Demo trip — store se customer tak 5 steps me (client demo ke liye, bina hile)
+  // Demo trip — store to customer in 5 steps (for client demos, without moving)
   const demoTrip = async (d: Delivery) => {
     stopShare();
     const steps = 5;
@@ -145,10 +145,10 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
   };
 
   useEffect(() => () => stopShare(), []);
-  // Dusri delivery select karte hi purani sharing band
+  // Stop the old sharing as soon as another delivery is selected
   useEffect(() => { if (shareCode && current?.code !== shareCode) stopShare(); });
 
-  // One-click demo — client turant /track par test kar sake (delete bhi ho jayega)
+  // One-click demo — so the client can test /track instantly (it can be deleted too)
   const loadDemo = async () => {
     const d: Delivery = {
       code: uniqueCode(), bookingId: 'demo',
@@ -178,7 +178,7 @@ export default function DeliveriesPanel({ bookings }: { bookings: any[] }) {
 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
-  // Snapshot hash — alag phone par bhi link khulte hi map + details (phir live GPS)
+  // Snapshot hash — map + details show immediately even on another phone when the link opens (then live GPS)
   const snapOf = (x: Delivery) => `#s=${encodeSnapshot({
     code: x.code, customer: x.customer, phone: x.phone, address: x.address,
     destLat: x.destLat, destLng: x.destLng, agent: x.agent, agentPhone: x.agentPhone,

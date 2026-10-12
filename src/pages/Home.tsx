@@ -11,7 +11,7 @@ export default function Home() {
       <Navbar />
       <Hero />
       <FeatureBanner />
-      {/* Shop turant upar — customer ko scroll nahi karna padta */}
+      {/* Shop placed near the top — customers don't need to scroll */}
       <Shop />
       <Process />
       <Looks />

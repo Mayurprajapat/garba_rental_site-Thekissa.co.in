@@ -1,13 +1,13 @@
-// Website content — Admin panel → Website tab se sab kuch badlo, Tumhe code haath nahi lagana padega.
+// Website content — change everything from the Admin panel → Website tab, no code changes needed.
 // Store number, banner, hero, features, promo codes, steps, photos, FAQs, booking panel, footer.
-// Save karte hi website par live (is browser me). Products/Categories wali tarah localStorage me rehta hai.
+// Goes live on the website as soon as you save (in this browser). Stored in localStorage like Products/Categories.
 
 import { useEffect, useState } from 'react';
 import type { Accessory, Category } from '../data/products';
 
 export interface StoreInfo {
   brand: string;
-  /** mobile number — 10 digit ya +91 ke saath, display format apne aap banta hai */
+  /** mobile number — 10 digits or with +91, display format is generated automatically */
   phone: string;
   email: string;
   city: string;
@@ -15,7 +15,7 @@ export interface StoreInfo {
   addressLong: string;
   hours: string;
   hoursShort: string;
-  /** QR payment ke liye dukandaar ki UPI ID (jaise name@okhdfc) — Admin → Website → Store se badlo */
+  /** Shop's UPI ID for QR payments (e.g. name@okhdfc) — change via Admin → Website → Store */
   upi: string;
 }
 
@@ -45,18 +45,20 @@ export interface SiteContent {
   looks: { title: string; subtitle: string; note: string; imgs: string[] };
   faqs: Faq[];
   booking: { title: string; subtitle: string; points: string[] };
-  footer: { about: string; delivery: string; credit: string };
+  footer: { about: string; delivery: string; credit: string; refundablePct: number };
   shopNote: string;
-  /** Dress QuickView card — "THE MODEL WORE THIS" box. Admin → Website se editable. */
+  /** Refundable extra % — Admin → Website se badalta hai. Default 30. */
+  refundablePct: number;
+  /** Dress QuickView card — "THE MODEL WORE THIS" box. Editable from Admin → Website. */
   completeLook: CompleteLook;
 }
 
 export interface CompleteLook {
   title: string;
   subtitle: string;
-  /** Chhoti note — "Tick = joins the dress…" wali line */
+  /** Short note — the "Tick = joins the dress…" line */
   hint: string;
-  /** Category-wise default lines. Kisi dress me alag `accessories` ho to wahi jeetega. */
+  /** Category-wise default lines. If a dress has its own `accessories`, those take precedence. */
   defaults: Record<Category, Accessory[]>;
 }
 
@@ -157,7 +159,10 @@ export const DEFAULT_CONTENT: SiteContent = {
     about: 'Designer Garba outfits on rent — perfect fitting, doorstep delivery, easy return.',
     delivery: 'Online only — no walk-in store',
     credit: 'Built by Mayur (TEXOWEB.SOLUTIONS)',
+    refundablePct: 30,
   },
+  /** Refundable extra percentage (of rent) — collected on delivery, refunded on return. Default: 30. */
+  refundablePct: 30,
   shopNote: '1-day rentals · 100% refundable 30% extra · 100% secure QR payments',
   completeLook: DEFAULT_COMPLETE_LOOK,
 };
@@ -206,7 +211,7 @@ function normalize(c: SiteContent): SiteContent {
   const savedStore = c.store || {};
   const savedHero = c.hero || {};
   const savedLooks = c.looks || {};
-  // Purana default hero subtitle (menswear mention) ho to naya ladies-only subtitle
+  // If the old default hero subtitle (menswear mention) is present, use the new ladies-only subtitle
   const OLD_SUB = 'Chaniya Choli, Kediyu-Dhoti and bridal couture';
   const heroSubtitle =
     typeof savedHero.subtitle === 'string' && savedHero.subtitle.includes(OLD_SUB)
@@ -214,12 +219,12 @@ function normalize(c: SiteContent): SiteContent {
       : typeof savedHero.subtitle === 'string' && savedHero.subtitle.trim()
         ? savedHero.subtitle
         : DEFAULT_CONTENT.hero.subtitle;
-  // Purani saved photos me mens/kids/combo images hon to hata do
+  // Remove mens/kids/combo images from previously saved photos
   const BANNED_IMG = /combo|kids|boys|kediya|kedia|angarkha|girls1/i;
   const looksImgs = Array.isArray(savedLooks.imgs)
     ? savedLooks.imgs.filter((s) => typeof s === 'string' && s.trim() && !BANNED_IMG.test(s))
     : [...DEFAULT_CONTENT.looks.imgs];
-  // Purani saved content ko naye defaults par migrate karo (client ka likha hua safe)
+  // Migrate previously saved content to the new defaults (preserving client-written text)
   const savedFeatures: string[] = Array.isArray((c as any).features)
     ? (c as any).features.map((t: any) => String(t ?? '').replace(/100% Refundable Security Deposit/gi, '100% Refundable Extra (30%)'))
     : [...DEFAULT_CONTENT.features];
@@ -240,13 +245,13 @@ function normalize(c: SiteContent): SiteContent {
     store: {
       ...DEFAULT_CONTENT.store,
       ...savedStore,
-      // Purana brand naam ho to naya kar do
+      // Update the old brand name to the new one
       brand: !savedStore.brand || savedStore.brand === 'TheKissa.co.in'
         ? DEFAULT_CONTENT.store.brand
         : savedStore.brand,
-      // UPI khaali / purani ho to default (pehle save ho chuki value migrate)
+      // Use the default if UPI is empty / old (migrate the previously saved value)
       upi: savedStore.upi?.trim() && savedStore.upi.trim() !== '9425417744@ptaxis' ? savedStore.upi : DEFAULT_CONTENT.store.upi,
-      // Purana default email ho to naya admin email kar do
+      // Replace the old default email with the new admin email
       email: !savedStore.email || savedStore.email === 'hello@thekissa.in'
         ? DEFAULT_CONTENT.store.email
         : savedStore.email,
@@ -259,14 +264,14 @@ function normalize(c: SiteContent): SiteContent {
     booking: {
       ...DEFAULT_CONTENT.booking,
       ...(c.booking || {}),
-      // Purana "Presize available" point ho to "Free size available" kar do
+      // Replace the old "Presize available" point with "Free size available"
       points: Array.isArray((c as any).booking?.points)
         ? (c as any).booking.points.map((t: any) =>
             String(t ?? '').replace(/presize available/gi, 'Free size available'))
         : [...DEFAULT_CONTENT.booking.points],
     },
     footer: { ...DEFAULT_CONTENT.footer, ...(c.footer || {}), credit: typeof (c as any).footer?.credit === 'string' && (c as any).footer.credit.trim() && (c as any).footer.credit.trim() !== 'Built by Mayur' ? (c as any).footer.credit : DEFAULT_CONTENT.footer.credit },
-    // Purani saved FAQ line hata do ("wrong size..." sentence) + deposit answer ko 30% extra par migrate karo
+    // Remove the old saved FAQ line ("wrong size..." sentence) + migrate the deposit answer to the 30% extra
     faqs: Array.isArray(c.faqs)
       ? c.faqs
         .filter((f: any) => !/buy instead of renting/i.test(String(f?.q ?? '')))
@@ -277,7 +282,7 @@ function normalize(c: SiteContent): SiteContent {
             .replace(/^Yes, 100%\. Refunded via UPI\/cash within 24 hours of return and quality check\. Normal wear is never charged\.$/, 'Yes, 100%. Every dress has a 30% refundable extra over the rent — refunded via UPI/cash within 24 hours of return and quality check. Normal wear is never charged.'),
         }))
       : [...DEFAULT_CONTENT.faqs],
-    // Purani saved line me "Codes: ..." ho to hata do, purana plan text ho to 1-day kar do
+    // Remove "Codes: ..." from the old saved line, convert old plan text to 1-day
     shopNote,
     completeLook: normalizeCompleteLook((c as any).completeLook),
   };
@@ -311,7 +316,7 @@ export function siteEvent(): string {
   return EVT;
 }
 
-/** Website components me lagao taaki Admin se save karte hi screen apne aap update ho. */
+/** Attach in website components so the screen updates automatically right after saving from Admin. */
 export function useSiteVersion(): number {
   const [v, setV] = useState(0);
   useEffect(() => {
@@ -334,7 +339,7 @@ export function useSiteVersion(): number {
   return v;
 }
 
-/** "NAVRATRI20, GROUP25" jaisi list — placeholder aur notes ke liye */
+/** List like "NAVRATRI20, GROUP25" — for placeholders and notes */
 export function promoCodesText(): string {
   return getSiteContent().promos.map((p) => p.code).join(' / ') || '—';
 }
