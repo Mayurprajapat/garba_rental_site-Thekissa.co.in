@@ -37,7 +37,7 @@ function TileImg({ src, alt }: { src: string; alt: string }) {
   if (!src || err) {
     return <div className="absolute inset-0 grid place-items-center text-[10px] text-neutral-400 bg-[#f4f1ea]">No photo</div>;
   }
-  return <img src={src} alt={alt} loading="lazy" decoding="async" onError={() => setErr(true)} className="absolute inset-0 w-full h-full object-contain" />;
+  return <img src={src} alt={alt} loading="lazy" decoding="async" onError={() => setErr(true)} className="absolute inset-0 w-full h-full object-cover" />;
 }
 
 function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
@@ -295,11 +295,15 @@ export default function Shop() {
               const n = tileCounts.get(c.id) ?? 0;
               return (
                 <button key={c.id} onClick={() => pickCat(on ? null : c)}
-                  className={`relative shrink-0 w-[132px] sm:w-[148px] h-[88px] sm:h-[98px] rounded-2xl overflow-hidden bg-[#f4f1ea] text-left transition-all duration-200 ${on ? 'ring-[3px] ring-[#c9a44a] ring-offset-2 ring-offset-[#faf8f6] shadow-[0_14px_30px_-14px_rgba(201,164,74,.7)]' : 'ring-1 ring-black/10 hover:ring-[#c9a44a]/60'}`}>
+                  className={`relative shrink-0 w-[140px] sm:w-[160px] h-[100px] sm:h-[112px] rounded-2xl overflow-hidden bg-[#2b0a18] text-left transition-all duration-200 ${on ? 'ring-[3px] ring-[#e8c66a] ring-offset-2 ring-offset-[#faf8f6] shadow-[0_16px_32px_-14px_rgba(201,164,74,.8)] -translate-y-0.5' : 'ring-1 ring-[#c9a44a]/50 hover:ring-[#e8c66a] hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-14px_rgba(201,164,74,.7)]'}`}>
                   <TileImg src={c.img} alt={c.label} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-                  <span className="absolute top-1.5 right-1.5 text-[8.5px] font-bold tracking-wider uppercase bg-white/85 backdrop-blur rounded-full px-1.5 py-0.5">{n} {c.kind === 'item' ? (n === 1 ? 'Item' : 'Items') : (n === 1 ? 'Design' : 'Designs')}</span>
-                  <span className="absolute bottom-1.5 left-2 right-2 text-[11.5px] font-bold text-white leading-tight line-clamp-2 drop-shadow">{c.label}</span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/10" />
+                  <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e8c66a]/80 to-transparent" />
+                  <span className="absolute top-1.5 right-1.5 text-[8.5px] font-black tracking-wider uppercase bg-gradient-to-b from-[#f5e3ae] to-[#c9a44a] text-[#3d0a1a] rounded-full px-2 py-0.5 shadow">{n} {c.kind === 'item' ? (n === 1 ? 'Item' : 'Items') : (n === 1 ? 'Design' : 'Designs')}</span>
+                  <span className="absolute bottom-0 inset-x-0 px-2.5 pb-2 pt-5 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-1">
+                    <span className="text-[12px] font-bold text-white leading-tight line-clamp-2 drop-shadow">{c.label}</span>
+                    <span className="ml-auto text-[#e8c66a] text-[13px] font-black shrink-0">→</span>
+                  </span>
                 </button>
               );
             })}
