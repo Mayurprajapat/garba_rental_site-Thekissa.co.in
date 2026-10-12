@@ -172,7 +172,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-white/10">
-        <div className="container-x pt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-[12px] font-semibold text-white/60">
+        <div className="container-x pt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 text-[12px] font-semibold text-white/80">
           <span className="flex items-center gap-1.5">✓ Dry-cleaned & sanitised</span>
           <span className="flex items-center gap-1.5">✓ 100% refundable extra</span>
           <span className="flex items-center gap-1.5">✓ Secure UPI payments</span>

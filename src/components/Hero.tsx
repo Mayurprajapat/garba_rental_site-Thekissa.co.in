@@ -43,7 +43,7 @@ export default function Hero() {
           <h1 className="font-display font-black tracking-tight text-balance text-[32px] min-[400px]:text-[38px] sm:text-[50px] leading-[1.02] mt-3">
             {hero.titleA}
             <br />
-            <span className="font-display-i font-normal gold-text">{hero.titleB}</span>
+            <span className="font-display-i font-normal gold-text-deep">{hero.titleB}</span>
           </h1>
           <p className="text-[#6f5b6a] max-w-xl text-[13.5px] sm:text-[15px] leading-relaxed mt-3">
             {hero.subtitle.includes('{price}') ? (
@@ -76,7 +76,7 @@ export default function Hero() {
           <div className="mandala-bg mt-5 rounded-2xl bg-gradient-to-br from-[#2b070e] via-[#4d0f1f] to-[#6e1a34] text-white px-5 py-4 shadow-[0_20px_45px_-20px_rgba(61,10,38,.6)] ring-1 ring-[#c9a44a]/50 relative overflow-hidden">
             <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#e8c66a]/80 to-transparent" />
             <p className="font-display font-black text-[22px] min-[400px]:text-[26px] sm:text-[32px] leading-tight tracking-tight break-words text-balance text-[#f7ead0]">100% Refundable Extra ({pct}%)</p>
-            <p className="text-white/70 text-[12.5px] sm:text-[13px] mt-1.5">Returned via UPI/cash within 24 hours of return — no deductions on normal wear</p>
+            <p className="text-white/85 text-[12.5px] sm:text-[13px] mt-1.5">Returned via UPI/cash within 24 hours of return — no deductions on normal wear</p>
           </div>
           {/* Mobile photos — desktop collage yahan nahi dikhta, isliye chhoti strip */}
           <div className="md:hidden mt-4 grid grid-cols-3 gap-2">

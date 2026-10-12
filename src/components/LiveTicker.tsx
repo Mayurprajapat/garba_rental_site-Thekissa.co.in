@@ -31,7 +31,7 @@ export default function LiveTicker() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: -18, opacity: 0 }}
               transition={{ duration: 0.35 }}
-              className="absolute inset-0 text-[12.5px] text-white/60 truncate leading-5"
+              className="absolute inset-0 text-[12.5px] text-white/85 truncate leading-5"
             >
               <b className="text-[#f7ead0]">{NAMES[i % NAMES.length]}</b> ({AREAS[(i + 2) % AREAS.length]}) booked{' '}
               <b className="text-[#f7ead0]">{p.name}</b> • {MINS[(i + 4) % MINS.length]} min ago

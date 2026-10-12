@@ -59,6 +59,11 @@ body {
   background: linear-gradient(120deg, #8a6d1f 0%, #c9a44a 35%, #f0d78c 50%, #c9a44a 65%, #8a6d1f 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
+/* deep gold text — light background par (gold-text yahan washout lagta hai) */
+.gold-text-deep {
+  background: linear-gradient(120deg, #6e5410 0%, #a8842c 35%, #c9a44a 50%, #a8842c 65%, #6e5410 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
 .gold-hairline { height: 1px; background: linear-gradient(90deg, transparent, rgba(201,164,74,.55), transparent); }
 .hairline { height: 1px; background: rgba(17,17,17,.1); }
 .hairline-light { height: 1px; background: rgba(17,17,17,.1); }
