@@ -76,10 +76,10 @@ export default function Navbar() {
 
       <div className="glass border-b border-[#c9a44a]/40 shadow-[0_12px_30px_-22px_rgba(60,30,40,.35)]">
         <div className="container-x h-[56px] sm:h-[64px] flex items-center justify-between gap-1.5 sm:gap-3">
-          <a href="#top" className="flex items-center gap-2 group min-w-0">
-            <span className="group-hover:scale-105 transition drop-shadow-[0_6px_12px_rgba(100,22,41,.3)]"><Logo /></span>
+          <a href="#top" className="flex items-center gap-1.5 sm:gap-2 group min-w-0">
+            <span className="group-hover:scale-105 transition drop-shadow-[0_6px_12px_rgba(100,22,41,.3)] shrink-0"><Logo className="w-8 h-8 min-[400px]:w-9 min-[400px]:h-9 sm:w-10 sm:h-10" /></span>
             <span className="leading-tight min-w-0 shrink-0">
-              <b className="font-display font-black text-[15px] min-[400px]:text-[19px] sm:text-[22px] block text-[#4d0f1f] tracking-tight whitespace-nowrap">{STORE.brand}</b>
+              <b className="font-display font-black text-[13px] min-[400px]:text-[19px] sm:text-[22px] block text-[#4d0f1f] tracking-tight whitespace-nowrap">{STORE.brand}</b>
               <small className="hidden min-[400px]:block text-[8.5px] sm:text-[9px] tracking-[0.2em] text-[#8a6d1f] font-bold">GARBA & FESTIVE RENTALS</small>
             </span>
           </a>
@@ -90,7 +90,7 @@ export default function Navbar() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <a href={STORE.phoneHref} className="hidden xl:flex items-center gap-1.5 text-[13px] font-semibold text-black border border-black/10 rounded-full px-4 py-2 hover:bg-black hover:text-white transition">
               <Phone size={14} /> {STORE.phoneShort}
             </a>
@@ -102,11 +102,11 @@ export default function Navbar() {
                 document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' });
                 setTimeout(() => document.getElementById('shop-search')?.focus({ preventScroll: true }), 500);
               }}
-              className="w-10 h-10 grid place-items-center rounded-full border border-black/10 bg-white hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)] transition" title="Search collection" aria-label="Search collection">
+              className="w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-full border border-black/10 bg-white hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)] transition" title="Search collection" aria-label="Search collection">
               <Search size={16} />
             </button>
             <button onClick={toggleWishlist} title={wishOnly ? 'Show all outfits' : 'Show wishlist only'} aria-label="Wishlist"
-              className={`relative w-10 h-10 grid place-items-center rounded-full border bg-white transition ${wishOnly ? 'border-black bg-black text-white shadow-[0_8px_20px_-10px_rgba(0,0,0,.5)]' : 'border-black/10 hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)]'}`}>
+              className={`relative w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-full border bg-white transition ${wishOnly ? 'border-black bg-black text-white shadow-[0_8px_20px_-10px_rgba(0,0,0,.5)]' : 'border-black/10 hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)]'}`}>
               <Heart size={16} className={wishOnly ? 'fill-white text-white' : wishlist.length ? 'fill-black text-black' : 'text-black'} />
               {wishlist.length > 0 && <span className={`absolute -top-1 -right-1 text-[10px] font-bold min-w-5 h-5 px-1 grid place-items-center rounded-full ${wishOnly ? 'bg-white text-black' : 'bg-black text-white'}`}>{wishlist.length}</span>}
             </button>
@@ -116,7 +116,7 @@ export default function Navbar() {
               <span className="bg-gradient-to-b from-[#f0d78c] to-[#c9a44a] text-[#3d0a1a] text-xs font-bold min-w-7 h-7 px-1.5 grid place-items-center rounded-full">{count}</span>
             </button>
             <button onClick={openOrders} title="View your orders" aria-label="My Orders"
-              className="relative w-10 h-10 grid place-items-center rounded-full border border-black/10 bg-white hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)] transition">
+              className="relative w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-full border border-black/10 bg-white hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)] transition">
               <PackageSearch size={16} />
               {orderCount > 0 && <span className="absolute -top-1 -right-1 text-[10px] font-bold min-w-5 h-5 px-1 grid place-items-center rounded-full bg-emerald-600 text-white">{orderCount}</span>}
             </button>
