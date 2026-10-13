@@ -404,6 +404,38 @@ export default function Admin() {
 
   const catsPushTimer = useRef<number | null>(null);
   const [catImgBusy, setCatImgBusy] = useState<string | null>(null);
+  // Tile photo picker — label-click kabhi-kabhi picker nahi kholta, isliye direct button + programmatic picker
+  const tileFileRef = useRef<HTMLInputElement | null>(null);
+  const tileTargetRef = useRef<string | null>(null);
+  const pickTilePhoto = (id: string) => {
+    tileTargetRef.current = id;
+    tileFileRef.current?.click();
+  };
+  const onTileFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    const id = tileTargetRef.current;
+    tileTargetRef.current = null;
+    if (!f || !id) return;
+    if (!f.type.startsWith('image/')) { setMsg('Sirf JPG/PNG photo lagao.'); setTimeout(() => setMsg(''), 4000); return; }
+    if (/heic|heif/i.test(f.type) || /\.hei[c|f]$/i.test(f.name)) { setMsg('Ye iPhone HEIC photo hai — website par nahi lagegi. Pehle JPG banao: photo ko WhatsApp par khud ko bhejo (Photo, Document nahi), wahan se save karke lagao. Ya iPhone Settings > Camera > Formats > Most Compatible karo.'); setTimeout(() => setMsg(''), 12000); return; }
+    setCatImgBusy(id);
+    try {
+      const url = await uploadImage(f);
+      if (url) {
+        const cur = getCategories();
+        persistCats(cur.map((x) => (x.id === id ? { ...x, img: url } : x)));
+      } else {
+        setMsg('Photo lagi nahi — chhoti (2MB se kam) JPG try karo, ya net check karke dobara lagao.');
+        setTimeout(() => setMsg(''), 8000);
+      }
+    } catch {
+      setMsg('Photo lagate time error aaya — page reload karke dobara try karo.');
+      setTimeout(() => setMsg(''), 8000);
+    } finally {
+      setCatImgBusy(null);
+    }
+  };
 
   // Website jaisa bada Save button — photo/naam/keyword badlo, phir Save dabao = sab devices par live
   const [catSaving, setCatSaving] = useState(false);
@@ -924,28 +956,9 @@ export default function Admin() {
                         )}
                         <div className="flex gap-1.5">
                           <input value={c.img} onChange={(e) => persistCats(cats.map((x) => (x.id === c.id ? { ...x, img: e.target.value } : x)))} placeholder="/images/… or URL" className="admin-input" />
-                          <label title="Upload photo" className="shrink-0 grid place-items-center w-10 rounded-lg border cursor-pointer hover:bg-black hover:text-white transition text-sm">
+                          <button type="button" title="Upload photo" onClick={() => pickTilePhoto(c.id)} className="shrink-0 grid place-items-center w-10 rounded-lg border cursor-pointer hover:bg-black hover:text-white transition text-sm">
                             {catImgBusy === c.id ? '…' : '⇪'}
-                            <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                              const f = e.target.files?.[0];
-                              e.target.value = '';
-                              if (!f) return;
-                              if (!f.type.startsWith('image/')) { setMsg('Sirf JPG/PNG photo lagao.'); setTimeout(() => setMsg(''), 4000); return; }
-                              if (/heic|heif/i.test(f.type) || /\.hei[c|f]$/i.test(f.name)) { setMsg('Ye iPhone HEIC photo hai — website par nahi lagegi. Pehle JPG banao: photo ko WhatsApp par khud ko bhejo (Document nahi, Photo), wahan se save karke lagao. Ya iPhone Settings > Camera > Formats > Most Compatible karo.'); setTimeout(() => setMsg(''), 12000); return; }
-                              setCatImgBusy(c.id);
-                              try {
-                                const url = await uploadImage(f);
-                                if (url) {
-                                  persistCats(cats.map((x) => (x.id === c.id ? { ...x, img: url } : x)));
-                                } else {
-                                  setMsg('Photo lagi nahi — chhoti (2MB se kam) JPG try karo, ya net check karke dobara lagao.');
-                                  setTimeout(() => setMsg(''), 8000);
-                                }
-                              } finally {
-                                setCatImgBusy(null);
-                              }
-                            }} />
-                          </label>
+                          </button>
                           <button title="Delete" onClick={() => { if (confirm(`Delete "${c.label}"?`)) persistCats(cats.filter((x) => x.id !== c.id)); }} className="shrink-0 w-10 grid place-items-center rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-600 hover:text-white transition"><Trash2 size={13} /></button>
                         </div>
                       </div>
@@ -953,6 +966,16 @@ export default function Admin() {
                   ))}
                 </div>
                 {cats.length === 0 && <p className="text-center text-sm text-[#8a7584] py-10">No categories — no strip will show on the website. Add or Reset.</p>}
+                {/* Ek hi hidden picker — ⇪ button isko kholta hai (label-click issues nahi) */}
+                <input
+                  ref={tileFileRef}
+                  type="file"
+                  accept="image/*"
+                  tabIndex={-1}
+                  aria-hidden
+                  style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+                  onChange={onTileFile}
+                />
                 <div className="sticky bottom-3 mt-4 bg-white/95 backdrop-blur border rounded-2xl p-3 shadow-xl">
                   <button onClick={saveCatsToCloud} disabled={catSaving} className="w-full bg-[#1a0f1e] text-white font-semibold rounded-full py-3 text-sm disabled:opacity-60">
                     {catSaving ? 'Saving…' : 'Save — live on website'}
