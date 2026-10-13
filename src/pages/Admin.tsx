@@ -963,6 +963,25 @@ export default function Admin() {
                           </span>
                           <button title="Delete" onClick={() => { if (confirm(`Delete "${c.label}"?`)) persistCats(cats.filter((x) => x.id !== c.id)); }} className="shrink-0 w-10 grid place-items-center rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-600 hover:text-white transition"><Trash2 size={13} /></button>
                         </div>
+                        {/* Product photos me se chuno — tap karte hi tile par lag jayegi (upload ki zaroorat nahi) */}
+                        {products.length > 0 && (
+                          <div>
+                            <p className="label-pro mt-1">Ya product photo chuno — tap = lag gayi</p>
+                            <div className="flex gap-1.5 mt-1.5 overflow-x-auto no-scrollbar pb-1">
+                              {products.slice(0, 24).map((p) => (
+                                <button
+                                  key={p.id}
+                                  type="button"
+                                  title={`${p.id} ki photo is tile par lagao`}
+                                  onClick={() => persistCats(cats.map((x) => (x.id === c.id ? { ...x, img: p.img } : x)))}
+                                  className={`shrink-0 rounded-lg overflow-hidden border-2 transition ${c.img === p.img ? 'border-emerald-500 ring-2 ring-emerald-200' : 'border-black/10 hover:border-black'}`}
+                                >
+                                  <img src={p.img} alt={p.id} loading="lazy" className="w-12 h-14 object-contain bg-[#f4f1ea]" />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
