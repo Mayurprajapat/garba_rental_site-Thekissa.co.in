@@ -22,12 +22,10 @@ export interface ShopCategory {
 }
 
 export const DEFAULT_CATEGORIES: ShopCategory[] = [
-  { id: 'chaniya', label: 'Chaniya Choli', query: 'chaniya, choli', img: '/images/g-chaniya2.webp', kind: 'dress', strict: true },
-  { id: 'ghaghra', label: 'Lehenga', query: 'lehenga, ghaghra', img: '/images/g-girls2.jpg', kind: 'dress', strict: true },
-  { id: 'blouse', label: 'Blouse', query: 'blouse, crop top', img: '/images/g-whiteblack.webp', kind: 'dress', strict: true },
-  // Jewellery: dress-kind tile (choker set jaise products khud dikhen).
-  // Purana item-kind tile hata — single addons (jhumka etc.) QuickView me "Only this" se rent hote rahenge.
-  { id: 'jewellery', label: 'Jewellery', query: 'jewellery, choker, necklace, haar, jhumka, kamarbandh', img: '/images/item-jewellery-set.jpg', kind: 'dress', strict: true },
+  { id: 'ghaghra', label: 'Lehenga', query: 'lehenga, ghaghra', img: '/images/g-girls2.jpg', kind: 'dress' },
+  { id: 'blouse', label: 'Blouse', query: 'blouse', img: '/images/g-whiteblack.webp', kind: 'dress' },
+  // ---- Single-rent items: har item alag (bina dress ke) ----
+  { id: 'jewellery', label: 'Jewellery Set', query: 'jewellery set, necklace, haar', img: '/images/item-jewellery-set.jpg', kind: 'item' },
 ];
 
 /** Category query matcher — comma = OR, comma ke andar space = AND (poora part milna chahiye). */
@@ -96,15 +94,10 @@ export function itemInTile(itemName: string, parent: TileProduct, tile: Pick<Sho
 
 const KEY = 'raasleela-admin-categories';
 const EVT = 'raasleela-categories-updated';
-// Purani default lists — inhe nayi 4-tile list (Chaniya Choli, Lehenga, Blouse, Jewellery) se auto-upgrade kar do.
-// gen-1: chaniya|choli|jewellery · gen-2: blouse|ghaghra|jewellery (jewellery item-kind thi, ab dress-kind hai)
-const OLD_ID_SETS = [
-  ['chaniya', 'choli', 'jewellery'].sort().join('|'),
-  ['blouse', 'ghaghra', 'jewellery'].sort().join('|'),
-];
-// Hatayi hui tiles — saved list me hon to auto-saaf kar do.
-// NOTE: 'chaniya' ab valid tile hai (is list me mat dalna!) — sirf purane/dead ids rakho.
-const REMOVED_CAT_IDS = ['kids-girls', 'kids-boys', 'kids-jhumka', 'family', 'kediyu', 'dhoti', 'pagdi', 'mojari', 'brooch', 'couple', 'choli', 'koti', 'dupatta', 'dandiya', 'bridal', 'jhumka', 'kamarbandh'];
+// Purani 3-tile wali list — isko nayi granular list se auto-upgrade kar do
+const OLD_IDS = ['chaniya', 'choli', 'jewellery'];
+// Hatayi hui tiles — saved list me hon to auto-saaf kar do (sirf Lehenga, Blouse, Jewellery Set rehte hain)
+const REMOVED_CAT_IDS = ['kids-girls', 'kids-boys', 'kids-jhumka', 'family', 'kediyu', 'dhoti', 'pagdi', 'mojari', 'brooch', 'couple', 'chaniya', 'choli', 'koti', 'dupatta', 'dandiya', 'bridal', 'jhumka', 'kamarbandh'];
 
 function valid(list: any): list is ShopCategory[] {
   return Array.isArray(list) && list.every((c) => c && typeof c.label === 'string' && typeof c.query === 'string');
@@ -126,9 +119,9 @@ export function getCategories(): ShopCategory[] {
     if (raw) {
       const arr = JSON.parse(raw);
       if (valid(arr) && arr.length) {
-        // Purani default list ho to nayi 4-tile list se upgrade karo
+        // Purani default 3-tile list ho to nayi list se upgrade karo
         const ids = arr.map((c) => c.id).sort().join('|');
-        if (OLD_ID_SETS.includes(ids)) {
+        if (ids === [...OLD_IDS].sort().join('|')) {
           const d = [...DEFAULT_CATEGORIES];
           try { localStorage.setItem(KEY, JSON.stringify(d)); } catch { /* ignore */ }
           return d;
