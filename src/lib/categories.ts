@@ -26,7 +26,8 @@ export const DEFAULT_CATEGORIES: ShopCategory[] = [
   { id: 'ghaghra', label: 'Lehenga', query: 'lehenga, ghaghra', img: '/images/g-girls2.jpg', kind: 'dress' },
   { id: 'blouse', label: 'Blouse', query: 'blouse', img: '/images/g-whiteblack.webp', kind: 'dress' },
   // ---- Single-rent items: har item alag (bina dress ke) ----
-  { id: 'jewellery', label: 'Jewellery Set', query: 'jewellery set, necklace, haar', img: '/images/item-jewellery-set.jpg', kind: 'item' },
+  // Query broad rakho taaki har addon (jhumka, kamarbandh, mojari, brooch, sets...) isi tile me aaye.
+  { id: 'jewellery', label: 'Jewellery Set', query: 'jewellery, choker, necklace, haar, jhumka, earring, earing, kamarbandh, mojari, brooch, bali, kundan, pearl, tikka, maang', img: '/images/item-jewellery-set.jpg', kind: 'item' },
 ];
 
 /** Category query matcher — comma = OR, comma ke andar space = AND (poora part milna chahiye). */
@@ -82,12 +83,14 @@ export function dressInTile(p: TileProduct, tile: Pick<ShopCategory, 'id' | 'que
 
 /**
  * Single-rent item (bina dress) kisi item-tile me dikhega ya nahi.
- * Parent dress par tags tick hain to wahi final — tile Strict hai to bina-tags item kabhi nahi.
- * Warna item naam se keyword match.
+ * Parent par ye tile tick hai to HAMESHA dikhega (chahe naam match na ho).
+ * Tile Strict hai to BINA tick wala item kabhi nahi.
+ * Warna item naam se keyword match — parent ke dress-tags items ko nahi rokte
+ * (taaki ghaghra-tagged dress ka jhumka/earring bhi Jewellery tile me aaye).
  */
 export function itemInTile(itemName: string, parent: TileProduct, tile: Pick<ShopCategory, 'id' | 'query' | 'kind' | 'cats' | 'strict'>): boolean {
   const tags = cleanTags(parent);
-  if (tags.length) return tags.includes(tile.id.toLowerCase());
+  if (tags.includes(tile.id.toLowerCase())) return true;
   if (tile.strict) return false;
   const q = tile.query.trim();
   return !q || matchesCategory(itemName.toLowerCase(), q);
