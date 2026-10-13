@@ -404,18 +404,11 @@ export default function Admin() {
 
   const catsPushTimer = useRef<number | null>(null);
   const [catImgBusy, setCatImgBusy] = useState<string | null>(null);
-  // Tile photo picker — label-click kabhi-kabhi picker nahi kholta, isliye direct button + programmatic picker
-  const tileFileRef = useRef<HTMLInputElement | null>(null);
-  const tileTargetRef = useRef<string | null>(null);
-  const pickTilePhoto = (id: string) => {
-    tileTargetRef.current = id;
-    tileFileRef.current?.click();
-  };
-  const onTileFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Tile photo select — seedha input par tap (kuch browsers me button-se-picker block hota hai,
+  // isliye input khud sabse upar rakha hai; id param me aati hai, ref-race ka sawal hi nahi)
+  const onTileFile = async (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
     const f = e.target.files?.[0];
     e.target.value = '';
-    const id = tileTargetRef.current;
-    tileTargetRef.current = null;
     if (!f || !id) return;
     if (!f.type.startsWith('image/')) { setMsg('Sirf JPG/PNG photo lagao.'); setTimeout(() => setMsg(''), 4000); return; }
     if (/heic|heif/i.test(f.type) || /\.hei[c|f]$/i.test(f.name)) { setMsg('Ye iPhone HEIC photo hai — website par nahi lagegi. Pehle JPG banao: photo ko WhatsApp par khud ko bhejo (Photo, Document nahi), wahan se save karke lagao. Ya iPhone Settings > Camera > Formats > Most Compatible karo.'); setTimeout(() => setMsg(''), 12000); return; }
@@ -956,9 +949,18 @@ export default function Admin() {
                         )}
                         <div className="flex gap-1.5">
                           <input value={c.img} onChange={(e) => persistCats(cats.map((x) => (x.id === c.id ? { ...x, img: e.target.value } : x)))} placeholder="/images/… or URL" className="admin-input" />
-                          <button type="button" title="Upload photo" onClick={() => pickTilePhoto(c.id)} className="shrink-0 grid place-items-center w-10 rounded-lg border cursor-pointer hover:bg-black hover:text-white transition text-sm">
-                            {catImgBusy === c.id ? '…' : '⇪'}
-                          </button>
+                          <span className="relative shrink-0 inline-block group" title="Upload photo">
+                            <span className="grid place-items-center w-10 h-10 rounded-lg border text-sm bg-white group-hover:bg-black group-hover:text-white transition">
+                              {catImgBusy === c.id ? '…' : '⇪'}
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              title="Upload photo"
+                              style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }}
+                              onChange={(e) => onTileFile(e, c.id)}
+                            />
+                          </span>
                           <button title="Delete" onClick={() => { if (confirm(`Delete "${c.label}"?`)) persistCats(cats.filter((x) => x.id !== c.id)); }} className="shrink-0 w-10 grid place-items-center rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-600 hover:text-white transition"><Trash2 size={13} /></button>
                         </div>
                       </div>
@@ -966,16 +968,6 @@ export default function Admin() {
                   ))}
                 </div>
                 {cats.length === 0 && <p className="text-center text-sm text-[#8a7584] py-10">No categories — no strip will show on the website. Add or Reset.</p>}
-                {/* Ek hi hidden picker — ⇪ button isko kholta hai (label-click issues nahi) */}
-                <input
-                  ref={tileFileRef}
-                  type="file"
-                  accept="image/*"
-                  tabIndex={-1}
-                  aria-hidden
-                  style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
-                  onChange={onTileFile}
-                />
                 <div className="sticky bottom-3 mt-4 bg-white/95 backdrop-blur border rounded-2xl p-3 shadow-xl">
                   <button onClick={saveCatsToCloud} disabled={catSaving} className="w-full bg-[#1a0f1e] text-white font-semibold rounded-full py-3 text-sm disabled:opacity-60">
                     {catSaving ? 'Saving…' : 'Save — live on website'}
