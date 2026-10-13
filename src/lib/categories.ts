@@ -193,7 +193,7 @@ export function saveCategories(list: ShopCategory[]): { ok: boolean; error?: str
     return { ok: false, error: 'Data ready nahi hua.' };
   }
   try {
-    localStorage.setItem(KEY, JSON.stringify(list));
+    localStorage.setItem(KEY, json);
   } catch (e: any) {
     const m = `${e?.name || ''} ${e?.message || ''} ${e?.code ?? ''}`;
     if (/quota|QUOTA|22/.test(m)) {
