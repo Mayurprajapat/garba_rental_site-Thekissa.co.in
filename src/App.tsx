@@ -28,6 +28,19 @@ function PageLoader() {
 }
 
 export default function App() {
+  // Purane vercel.app links (duplicate URL / SEO issue) → main domain par bhejo.
+  // Path + Order ID + admin path sab same rehta hai, sirf domain badalta hai.
+  // Admin bhi ab thekissa.co.in/{secret-path} par khulega — wahi cloud data, sab same.
+  useEffect(() => {
+    try {
+      const h = window.location.hostname;
+      if (h.endsWith('.vercel.app') && h.startsWith('garba-rental-website')) {
+        window.location.replace(
+          `https://thekissa.co.in${window.location.pathname}${window.location.search}${window.location.hash}`
+        );
+      }
+    } catch { /* ignore */ }
+  }, []);
   // Website text/photos (Admin → Website) + category tiles cloud se turant sync — sab devices par live
   useEffect(() => {
     initSiteContentSync();
