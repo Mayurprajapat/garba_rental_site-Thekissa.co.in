@@ -404,6 +404,26 @@ export default function Admin() {
 
   const catsPushTimer = useRef<number | null>(null);
 
+  // Website jaisa bada Save button — photo/naam/keyword badlo, phir Save dabao = sab devices par live
+  const [catSaving, setCatSaving] = useState(false);
+  const saveCatsToCloud = async () => {
+    if (catSaving) return;
+    setCatSaving(true);
+    const list = getCategories();
+    setCats(list);
+    saveCategories(list);
+    if (!useCloud || !supabase) {
+      setMsg('Local mode — tiles isi browser me saved hain. Live website par dikhane ke liye live admin link use karo.');
+      setTimeout(() => setMsg(''), 6000);
+    } else {
+      setMsg('Cloud (live shop) me bhej rahe hain…');
+      const r = await pushCategoriesToCloud(list);
+      setMsg(r.ok ? 'Saved — live on website ✓ (3 category cards sab devices par update)' : `CLOUD fail: ${r.error || ''}`);
+      setTimeout(() => setMsg(''), r.ok ? 6000 : 12000);
+    }
+    setCatSaving(false);
+  };
+
   const persistCats = (list: ShopCategory[]) => {
     setCats(list);
     saveCategories(list);
@@ -907,6 +927,12 @@ export default function Admin() {
                   ))}
                 </div>
                 {cats.length === 0 && <p className="text-center text-sm text-[#8a7584] py-10">No categories — no strip will show on the website. Add or Reset.</p>}
+                <div className="sticky bottom-3 mt-4 bg-white/95 backdrop-blur border rounded-2xl p-3 shadow-xl">
+                  <button onClick={saveCatsToCloud} disabled={catSaving} className="w-full bg-[#1a0f1e] text-white font-semibold rounded-full py-3 text-sm disabled:opacity-60">
+                    {catSaving ? 'Saving…' : 'Save — live on website'}
+                  </button>
+                  <p className="text-[11.5px] text-[#8a7584] text-center mt-1.5">Photo/naam badlo → <b>Save dabao</b> → green ✓ aaye to 3 cards phones par live</p>
+                </div>
               </div>
             )}
 
