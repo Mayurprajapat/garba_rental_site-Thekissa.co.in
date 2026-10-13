@@ -1,9 +1,9 @@
-// Website content — change everything from the Admin panel → Website tab, no code changes needed.
-// Store number, banner, hero, features, promo codes, steps, photos, FAQs, booking panel, footer.
-// Goes live on the website as soon as you save (in this browser). Stored in localStorage like Products/Categories.
-
+// Website content — Admin panel → Website tab se badlo, code chhune ki zaroorat nahi.
+// Save dabate hi local (isi browser) + cloud (Supabase, sab devices) dono me jata hai.
+// Website cloud se turant update hoti hai (Realtime). Bina cloud ke local mode me chalta hai.
 import { useEffect, useState } from 'react';
 import type { Accessory, Category } from '../data/products';
+import { isSupabaseConfigured, supabase } from './supabase';
 
 export interface StoreInfo {
   brand: string;
@@ -169,6 +169,7 @@ export const DEFAULT_CONTENT: SiteContent = {
 };
 
 const KEY = 'raasleela-site-content';
+const SAVED_AT_KEY = 'raasleela-site-saved-at';
 const EVT = 'raasleela-site-updated';
 
 function valid(c: any): c is SiteContent {
@@ -310,10 +311,137 @@ export function getSiteContent(): SiteContent {
   return normalize({ ...DEFAULT_CONTENT });
 }
 
-export function saveSiteContent(c: SiteContent) {
+export function saveSiteContent(c: SiteContent): { ok: boolean; error?: string } {
+  let json = '';
   try {
-    localStorage.setItem(KEY, JSON.stringify(c));
+    json = JSON.stringify(c);
+  } catch {
+    return { ok: false, error: 'Data ready nahi ho paya — koi galat value hai. Page reload karke dobara try karo.' };
+  }
+  try {
+    localStorage.setItem(KEY, json);
+  } catch (e: any) {
+    const m = `${e?.name || ''} ${e?.message || ''} ${e?.code ?? ''}`;
+    if (/quota|QUOTA|22/.test(m)) {
+      return {
+        ok: false,
+        error: 'Phone storage FULL ho gaya — Save fail hua. Kuch photos hatao (Customer photos / Hero photos se ✕ dabao), phir Save dabao.',
+      };
+    }
+    return { ok: false, error: `Save fail: ${e?.message || 'browser storage error'}` };
+  }
+  // Verify — likha hua wapas padhke confirm karo (silent fail ab nahi hoga)
+  try {
+    const back = localStorage.getItem(KEY);
+    if (!back || !valid(JSON.parse(back))) {
+      return { ok: false, error: 'Save verify nahi hua — browser storage block hai (private mode?). Normal browser me kholo.' };
+    }
+  } catch {
+    return { ok: false, error: 'Save verify nahi hua — dobara try karo.' };
+  }
+  try {
+    localStorage.setItem(SAVED_AT_KEY, String(Date.now()));
+  } catch { /* time stamp na likha paye to bhi save ok hai */ }
+  try {
     window.dispatchEvent(new Event(EVT));
+  } catch { /* ignore */ }
+  return { ok: true };
+}
+
+function getSavedAt(): number {
+  try {
+    return Number(localStorage.getItem(SAVED_AT_KEY) || 0) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Cloud (Supabase site_content table, id=1) me push — Save ke baad sab devices par live. */
+export async function pushSiteContentToCloud(c: SiteContent): Promise<{ ok: boolean; error?: string; missingTable?: boolean }> {
+  if (!isSupabaseConfigured || !supabase) return { ok: false, error: 'Cloud connected nahi hai (local mode).' };
+  try {
+    const { error } = await supabase
+      .from('site_content')
+      .upsert({ id: 1, data: c as any, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+    if (error) {
+      const m = `${error.message || ''} ${(error as any)?.code || ''}`;
+      if (/site_content/i.test(m) && /does not exist|schema cache|relation|PGRST/i.test(m)) {
+        return {
+          ok: false,
+          missingTable: true,
+          error: 'Cloud table bani nahi hai — Supabase > SQL Editor me supabase/migration_site_content.sql ek baar Run karo, phir Save dabao.',
+        };
+      }
+      return { ok: false, error: `Cloud save fail: ${error.message}` };
+    }
+    try {
+      localStorage.setItem(SAVED_AT_KEY, String(Date.now()));
+    } catch { /* ignore */ }
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: `Cloud save fail: ${e?.message || 'network error'} (net aane par dobara Save dabao)` };
+  }
+}
+
+/** Cloud se kheecho — nayi copy mile to local me lagao + website ko batao. Last-write-wins. */
+export async function pullSiteContentFromCloud(): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return false;
+  try {
+    const { data, error } = await supabase.from('site_content').select('data,updated_at').eq('id', 1).maybeSingle();
+    if (error || !data?.data || !valid(data.data)) return false;
+    const cloudTime = data.updated_at ? new Date(data.updated_at).getTime() : 0;
+    if (cloudTime && cloudTime <= getSavedAt()) return false;
+    const incoming = normalize(data.data as SiteContent);
+    let current = '';
+    try {
+      current = JSON.stringify(normalize(getSiteContent()));
+    } catch { /* ignore */ }
+    if (JSON.stringify(incoming) === current) {
+      try {
+        localStorage.setItem(SAVED_AT_KEY, String(cloudTime || Date.now()));
+      } catch { /* ignore */ }
+      return false;
+    }
+    try {
+      localStorage.setItem(KEY, JSON.stringify(incoming));
+      localStorage.setItem(SAVED_AT_KEY, String(cloudTime || Date.now()));
+    } catch {
+      return false;
+    }
+    try {
+      window.dispatchEvent(new Event(EVT));
+    } catch { /* ignore */ }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+let syncStarted = false;
+
+/** App start par ek baar chalao — cloud pull + Realtime subscribe + focus refresh. */
+export function initSiteContentSync(): void {
+  if (syncStarted) return;
+  syncStarted = true;
+  if (!isSupabaseConfigured || !supabase) return;
+  pullSiteContentFromCloud();
+  try {
+    const sb = supabase;
+    sb.channel('site-content-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_content' }, () => {
+        pullSiteContentFromCloud();
+      })
+      .subscribe();
+  } catch { /* realtime na mile to focus/pull fallback kaafi */ }
+  const onFocus = () => {
+    pullSiteContentFromCloud();
+  };
+  const onVisible = () => {
+    if (document.visibilityState === 'visible') pullSiteContentFromCloud();
+  };
+  try {
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
   } catch { /* ignore */ }
 }
 

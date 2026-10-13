@@ -1,9 +1,9 @@
 // Admin → Website tab: change all site text, photos and numbers from here.
 // Clients never need to touch code — press Save and the website updates instantly.
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { getSiteContent, resetSiteContent, saveSiteContent, type SiteContent } from '../../lib/siteContent';
+import { getSiteContent, pushSiteContentToCloud, resetSiteContent, saveSiteContent, type SiteContent } from '../../lib/siteContent';
 import { formatAccessories, parseAccessories, type Category } from '../../data/products';
 import { dataUrlToBlob, fileToCompressedDataUrl } from '../../lib/proof';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
@@ -35,14 +35,55 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export default function WebsitePanel() {
   const [c, setC] = useState<SiteContent>(() => getSiteContent());
   const [msg, setMsg] = useState('');
+  const [msgErr, setMsgErr] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [lookUrl, setLookUrl] = useState('');
   const [lookBusy, setLookBusy] = useState(false);
   const [heroBusy, setHeroBusy] = useState<number | null>(null);
+  const msgTimer = useRef<number | null>(null);
 
-  const save = () => {
-    saveSiteContent(c);
-    setMsg('Website updated — live on site.');
-    setTimeout(() => setMsg(''), 3000);
+  const showMsg = (text: string, isErr: boolean, ms = 5000) => {
+    setMsg(text);
+    setMsgErr(isErr);
+    if (msgTimer.current) window.clearTimeout(msgTimer.current);
+    if (ms > 0) msgTimer.current = window.setTimeout(() => setMsg(''), ms);
+  };
+
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    // 1) Isi phone/browser me save (hamesha) — fail ho to wahi ruk jao, jhootha success kabhi nahi
+    const local = saveSiteContent(c);
+    if (!local.ok) {
+      showMsg(local.error || 'Save fail ho gaya.', true, 10000);
+      setSaving(false);
+      return;
+    }
+    // 2) Cloud connected hai to sab devices/customers ke liye push karo
+    if (isSupabaseConfigured && supabase) {
+      showMsg('Phone me saved ✓ — cloud (live website) me bhej rahe hain…', false, 0);
+      const cloud = await pushSiteContentToCloud(c);
+      if (cloud.ok) {
+        showMsg('Saved — live on website ✓ (sab devices par dikhega)', false, 6000);
+      } else {
+        showMsg(`Phone me saved ✓, par CLOUD fail: ${cloud.error || ''}`, true, 12000);
+      }
+    } else {
+      showMsg('Website updated — isi browser me live ✓', false, 5000);
+    }
+    setSaving(false);
+  };
+
+  const handleReset = async () => {
+    if (!confirm('Reset all text to defaults?')) return;
+    const d = resetSiteContent();
+    setC(d);
+    if (isSupabaseConfigured && supabase) {
+      const cloud = await pushSiteContentToCloud(d);
+      showMsg(cloud.ok ? 'Reset done — live on website ✓' : `Reset (local) ✓, par cloud fail: ${cloud.error || ''}`, !cloud.ok, 8000);
+    } else {
+      showMsg('Reset done.', false, 4000);
+    }
   };
 
   // Photo upload — cloud ho to storage URL, warna compressed copy (same browser)
@@ -112,7 +153,11 @@ export default function WebsitePanel() {
 
   return (
     <div>
-      {msg && <p className="text-sm bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl px-4 py-2.5 mb-4">{msg}</p>}
+      {msg && (
+        <p className={`text-sm border rounded-xl px-4 py-2.5 mb-4 ${msgErr ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}`}>
+          {msg}
+        </p>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-3 sm:gap-4 items-start">
         <Card title="Store / Contact" hint="Changing the number updates the call button, WhatsApp and invoice — everywhere, automatically.">
@@ -335,9 +380,18 @@ export default function WebsitePanel() {
         </Card>
       </div>
 
-      <div className="sticky bottom-3 mt-4 flex gap-2 bg-white/95 backdrop-blur border rounded-2xl p-3 shadow-xl">
-        <button onClick={save} className="flex-1 bg-[#1a0f1e] text-white font-semibold rounded-full py-3 text-sm">Save — live on website</button>
-        <button onClick={() => { if (confirm('Reset all text to defaults?')) { const d = resetSiteContent(); setC(d); setMsg('Reset done.'); setTimeout(() => setMsg(''), 3000); } }} className="border font-semibold rounded-full px-5 py-3 text-sm">Reset</button>
+      <div className="sticky bottom-3 mt-4 bg-white/95 backdrop-blur border rounded-2xl p-3 shadow-xl">
+        {msg && (
+          <p className={`text-[12.5px] font-semibold rounded-xl px-3.5 py-2 mb-2 ${msgErr ? 'bg-rose-50 text-rose-800 border border-rose-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'}`}>
+            {msg}
+          </p>
+        )}
+        <div className="flex gap-2">
+          <button onClick={save} disabled={saving} className="flex-1 bg-[#1a0f1e] text-white font-semibold rounded-full py-3 text-sm disabled:opacity-60">
+            {saving ? 'Saving…' : 'Save — live on website'}
+          </button>
+          <button onClick={handleReset} disabled={saving} className="border font-semibold rounded-full px-5 py-3 text-sm disabled:opacity-60">Reset</button>
+        </div>
       </div>
     </div>
   );
