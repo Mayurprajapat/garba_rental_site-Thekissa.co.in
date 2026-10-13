@@ -284,6 +284,22 @@ body {
 .card-glow-border:hover::before { opacity: 1; animation: glowSpin 1.8s linear infinite; }
 @keyframes glowSpin { to { --glow-angle: 360deg; } }
 
+/* ── Phone lag-fix: bhaari GPU effects band ──────────────
+   Conic-glow sweep (har card par non-stop) + backdrop-blur (sticky
+   navbar/filter + har card ke badges) low-end phones par scroll
+   jank / lag karte hain. Mobile par static premium look (ring + solid
+   backgrounds); desktop par sab effects same rahenge. */
+@media (max-width: 640px) {
+  .card-glow-border::before { animation: none !important; opacity: 0 !important; }
+  .glass { background: rgba(255,253,249,.97); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .backdrop-blur,
+  .backdrop-blur-sm,
+  .backdrop-blur-md {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
 /* reduced-motion: festive animations band */
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee, .animate-floaty, .animate-diya, .glow-green, .pulse-dot, .animate-twinkle, .stick-l, .stick-r, .headline-festive::after, .card-glow-border::before { animation: none !important; opacity: 0 !important; }
