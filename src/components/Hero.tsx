@@ -109,7 +109,7 @@ export default function Hero() {
           <div className="md:hidden mt-4 grid grid-cols-3 gap-2">
             {[imgMain, imgSmall, imgThird].map((src, i) => (
               <div key={`${src}-${i}`} className="rounded-2xl overflow-hidden ring-1 ring-[#c9a44a]/50 shadow-[0_16px_30px_-20px_rgba(34,17,20,.5)] bg-[#f4f1ea]">
-                <img src={src} alt="Garba rental outfit" loading="lazy" decoding="async" className="w-full h-28 object-cover" />
+                <img src={src} alt="Garba rental outfit" loading="lazy" decoding="async" className="w-full h-28 object-contain bg-[#f4f1ea]" />
               </div>
             ))}
           </div>
@@ -119,11 +119,11 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
           className="relative hidden md:block"
         >
-          <div className="rounded-[2rem] overflow-hidden ring-2 ring-[#c9a44a]/50 shadow-[0_40px_80px_-40px_rgba(34,17,20,.45)]">
-            <img src={imgMain} alt="Mirror-work Chaniya Choli" fetchPriority="high" className="w-full h-72 object-cover" />
+          <div className="rounded-[2rem] overflow-hidden ring-2 ring-[#c9a44a]/50 shadow-[0_40px_80px_-40px_rgba(34,17,20,.45)] bg-[#f4f1ea]">
+            <img src={imgMain} alt="Mirror-work Chaniya Choli" fetchPriority="high" className="w-full h-72 object-contain" />
           </div>
-          <div className="absolute -bottom-5 -left-5 w-40 rounded-2xl overflow-hidden ring-2 ring-[#e8c66a]/70 shadow-xl">
-            <img src={imgSmall} alt="Golden diva choli" className="w-full h-48 object-cover" />
+          <div className="absolute -bottom-5 -left-5 w-40 rounded-2xl overflow-hidden ring-2 ring-[#e8c66a]/70 shadow-xl bg-white">
+            <img src={imgSmall} alt="Golden diva choli" className="w-full h-48 object-contain" />
           </div>
           <div className="animate-floaty absolute -top-4 -right-2 bg-white/95 backdrop-blur rounded-2xl ring-1 ring-[#c9a44a]/50 shadow-xl px-4 py-3 flex items-center gap-2.5">
             <span className="bg-emerald-500 text-white font-bold text-[11px] px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
