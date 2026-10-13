@@ -10,6 +10,12 @@ import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 
 const LOOK_CATS: Category[] = ['women', 'premium', 'men', 'kids', 'combo'];
 
+const HERO_LABELS = [
+  'Badi photo — main (desktop + mobile 1st)',
+  'Chhoti overlapping photo — 2,000+ card wali',
+  'Mobile 3rd photo — sirf phone me dikhti hai',
+];
+
 function Card({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="admin-card p-4 sm:p-5">
@@ -31,6 +37,7 @@ export default function WebsitePanel() {
   const [msg, setMsg] = useState('');
   const [lookUrl, setLookUrl] = useState('');
   const [lookBusy, setLookBusy] = useState(false);
+  const [heroBusy, setHeroBusy] = useState<number | null>(null);
 
   const save = () => {
     saveSiteContent(c);
@@ -38,14 +45,14 @@ export default function WebsitePanel() {
     setTimeout(() => setMsg(''), 3000);
   };
 
-  // Customer-look photo upload — cloud ho to storage URL, warna compressed copy (same browser)
-  const uploadLook = async (f: File): Promise<string | null> => {
+  // Photo upload — cloud ho to storage URL, warna compressed copy (same browser)
+  const uploadImage = async (f: File, prefix: string): Promise<string | null> => {
     try {
       const small = await fileToCompressedDataUrl(f, 900, 0.72);
       if (isSupabaseConfigured && supabase) {
         const blob = (small ? dataUrlToBlob(small) : null) ?? (f.type.startsWith('image/') ? f : null);
         if (!blob) return null;
-        const name = `look-${Date.now()}.jpg`;
+        const name = `${prefix}-${Date.now()}.jpg`;
         const { error } = await supabase.storage.from('product-images').upload(name, blob, { contentType: 'image/jpeg', upsert: true });
         if (error) { setMsg('Upload failed: ' + error.message); setTimeout(() => setMsg(''), 3000); return null; }
         return supabase.storage.from('product-images').getPublicUrl(name).data.publicUrl;
@@ -55,6 +62,34 @@ export default function WebsitePanel() {
       return null;
     }
   };
+
+  const uploadLook = (f: File) => uploadImage(f, 'look');
+
+  // Hero ke 3 photos — index-wise replace (starting ke 2 cards + mobile 3rd)
+  const replaceHeroImg = async (index: number, files: FileList | null) => {
+    const f = files?.[0];
+    if (!f) return;
+    setHeroBusy(index);
+    try {
+      const url = await uploadImage(f, 'hero');
+      if (url) setC((p) => {
+        const imgs = [...(p.hero.imgs || [])];
+        while (imgs.length < 3) imgs.push('');
+        imgs[index] = url;
+        return { ...p, hero: { ...p.hero, imgs: imgs.slice(0, 3) } };
+      });
+    } finally {
+      setHeroBusy(null);
+    }
+  };
+
+  const setHeroImg = (index: number, url: string) =>
+    setC((p) => {
+      const imgs = [...(p.hero.imgs || [])];
+      while (imgs.length < 3) imgs.push('');
+      imgs[index] = url;
+      return { ...p, hero: { ...p.hero, imgs: imgs.slice(0, 3) } };
+    });
 
   const addLookFiles = async (files: FileList | null) => {
     const list = [...(files ?? [])].slice(0, Math.max(0, 12 - c.looks.imgs.length));
@@ -119,6 +154,32 @@ export default function WebsitePanel() {
           </div>
           <Field label="Subtitle"><textarea value={c.hero.subtitle} onChange={(e) => setC((p) => ({ ...p, hero: { ...p.hero, subtitle: e.target.value } }))} className="admin-input" rows={2} /></Field>
           <Field label="Starting price (e.g. ₹799)"><input value={c.hero.minPrice} onChange={(e) => setC((p) => ({ ...p, hero: { ...p.hero, minPrice: e.target.value } }))} className="admin-input" /></Field>
+        </Card>
+
+        <Card title="Hero photos (starting ke 2 cards + 2,000+ rentals)" hint="Homepage ke top wali 2 photos + mobile 3rd photo — yahi se change hongi. Phone se upload karo ya link paste karo, phir neeche Save dabao.">
+          <div className="grid sm:grid-cols-3 gap-2.5">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="border rounded-xl p-2.5 bg-[#faf7ef] space-y-2">
+                <p className="text-[12px] font-bold">{HERO_LABELS[i]}</p>
+                <img
+                  src={(c.hero.imgs || [])[i] || ''}
+                  alt={`Hero photo ${i + 1}`}
+                  className="w-full h-32 object-cover rounded-xl border border-black/10 bg-white"
+                />
+                <label className="block text-center text-[12.5px] font-bold border rounded-xl px-3 py-2 cursor-pointer hover:bg-black hover:text-white transition">
+                  {heroBusy === i ? 'Uploading…' : '📷 Change photo'}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { replaceHeroImg(i, e.target.files); e.target.value = ''; }} />
+                </label>
+                <input
+                  value={(c.hero.imgs || [])[i] || ''}
+                  onChange={(e) => setHeroImg(i, e.target.value)}
+                  placeholder="/images/… ya https://…"
+                  className="admin-input !text-[11.5px] font-mono"
+                />
+              </div>
+            ))}
+          </div>
+          <p className="text-[11.5px] text-[#8a7584]">1st = badi main photo · 2nd = 2,000+ card ke paas wali chhoti photo · 3rd = sirf mobile strip me. Save dabate hi website par live.</p>
         </Card>
 
         <Card title="Features (3 points below the hero)">

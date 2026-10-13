@@ -38,7 +38,7 @@ export interface Faq {
 export interface SiteContent {
   store: StoreInfo;
   announcement: { show: boolean; badge: string; msg: string };
-  hero: { titleA: string; titleB: string; subtitle: string; minPrice: string };
+  hero: { titleA: string; titleB: string; subtitle: string; minPrice: string; imgs: string[] };
   features: string[];
   promos: Promo[];
   process: { title: string; steps: ProcStep[] };
@@ -119,6 +119,7 @@ export const DEFAULT_CONTENT: SiteContent = {
     titleB: 'Return easily.',
     subtitle: 'Designer Chaniya Choli, bridal couture and jewellery — on rent from {price}. Sanitised, steam-pressed, same-day delivery.',
     minPrice: '₹299',
+    imgs: ['/images/g-hero.webp', '/images/g-chaniya2.webp', '/images/g-pinkmulti.webp'],
   },
   features: ['Dry-cleaned & Sanitized', '100% Refundable Extra (30%)', '100% Secure QR Payments', 'Live Availability Tracking'],
   promos: [
@@ -235,6 +236,10 @@ function normalize(c: SiteContent): SiteContent {
     : (savedAnn.msg ?? DEFAULT_CONTENT.announcement.msg);
   const savedMinPrice = (c as any).hero?.minPrice;
   const minPrice = savedMinPrice === '₹799' ? DEFAULT_CONTENT.hero.minPrice : (savedMinPrice ?? DEFAULT_CONTENT.hero.minPrice);
+  // Hero photos — purane saved content me imgs nahi honge to defaults do. Max 3 rakho.
+  const rawHeroImgs = Array.isArray(savedHero.imgs) ? savedHero.imgs : [];
+  const cleanHeroImgs = rawHeroImgs.filter((s: any) => typeof s === 'string' && s.trim()).slice(0, 3);
+  while (cleanHeroImgs.length < 3) cleanHeroImgs.push(DEFAULT_CONTENT.hero.imgs[cleanHeroImgs.length]);
   const rawNote = typeof (c as any).shopNote === 'string' && (c as any).shopNote.trim()
     ? (c as any).shopNote.replace(/\s*[·•|]\s*Codes:.*$/i, '').replace(/1-day, 3-day or 9-day rentals/i, '1-day rentals').replace(/100% refundable deposit/i, '100% refundable 30% extra').trim()
     : '';
@@ -263,7 +268,7 @@ function normalize(c: SiteContent): SiteContent {
         : savedStore.email,
     },
     announcement: { ...DEFAULT_CONTENT.announcement, ...savedAnn, msg: annMsg },
-    hero: { ...DEFAULT_CONTENT.hero, ...(c.hero || {}), subtitle: heroSubtitle, minPrice },
+    hero: { ...DEFAULT_CONTENT.hero, ...(c.hero || {}), subtitle: heroSubtitle, minPrice, imgs: cleanHeroImgs },
     features: savedFeatures,
     process: { ...DEFAULT_CONTENT.process, ...(c.process || {}) },
     looks: { ...DEFAULT_CONTENT.looks, ...(c.looks || {}), imgs: looksImgs },

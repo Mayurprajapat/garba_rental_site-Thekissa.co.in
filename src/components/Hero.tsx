@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Lock, Search, ShieldCheck, Star, Truck } from 'lucide-react';
 import { useState } from 'react';
 import { getRefundablePct } from '../lib/order';
-import { getSiteContent, useSiteVersion } from '../lib/siteContent';
+import { getSiteContent, DEFAULT_CONTENT, useSiteVersion } from '../lib/siteContent';
 import { waLink } from '../data/products';
 import { useStore } from '../store/useStore';
 
@@ -24,6 +24,10 @@ export default function Hero() {
   const [q, setQ] = useState('');
   useSiteVersion();
   const hero = getSiteContent().hero;
+  const heroImgs = hero.imgs?.length ? hero.imgs : DEFAULT_CONTENT.hero.imgs;
+  const imgMain = heroImgs[0] || DEFAULT_CONTENT.hero.imgs[0];
+  const imgSmall = heroImgs[1] || DEFAULT_CONTENT.hero.imgs[1];
+  const imgThird = heroImgs[2] || DEFAULT_CONTENT.hero.imgs[2];
   const pct = getRefundablePct();
 
   const goShop = () => {
@@ -103,8 +107,8 @@ export default function Hero() {
           </div>
           {/* Mobile photos — desktop collage yahan nahi dikhta, isliye chhoti strip */}
           <div className="md:hidden mt-4 grid grid-cols-3 gap-2">
-            {['/images/g-hero.webp', '/images/g-chaniya2.webp', '/images/g-pinkmulti.webp'].map((src) => (
-              <div key={src} className="rounded-2xl overflow-hidden ring-1 ring-[#c9a44a]/50 shadow-[0_16px_30px_-20px_rgba(34,17,20,.5)] bg-[#f4f1ea]">
+            {[imgMain, imgSmall, imgThird].map((src, i) => (
+              <div key={`${src}-${i}`} className="rounded-2xl overflow-hidden ring-1 ring-[#c9a44a]/50 shadow-[0_16px_30px_-20px_rgba(34,17,20,.5)] bg-[#f4f1ea]">
                 <img src={src} alt="Garba rental outfit" loading="lazy" decoding="async" className="w-full h-28 object-cover" />
               </div>
             ))}
@@ -116,10 +120,10 @@ export default function Hero() {
           className="relative hidden md:block"
         >
           <div className="rounded-[2rem] overflow-hidden ring-2 ring-[#c9a44a]/50 shadow-[0_40px_80px_-40px_rgba(34,17,20,.45)]">
-            <img src="/images/g-hero.webp" alt="Mirror-work Chaniya Choli" fetchPriority="high" className="w-full h-72 object-cover" />
+            <img src={imgMain} alt="Mirror-work Chaniya Choli" fetchPriority="high" className="w-full h-72 object-cover" />
           </div>
           <div className="absolute -bottom-5 -left-5 w-40 rounded-2xl overflow-hidden ring-2 ring-[#e8c66a]/70 shadow-xl">
-            <img src="/images/g-chaniya2.webp" alt="Golden diva choli" className="w-full h-48 object-cover" />
+            <img src={imgSmall} alt="Golden diva choli" className="w-full h-48 object-cover" />
           </div>
           <div className="animate-floaty absolute -top-4 -right-2 bg-white/95 backdrop-blur rounded-2xl ring-1 ring-[#c9a44a]/50 shadow-xl px-4 py-3 flex items-center gap-2.5">
             <span className="bg-emerald-500 text-white font-bold text-[11px] px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
