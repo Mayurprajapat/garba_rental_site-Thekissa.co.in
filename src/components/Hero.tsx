@@ -1,6 +1,6 @@
-import { motion } from 'framer-motion';
-import { Lock, Search, ShieldCheck, Star, Truck } from 'lucide-react';
-import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Lock, Search, ShieldCheck, Star, Truck, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { getRefundablePct } from '../lib/order';
 import { getSiteContent, DEFAULT_CONTENT, useSiteVersion } from '../lib/siteContent';
 import { waLink } from '../data/products';
@@ -28,7 +28,22 @@ export default function Hero() {
   const imgMain = heroImgs[0] || DEFAULT_CONTENT.hero.imgs[0];
   const imgSmall = heroImgs[1] || DEFAULT_CONTENT.hero.imgs[1];
   const imgThird = heroImgs[2] || DEFAULT_CONTENT.hero.imgs[2];
+  const gallery = [imgMain, imgSmall, imgThird];
   const pct = getRefundablePct();
+  // Tap-to-zoom — photo tap kare to badi dikhe (Customer looks jaisa)
+  const [zoom, setZoom] = useState<number | null>(null);
+  useEffect(() => {
+    if (zoom === null) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setZoom(null);
+      else if (e.key === 'ArrowRight') setZoom((z) => (z === null ? z : (z + 1) % gallery.length));
+      else if (e.key === 'ArrowLeft') setZoom((z) => (z === null ? z : (z - 1 + gallery.length) % gallery.length));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+  }, [zoom === null, gallery.length]);
 
   const goShop = () => {
     document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' });
@@ -108,9 +123,10 @@ export default function Hero() {
           {/* Mobile photos — desktop collage yahan nahi dikhta, isliye chhoti strip */}
           <div className="md:hidden mt-4 grid grid-cols-3 gap-2">
             {[imgMain, imgSmall, imgThird].map((src, i) => (
-              <div key={`${src}-${i}`} className="rounded-2xl overflow-hidden ring-1 ring-[#c9a44a]/50 shadow-[0_16px_30px_-20px_rgba(34,17,20,.5)] bg-[#f4f1ea]">
-                <img src={src} alt="Garba rental outfit" loading="lazy" decoding="async" className="w-full h-28 object-contain bg-[#f4f1ea]" />
-              </div>
+              <button key={`${src}-${i}`} type="button" onClick={() => setZoom(i)} title="Tap to view full photo"
+                className="rounded-2xl overflow-hidden ring-1 ring-[#c9a44a]/50 shadow-[0_16px_30px_-20px_rgba(34,17,20,.5)] bg-[#f4f1ea] cursor-zoom-in p-0">
+                <img src={src} alt="Garba rental outfit" loading="lazy" decoding="async" className="w-full h-28 object-contain bg-[#f4f1ea] pointer-events-none" draggable={false} />
+              </button>
             ))}
           </div>
         </motion.div>
@@ -119,12 +135,15 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
           className="relative hidden md:block"
         >
-          <div className="rounded-[2rem] overflow-hidden ring-2 ring-[#c9a44a]/50 shadow-[0_40px_80px_-40px_rgba(34,17,20,.45)] bg-[#f4f1ea]">
-            <img src={imgMain} alt="Mirror-work Chaniya Choli" fetchPriority="high" className="w-full h-72 object-contain" />
-          </div>
-          <div className="absolute -bottom-5 -left-5 w-40 rounded-2xl overflow-hidden ring-2 ring-[#e8c66a]/70 shadow-xl bg-white">
-            <img src={imgSmall} alt="Golden diva choli" className="w-full h-48 object-contain" />
-          </div>
+          <button type="button" onClick={() => setZoom(0)} title="Tap to view full photo"
+            className="block w-full rounded-[2rem] overflow-hidden ring-2 ring-[#c9a44a]/50 shadow-[0_40px_80px_-40px_rgba(34,17,20,.45)] bg-[#f4f1ea] cursor-zoom-in p-0 relative group">
+            <img src={imgMain} alt="Mirror-work Chaniya Choli" fetchPriority="high" className="w-full h-72 object-contain pointer-events-none" draggable={false} />
+            <span className="absolute bottom-3 right-3 bg-black/60 text-white text-[10px] font-bold rounded-full px-2.5 py-1 opacity-0 group-hover:opacity-100 transition">⤢ Badi dekho</span>
+          </button>
+          <button type="button" onClick={() => setZoom(1)} title="Tap to view full photo"
+            className="absolute -bottom-5 -left-5 w-40 rounded-2xl overflow-hidden ring-2 ring-[#e8c66a]/70 shadow-xl bg-white cursor-zoom-in p-0">
+            <img src={imgSmall} alt="Golden diva choli" className="w-full h-48 object-contain pointer-events-none" draggable={false} />
+          </button>
           <div className="animate-floaty absolute -top-4 -right-2 bg-white/95 backdrop-blur rounded-2xl ring-1 ring-[#c9a44a]/50 shadow-xl px-4 py-3 flex items-center gap-2.5">
             <span className="bg-emerald-500 text-white font-bold text-[11px] px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
               <Star size={10} className="fill-white" />4.9
@@ -133,6 +152,24 @@ export default function Hero() {
           </div>
         </motion.div>
       </div>
+      {/* Full-view lightbox — photo tap par badi dikhe */}
+      <AnimatePresence>
+        {zoom !== null && gallery[zoom] && (
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={() => setZoom(null)} />
+            <motion.div initial={{ scale: 0.92, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 16 }} transition={{ duration: 0.22 }}
+              className="relative bg-white rounded-2xl overflow-hidden max-w-md w-full shadow-2xl">
+              <img key={gallery[zoom]} src={gallery[zoom]} alt={`Garba rental outfit ${zoom + 1} — full view`} className="w-full max-h-[72vh] object-contain bg-black" />
+              <div className="flex items-center gap-2 p-3">
+                <button onClick={() => setZoom((zoom - 1 + gallery.length) % gallery.length)} aria-label="Previous photo" className="w-9 h-9 grid place-items-center rounded-full bg-black/5 hover:bg-[#641629] hover:text-white transition shrink-0"><ChevronLeft size={16} /></button>
+                <b className="text-[13px] flex-1 text-center tabular-nums">{zoom + 1} / {gallery.length}</b>
+                <button onClick={() => setZoom((zoom + 1) % gallery.length)} aria-label="Next photo" className="w-9 h-9 grid place-items-center rounded-full bg-black/5 hover:bg-[#641629] hover:text-white transition shrink-0"><ChevronRight size={16} /></button>
+                <button onClick={() => setZoom(null)} aria-label="Close photo" className="w-9 h-9 grid place-items-center rounded-full bg-black text-white hover:bg-[#641629] transition shrink-0"><X size={15} /></button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
