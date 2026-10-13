@@ -20,14 +20,17 @@ export interface ShopCategory {
   cats?: Category[];
   /** Strict ON = tile me SIRF tick kiye (tagged) products — keyword match band, mixing zero */
   strict?: boolean;
+  /** Name-only match = query sirf naam/tagline/ID se milao (description me "blouse"/"jewellery"
+      mention wale outfits doosri tile me leak nahi honge — mixing zero) */
+  nameOnly?: boolean;
 }
 
 export const DEFAULT_CATEGORIES: ShopCategory[] = [
-  { id: 'ghaghra', label: 'Lehenga', query: 'lehenga, ghaghra', img: '/images/g-girls2.jpg', kind: 'dress' },
-  { id: 'blouse', label: 'Blouse', query: 'blouse', img: '/images/g-whiteblack.webp', kind: 'dress' },
-  // ---- Single-rent items: har item alag (bina dress ke) ----
-  // Query broad rakho taaki har addon (jhumka, kamarbandh, mojari, brooch, sets...) isi tile me aaye.
-  { id: 'jewellery', label: 'Jewellery Set', query: 'jewellery, choker, necklace, haar, jhumka, earring, earing, kamarbandh, mojari, brooch, bali, kundan, pearl, tikka, maang', img: '/images/item-jewellery-set.jpg', kind: 'item' },
+  { id: 'ghaghra', label: 'Lehenga', query: 'lehenga, ghaghra', img: '/images/g-girls2.jpg', kind: 'dress', nameOnly: true },
+  { id: 'blouse', label: 'Blouse', query: 'blouse, crop top', img: '/images/g-whiteblack.webp', kind: 'dress', nameOnly: true },
+  // Jewellery dress-kind tile — choker/set jaise products card me dikhen (All Outfits me nahi).
+  // Single-rent addons (jhumka etc.) QuickView me "Only this" se rent hote rahenge.
+  { id: 'jewellery', label: 'Jewellery', query: 'jewellery, choker, necklace, haar, jhumka, earring, earing, kamarbandh, mojari, payal, bangle, kada, nath, anklet, tikka, maang, kundan set, pearl set', img: '/images/item-jewellery-set.jpg', kind: 'dress', nameOnly: true },
 ];
 
 /** Category query matcher — comma = OR, comma ke andar space = AND (poora part milna chahiye). */
@@ -71,13 +74,18 @@ export function tileHay(p: TileProduct): string {
  * Dress kisi tile me dikhega ya nahi.
  * Tags tick hain to WAHI final hain (sirf ticked tiles) — keyword ignore.
  * Tile Strict hai to BINA tags wala dress kabhi nahi dikhega (mixing zero).
+ * Name-only tile = query sirf naam/tagline/ID se (desc-fabric wale words leak nahi karte).
  * Tags khaali + non-strict = purana keyword + dress-group behaviour.
  */
-export function dressInTile(p: TileProduct, tile: Pick<ShopCategory, 'id' | 'query' | 'kind' | 'cats' | 'strict'>): boolean {
+export function dressInTile(p: TileProduct, tile: Pick<ShopCategory, 'id' | 'query' | 'kind' | 'cats' | 'strict' | 'nameOnly'>): boolean {
   const tags = cleanTags(p);
   if (tags.length) return tags.includes(tile.id.toLowerCase());
   if (tile.strict) return false;
   if (tile.cats?.length && p.category && !(tile.cats as string[]).includes(p.category)) return false;
+  if (tile.nameOnly) {
+    const nameHay = `${p.name ?? ''} ${p.hindi ?? ''} ${p.id ?? ''}`.toLowerCase();
+    return matchesCategory(nameHay, tile.query);
+  }
   return matchesCategory(tileHay(p), tile.query);
 }
 
@@ -97,29 +105,34 @@ export function itemInTile(itemName: string, parent: TileProduct, tile: Pick<Sho
 }
 
 /**
- * All Outfits me sirf outfits — Jewellery / Blouse products bahar (wo apni tile me dikhenge).
- * Tags tick hain to wahi final; bina-tags products ka naam dekho (desc me "blouse" mention wale
- * chaniya sets bahar na hon — isliye sirf naam match, description nahi).
+ * All Outfits me sirf outfits — Jewellery naam wale products bahar (wo Jewellery tile me dikhenge),
+ * chahe unpar koi bhi tag tick ho (galt tick se bhi All saaf rahe).
+ * Blouse exclusion tag-based hai (naam me "crop top" wale sets All me rehte hain).
  */
 const NON_OUTFIT_TAGS = ['jewellery', 'blouse'];
-const JEWELLERY_NAME_Q = 'jewellery, choker, necklace, haar, jhumka, kamarbandh, mojari, brooch, earring, bali';
+const JEWELLERY_NAME_Q = 'jewellery, choker, necklace, haar, jhumka, earring, earing, kamarbandh, mojari, brooch, bali, payal, bangle, kada, nath, anklet, tikka, maang, kundan set, pearl set';
 const BLOUSE_NAME_Q = 'blouse';
 export function isOutfit(p: TileProduct): boolean {
   const tags = cleanTags(p);
-  if (tags.length) return !tags.some((t) => NON_OUTFIT_TAGS.includes(t));
   const name = `${p.name ?? ''} ${p.hindi ?? ''}`.toLowerCase();
+  // Naam se jewellery lage to All me kabhi nahi — chahe koi bhi tag tick ho
+  if (name.trim() && matchesCategory(name, JEWELLERY_NAME_Q)) return false;
+  if (tags.length) return !tags.some((t) => NON_OUTFIT_TAGS.includes(t));
   if (!name.trim()) return true;
-  if (matchesCategory(name, JEWELLERY_NAME_Q)) return false;
   if (matchesCategory(name, BLOUSE_NAME_Q)) return false;
   return true;
 }
 
 const KEY = 'raasleela-admin-categories';
 const EVT = 'raasleela-categories-updated';
-// Purani 3-tile wali list — isko nayi granular list se auto-upgrade kar do
-const OLD_IDS = ['chaniya', 'choli', 'jewellery'];
-// Hatayi hui tiles — saved list me hon to auto-saaf kar do (sirf Lehenga, Blouse, Jewellery Set rehte hain)
-const REMOVED_CAT_IDS = ['kids-girls', 'kids-boys', 'kids-jhumka', 'family', 'kediyu', 'dhoti', 'pagdi', 'mojari', 'brooch', 'couple', 'chaniya', 'choli', 'koti', 'dupatta', 'dandiya', 'bridal', 'jhumka', 'kamarbandh'];
+// Purani default lists — inhe nayi list se auto-upgrade kar do.
+// gen-1: chaniya|choli|jewellery · gen-2: blouse|ghaghra|jewellery (jewellery item-kind thi, ab dress-kind hai)
+const OLD_ID_SETS = [
+  ['chaniya', 'choli', 'jewellery'].sort().join('|'),
+  ['blouse', 'ghaghra', 'jewellery'].sort().join('|'),
+];
+// Hatayi hui tiles — saved list me hon to auto-saaf kar do
+const REMOVED_CAT_IDS = ['kids-girls', 'kids-boys', 'kids-jhumka', 'family', 'kediyu', 'dhoti', 'pagdi', 'mojari', 'brooch', 'couple', 'choli', 'koti', 'dupatta', 'dandiya', 'bridal', 'jhumka', 'kamarbandh'];
 
 function valid(list: any): list is ShopCategory[] {
   return Array.isArray(list) && list.every((c) => c && typeof c.label === 'string' && typeof c.query === 'string');
@@ -132,6 +145,7 @@ function normalize(list: ShopCategory[]): ShopCategory[] {
     kind: c.kind === 'item' ? 'item' as const : 'dress' as const,
     cats: Array.isArray((c as any).cats) ? (c as any).cats : undefined,
     strict: (c as any).strict === true,
+    nameOnly: (c as any).nameOnly === true,
   }));
 }
 
@@ -141,9 +155,9 @@ export function getCategories(): ShopCategory[] {
     if (raw) {
       const arr = JSON.parse(raw);
       if (valid(arr) && arr.length) {
-        // Purani default 3-tile list ho to nayi list se upgrade karo
+        // Purani default list ho to nayi list se upgrade karo (kind/nameOnly badle hain)
         const ids = arr.map((c) => c.id).sort().join('|');
-        if (ids === [...OLD_IDS].sort().join('|')) {
+        if (OLD_ID_SETS.includes(ids)) {
           const d = [...DEFAULT_CATEGORIES];
           try { localStorage.setItem(KEY, JSON.stringify(d)); } catch { /* ignore */ }
           return d;

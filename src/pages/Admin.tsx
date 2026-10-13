@@ -837,6 +837,7 @@ export default function Admin() {
               <div>
                 <div className="admin-card p-4 text-[13px] text-[#3d2b36] leading-relaxed">
                   <b>Shop by category</b> — the website shows photo tiles (one per dress / item). Tap = collection filter.
+                  Default tiles match <b>sirf naam se</b> (description wale shabd leak nahi karte — mixing zero).
                   <b>Dress</b> = dresses · <b>Item</b> = single-rent items only (jhumka, kamarbandh — without a dress).
                   Keyword comma (,) means <b>OR</b> (e.g. <code>dupatta, bandhani</code>); words inside one comma part must all match (e.g. <code>oxidised jhumka</code>).
                   Empty keyword = all products in that group.
