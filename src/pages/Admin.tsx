@@ -931,6 +931,7 @@ export default function Admin() {
                               e.target.value = '';
                               if (!f) return;
                               if (!f.type.startsWith('image/')) { setMsg('Sirf JPG/PNG photo lagao.'); setTimeout(() => setMsg(''), 4000); return; }
+                              if (/heic|heif/i.test(f.type) || /\.hei[c|f]$/i.test(f.name)) { setMsg('Ye iPhone HEIC photo hai — website par nahi lagegi. Pehle JPG banao: photo ko WhatsApp par khud ko bhejo (Document nahi, Photo), wahan se save karke lagao. Ya iPhone Settings > Camera > Formats > Most Compatible karo.'); setTimeout(() => setMsg(''), 12000); return; }
                               setCatImgBusy(c.id);
                               try {
                                 const url = await uploadImage(f);
