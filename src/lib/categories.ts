@@ -30,7 +30,7 @@ export const DEFAULT_CATEGORIES: ShopCategory[] = [
   { id: 'blouse', label: 'Blouse', query: 'blouse, crop top', img: '/images/g-whiteblack.webp', kind: 'dress', nameOnly: true },
   // Jewellery dress-kind tile — choker/set jaise products card me dikhen (All Outfits me nahi).
   // Single-rent addons (jhumka etc.) QuickView me "Only this" se rent hote rahenge.
-  { id: 'jewellery', label: 'Jewellery', query: 'jewellery, choker, necklace, haar, jhumka, earring, earing, kamarbandh, mojari, payal, bangle, kada, nath, anklet, tikka, maang, kundan set, pearl set', img: '/images/item-jewellery-set.jpg', kind: 'dress', nameOnly: true },
+  { id: 'jewellery', label: 'Jewellery', query: 'jewellery, choker, necklace, haar, jhumka, earring, earing, ghungroo, gungroo, kamarbandh, mojari, payal, bangle, kada, nath, anklet, tikka, maang, kundan set, pearl set', img: '/images/item-jewellery-set.jpg', kind: 'dress', nameOnly: true },
 ];
 
 /** Category query matcher — comma = OR, comma ke andar space = AND (poora part milna chahiye). */
@@ -110,7 +110,7 @@ export function itemInTile(itemName: string, parent: TileProduct, tile: Pick<Sho
  * Blouse exclusion tag-based hai (naam me "crop top" wale sets All me rehte hain).
  */
 const NON_OUTFIT_TAGS = ['jewellery', 'blouse'];
-const JEWELLERY_NAME_Q = 'jewellery, choker, necklace, haar, jhumka, earring, earing, kamarbandh, mojari, brooch, bali, payal, bangle, kada, nath, anklet, tikka, maang, kundan set, pearl set';
+const JEWELLERY_NAME_Q = 'jewellery, choker, necklace, haar, jhumka, earring, earing, ghungroo, gungroo, kamarbandh, mojari, brooch, bali, payal, bangle, kada, nath, anklet, tikka, maang, kundan set, pearl set';
 const BLOUSE_NAME_Q = 'blouse';
 export function isOutfit(p: TileProduct): boolean {
   const tags = cleanTags(p);
