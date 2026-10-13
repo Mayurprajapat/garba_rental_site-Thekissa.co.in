@@ -39,6 +39,7 @@ export default function WebsitePanel() {
   const [saving, setSaving] = useState(false);
   const [lookUrl, setLookUrl] = useState('');
   const [lookBusy, setLookBusy] = useState(false);
+  const [lookReplaceBusy, setLookReplaceBusy] = useState<number | null>(null);
   const [heroBusy, setHeroBusy] = useState<number | null>(null);
   const msgTimer = useRef<number | null>(null);
 
@@ -131,6 +132,23 @@ export default function WebsitePanel() {
       imgs[index] = url;
       return { ...p, hero: { ...p.hero, imgs: imgs.slice(0, 3) } };
     });
+
+  // Customer photo REPLACE (usI jagah nayi photo — order same rahega)
+  const replaceLookImg = async (index: number, files: FileList | null) => {
+    const f = files?.[0];
+    if (!f) return;
+    setLookReplaceBusy(index);
+    try {
+      const url = await uploadLook(f);
+      if (url) {
+        setC((p) => ({ ...p, looks: { ...p.looks, imgs: p.looks.imgs.map((x, j) => (j === index ? url : x)) } }));
+      } else {
+        showMsg('Photo padhi nahi gayi — JPG/PNG photo try karo.', true, 6000);
+      }
+    } finally {
+      setLookReplaceBusy(null);
+    }
+  };
 
   const addLookFiles = async (files: FileList | null) => {
     const list = [...(files ?? [])].slice(0, Math.max(0, 12 - c.looks.imgs.length));
@@ -302,7 +320,7 @@ export default function WebsitePanel() {
           <button onClick={() => setC((p) => ({ ...p, process: { ...p.process, steps: [...p.process.steps, { n: `0${p.process.steps.length + 1}`, h: 'New step', p: '' }] } }))} className="text-[12.5px] font-bold border rounded-full px-3.5 py-1.5 flex items-center gap-1"><Plus size={13} /> Add step</button>
         </Card>
 
-        <Card title="Customer photos" hint="One photo URL per line. Product photo links work too.">
+        <Card title="Customer photos" hint="Website par 'Worn last Navratri' wali strip. Kisi photo par ↻ dabao = usi jagah replace · + = nayi jodo · ✕ = hatao · phir neeche Save dabao.">
           <div className="grid sm:grid-cols-2 gap-2.5">
             <Field label="Small heading"><input value={c.looks.subtitle} onChange={(e) => setC((p) => ({ ...p, looks: { ...p.looks, subtitle: e.target.value } }))} className="admin-input" /></Field>
             <Field label="Big heading"><input value={c.looks.title} onChange={(e) => setC((p) => ({ ...p, looks: { ...p.looks, title: e.target.value } }))} className="admin-input" /></Field>
@@ -315,6 +333,10 @@ export default function WebsitePanel() {
                   <img src={src} alt="" className={`w-16 h-20 object-cover rounded-xl border-2 ${i === 0 ? 'border-black' : 'border-black/10'}`} />
                   {i === 0 && <span className="absolute top-0.5 left-0.5 text-[8.5px] font-black bg-black text-white rounded-full px-1.5 py-0.5">1ST</span>}
                   <button type="button" onClick={() => setC((p) => ({ ...p, looks: { ...p.looks, imgs: p.looks.imgs.filter((_, j) => j !== i) } }))} title="Remove photo" className="absolute -top-1.5 -right-1.5 w-5 h-5 grid place-items-center rounded-full bg-rose-600 text-white text-[11px] font-bold">✕</button>
+                  <label title="Isi jagah nayi photo lagao (replace)" className="absolute -bottom-1.5 -right-1.5 w-5 h-5 grid place-items-center rounded-full bg-black text-white text-[11px] font-bold cursor-pointer hover:bg-emerald-600 transition">
+                    {lookReplaceBusy === i ? '…' : '↻'}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => { replaceLookImg(i, e.target.files); e.target.value = ''; }} />
+                  </label>
                 </div>
               ))}
               {c.looks.imgs.length < 12 && (
@@ -329,7 +351,7 @@ export default function WebsitePanel() {
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (lookUrl.trim() && c.looks.imgs.length < 12) { setC((p) => ({ ...p, looks: { ...p.looks, imgs: [...p.looks.imgs, lookUrl.trim()].slice(0, 12) } })); setLookUrl(''); } } }} />
               <button type="button" onClick={() => { if (lookUrl.trim() && c.looks.imgs.length < 12) { setC((p) => ({ ...p, looks: { ...p.looks, imgs: [...p.looks.imgs, lookUrl.trim()].slice(0, 12) } })); setLookUrl(''); } }} className="shrink-0 text-[12.5px] font-bold border rounded-xl px-3.5 hover:bg-black hover:text-white transition">+ Add</button>
             </div>
-            <p className="text-[11.5px] text-[#8a7584] mt-1">+ dabake phone se seedha upload karo ya link paste karo · ✕ se hatao · neeche Save dabana mat bhoolo.</p>
+            <p className="text-[11.5px] text-[#8a7584] mt-1">+ dabake phone se seedha upload karo ya link paste karo · ✕ se hatao · <b>↻ se usi jagah nayi photo lagao (order same rahega)</b> · neeche Save dabana mat bhoolo.</p>
           </Field>
         </Card>
 

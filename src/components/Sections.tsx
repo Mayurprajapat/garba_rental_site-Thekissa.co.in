@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, MapPin, Navigation, ShieldCheck, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight, MapPin, Navigation, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { waLink } from '../data/products';
 import { STORE } from '../data/store';
 import { getSiteContent, DEFAULT_CONTENT, useSiteVersion } from '../lib/siteContent';
@@ -87,19 +87,55 @@ export function Looks() {
   useSiteVersion();
   const looks = getSiteContent().looks;
   const imgs = looks.imgs.length ? looks.imgs : DEFAULT_CONTENT.looks.imgs;
+  // Tap-to-zoom — customer photo tap kare to badi dikhe
+  const [zoom, setZoom] = useState<number | null>(null);
+  useEffect(() => {
+    if (zoom === null) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setZoom(null);
+      else if (e.key === 'ArrowRight') setZoom((z) => (z === null ? z : (z + 1) % imgs.length));
+      else if (e.key === 'ArrowLeft') setZoom((z) => (z === null ? z : (z - 1 + imgs.length) % imgs.length));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+  }, [zoom === null, imgs.length]);
   return (
     <section id="looks" className="container-x py-5">
       <p className="eyebrow text-center">{looks.subtitle}</p>
       <h2 className="premium-heading font-display font-black text-lg sm:text-xl text-center mt-1.5">{looks.title}</h2>
       <div className="flex gap-2.5 mt-3 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-1 -mx-4 px-4">
         {imgs.map((src, i) => (
-          <motion.img key={src} src={src} alt={`Customer garba look ${i + 1}`} loading="lazy"
+          <motion.button key={src} type="button" onClick={() => setZoom(i)} title="Tap to view full photo"
             initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-40px' }} transition={{ duration: 0.5, delay: (i % 3) * 0.08 }}
-            className="rounded-2xl h-28 sm:h-36 w-auto shrink-0 snap-start object-cover card-shadow ring-1 ring-[#c9a44a]/30 hover:ring-[#c9a44a]/70 hover:scale-[1.03] transition" />
+            className="shrink-0 snap-start rounded-2xl ring-1 ring-[#c9a44a]/30 hover:ring-[#c9a44a]/70 hover:scale-[1.03] transition overflow-hidden card-shadow relative group p-0 bg-transparent">
+            <img src={src} alt={`Customer garba look ${i + 1}`} loading="lazy"
+              className="h-28 sm:h-36 w-auto object-cover block pointer-events-none" draggable={false} />
+            <span className="absolute bottom-1.5 right-1.5 bg-black/60 text-white text-[10px] font-bold rounded-full px-2 py-0.5 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition">⤢ Badi dekho</span>
+          </motion.button>
         ))}
       </div>
-      <p className="text-center text-[11px] text-[#6f5b6a] mt-2">{looks.note}</p>
+      <p className="text-center text-[11px] text-[#6f5b6a] mt-2">{looks.note} · Tap any photo to zoom</p>
+      {/* Full-view lightbox */}
+      <AnimatePresence>
+        {zoom !== null && imgs[zoom] && (
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="absolute inset-0 bg-black/85 backdrop-blur-sm" onClick={() => setZoom(null)} />
+            <motion.div initial={{ scale: 0.92, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 16 }} transition={{ duration: 0.22 }}
+              className="relative bg-white rounded-2xl overflow-hidden max-w-md w-full shadow-2xl">
+              <img key={imgs[zoom]} src={imgs[zoom]} alt={`Customer garba look ${zoom + 1} — full view`} className="w-full max-h-[72vh] object-contain bg-black" />
+              <div className="flex items-center gap-2 p-3">
+                <button onClick={() => setZoom((zoom - 1 + imgs.length) % imgs.length)} aria-label="Previous photo" className="w-9 h-9 grid place-items-center rounded-full bg-black/5 hover:bg-[#641629] hover:text-white transition shrink-0"><ChevronLeft size={16} /></button>
+                <b className="text-[13px] flex-1 text-center tabular-nums">{zoom + 1} / {imgs.length}</b>
+                <button onClick={() => setZoom((zoom + 1) % imgs.length)} aria-label="Next photo" className="w-9 h-9 grid place-items-center rounded-full bg-black/5 hover:bg-[#641629] hover:text-white transition shrink-0"><ChevronRight size={16} /></button>
+                <button onClick={() => setZoom(null)} aria-label="Close photo" className="w-9 h-9 grid place-items-center rounded-full bg-black text-white hover:bg-[#641629] transition shrink-0"><X size={15} /></button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
