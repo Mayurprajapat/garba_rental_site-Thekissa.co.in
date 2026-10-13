@@ -47,10 +47,20 @@ export default function AiAssistant() {
       <button
         onClick={() => setOpen(!open)}
         aria-label="AI assistant"
-        className="fixed bottom-[9.5rem] sm:bottom-24 right-4 sm:right-5 z-40 h-13 w-13 p-3.5 rounded-full bg-[#221114] text-white shadow-[0_16px_36px_-12px_rgba(34,17,20,.6)] ring-1 ring-white/20 hover:scale-105 transition flex items-center gap-2"
+        aria-expanded={open}
+        title={open ? 'Close assistant' : 'Ask AI for outfit help'}
+        className="fixed bottom-[9.5rem] sm:bottom-24 right-4 sm:right-5 z-40 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#641629] to-[#8e1a2e] text-white shadow-[0_16px_36px_-12px_rgba(34,17,20,.6)] ring-1 ring-[#c9a44a]/40 hover:scale-[1.04] active:scale-95 transition h-13 w-13 sm:h-auto sm:w-auto sm:px-4 sm:py-2.5"
       >
-        {open ? <X size={20} /> : <Bot size={20} />}
-        {!open && <span className="hidden sm:inline text-xs font-semibold pr-1">AI Help</span>}
+        <span className="relative grid place-items-center shrink-0">
+          {open ? <X size={20} /> : <Bot size={20} />}
+          {!open && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full ring-2 ring-[#641629] pulse-dot" />}
+        </span>
+        {!open && (
+          <span className="hidden sm:flex flex-col items-start leading-tight text-left pr-0.5">
+            <span className="text-[13px] font-bold leading-none">AI Help</span>
+            <span className="text-[10.5px] text-white/70 font-medium leading-none mt-1">Outfit finder</span>
+          </span>
+        )}
       </button>
 
       <AnimatePresence>
