@@ -41,6 +41,7 @@ function TileImg({ src, alt }: { src: string; alt: string }) {
 }
 
 function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
+  useSiteVersion();
   const toggleWish = useStore((s) => s.toggleWish);
   const wishlist = useStore((s) => s.wishlist);
   const setQuickView = useStore((s) => s.setQuickView);

@@ -3,7 +3,7 @@
 
 import { useRef, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { getSiteContent, pushSiteContentToCloud, resetSiteContent, saveSiteContent, type SiteContent } from '../../lib/siteContent';
+import { getSiteContent, pushSiteContentToCloud, resetSiteContent, saveSiteContent, withSyncedRefundTexts, type SiteContent } from '../../lib/siteContent';
 import { formatAccessories, parseAccessories, type Category } from '../../data/products';
 import { dataUrlToBlob, fileToCompressedDataUrl } from '../../lib/proof';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
@@ -53,8 +53,13 @@ export default function WebsitePanel() {
   const save = async () => {
     if (saving) return;
     setSaving(true);
+    // Refund % badla ho to Features / FAQs / shop note / booking points ka purana "30%"
+    // apne-aap naye % me sync karo — admin ko har jagah haath se badalna na pade.
+    // Website (shop, cart, bill, Hero, Terms/Refund pages) to pehle se hi automatic tha.
+    const synced = withSyncedRefundTexts({ ...c });
+    setC(synced);
     // 1) Isi phone/browser me save (hamesha) — fail ho to wahi ruk jao, jhootha success kabhi nahi
-    const local = saveSiteContent(c);
+    const local = saveSiteContent(synced);
     if (!local.ok) {
       showMsg(local.error || 'Save fail ho gaya.', true, 10000);
       setSaving(false);
@@ -63,7 +68,7 @@ export default function WebsitePanel() {
     // 2) Cloud connected hai to sab devices/customers ke liye push karo
     if (isSupabaseConfigured && supabase) {
       showMsg('Phone me saved ✓ — cloud (live website) me bhej rahe hain…', false, 0);
-      const cloud = await pushSiteContentToCloud(c);
+      const cloud = await pushSiteContentToCloud(synced);
       if (cloud.ok) {
         showMsg('Saved — live on website ✓ (sab devices par dikhega)', false, 6000);
       } else {
@@ -255,7 +260,7 @@ export default function WebsitePanel() {
           <button onClick={() => setC((p) => ({ ...p, features: [...p.features, 'New point'] }))} className="text-[12.5px] font-bold border rounded-full px-3.5 py-1.5 flex items-center gap-1"><Plus size={13} /> Add point</button>
         </Card>
 
-        <Card title="Refundable extra (%)" hint="Customer se rent ke upar kitna % refundable extra lena hai — calculation (shop, cart, bill, WhatsApp message, Terms/Refund pages) me automatic update ho jayega. Return par yehi amount wapas milta hai.">
+        <Card title="Refundable extra (%)" hint="Customer se rent ke upar kitna % refundable extra lena hai — Save dabate hi shop, cart, bill, Hero, WhatsApp message, Terms/Refund pages AUR Features / FAQs / Shop note ka % text — sab automatic update ho jayega. Return par yehi amount wapas milta hai.">
           <Field label="Refund rate % (0–90)">
             <div className="flex items-center gap-3">
               <input
@@ -285,7 +290,7 @@ export default function WebsitePanel() {
             <b>Live preview:</b> ₹1000 rent par <b>₹{Math.round((1000 * (c.refundablePct || 0)) / 100).toLocaleString('en-IN')}</b> refundable extra ({c.refundablePct}%)
             {' '}· ₹2000 rent par <b>₹{Math.round((2000 * (c.refundablePct || 0)) / 100).toLocaleString('en-IN')}</b>
           </div>
-          <p className="text-[11.5px] text-[#8a7584]">0% = koi extra nahi · 30% = default (₹1000 par ₹300). Save dabate hi website + bill + WhatsApp message me naya rate lag jayega. Note: Features / FAQs / Shop note me likha “30%” text aapne khud likha hai — chaaho to wahi fields me bhi naya % likh do.</p>
+          <p className="text-[11.5px] text-[#8a7584]">0% = koi extra nahi · 30% = default (₹1000 par ₹300). Save dabate hi website + bill + WhatsApp message + Features / FAQs / Shop note me naya rate lag jayega — kahin haath se badalne ki zaroorat nahi. Dusre phone/par customer ko dikhe isliye neeche Save ke baad “live on website ✓” message zaroor check karo (cloud connected hona chahiye).</p>
           <div className="flex flex-wrap gap-1.5">
             {[0, 10, 20, 30, 50].map((v) => (
               <button key={v} onClick={() => setC((p) => ({ ...p, refundablePct: v }))} className={`text-[12px] font-bold border rounded-full px-3 py-1.5 transition ${c.refundablePct === v ? 'bg-[#1a0f1e] text-white border-[#1a0f1e]' : 'hover:border-[#1a0f1e]'}`}>{v}%</button>

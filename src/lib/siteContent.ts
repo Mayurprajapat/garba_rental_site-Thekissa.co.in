@@ -62,6 +62,62 @@ export interface CompleteLook {
   defaults: Record<Category, Accessory[]>;
 }
 
+/**
+ * Refund % ko display text me auto-sync karo.
+ * Admin sirf refundablePct badle — Features / FAQs / shop note me likha purana "30%"
+ * apne-aap naye % me badal jayega. Sirf refund-rate wale numbers badalte hain:
+ * - "100%" (means fully refundable) kabhi nahi chhedte
+ * - cancellation slabs ("50% refunded" etc.) kabhi nahi chhedte — unme
+ *   "refundable extra" phrase nahi hota
+ */
+export function applyRefundPctToText(text: string, pct: number): string {
+  if (typeof text !== 'string' || !text) return text;
+  if (!/refund|deposit/i.test(text)) return text;
+  const p = Math.min(90, Math.max(0, Math.round(pct)));
+  let out = text;
+  // Legacy: "100% Refundable Security Deposit" → "100% Refundable Extra (P%)"
+  out = out.replace(/100%\s*refundable\s*security\s*deposit/gi, `100% Refundable Extra (${p}%)`);
+  // Legacy: "100% refundable deposit" → "100% refundable P% extra"
+  out = out.replace(/100%\s*refundable\s*deposit/gi, `100% refundable ${p}% extra`);
+  // "Refundable Extra (NN%)" → "(P%)"
+  out = out.replace(/(refundable extra\s*\(\s*)\d{1,2}(\s*%\s*\))/gi, `$1${p}$2`);
+  // "100% refundable NN% extra" → keep 100%, replace NN
+  out = out.replace(/(100%\s*refundable\s*)\d{1,2}(\s*%\s*extra)/gi, `$1${p}$2`);
+  // "Refundable extra NN%" (number AFTER the phrase)
+  out = out.replace(/(refundable extra[^0-9%]{0,20})\b\d{1,2}(\s*%)/gi, `$1${p}$2`);
+  // "NN% refundable extra" (number BEFORE the phrase)
+  out = out.replace(/\b\d{1,2}(\s*%[^0-9%]{0,20}refundable extra)/gi, `${p}$1`);
+  return out;
+}
+
+/** Features + FAQs + shopNote + booking points — sab me refund % sync karke do. */
+export function withSyncedRefundTexts<T extends Pick<SiteContent, 'features' | 'faqs' | 'shopNote' | 'booking'> & { refundablePct: number }>(c: T): T {
+  const pct = c.refundablePct;
+  return {
+    ...c,
+    features: Array.isArray((c as any).features)
+      ? (c as any).features.map((t: any) => applyRefundPctToText(String(t ?? ''), pct))
+      : (c as any).features,
+    faqs: Array.isArray((c as any).faqs)
+      ? (c as any).faqs.map((f: any) => ({
+          q: applyRefundPctToText(String(f?.q ?? ''), pct),
+          a: applyRefundPctToText(String(f?.a ?? ''), pct),
+        }))
+      : (c as any).faqs,
+    shopNote: typeof (c as any).shopNote === 'string'
+      ? applyRefundPctToText((c as any).shopNote, pct)
+      : (c as any).shopNote,
+    booking: (c as any).booking
+      ? {
+          ...(c as any).booking,
+          points: Array.isArray((c as any).booking?.points)
+            ? (c as any).booking.points.map((t: any) => applyRefundPctToText(String(t ?? ''), pct))
+            : (c as any).booking.points,
+        }
+      : (c as any).booking,
+  };
+}
+
 export const DEFAULT_COMPLETE_LOOK: CompleteLook = {
   title: 'THE MODEL WORE THIS',
   subtitle: 'The complete look is right here — nothing to search for.',
@@ -210,6 +266,12 @@ function normalizeCompleteLook(raw: any): CompleteLook {
 }
 
 function normalize(c: SiteContent): SiteContent {
+  // Refundable extra % — admin sets it (0–90). Invalid/old values fall back to 30.
+  // Note: null/undefined/'' = not set → 30. Explicit 0 = no extra (allowed).
+  // NOTE: pct SABSE PEHLE nikalo — neeche saare "30%" migration + display texts isi se sync honge.
+  const rawPctIn = (c as any).refundablePct;
+  const rawPct = rawPctIn == null || rawPctIn === '' ? NaN : Number(rawPctIn);
+  const refundablePct = Number.isFinite(rawPct) ? Math.min(90, Math.max(0, Math.round(rawPct))) : 30;
   const savedStore = c.store || {};
   const savedHero = (c as any).hero || {};
   const savedLooks = c.looks || {};
@@ -227,9 +289,11 @@ function normalize(c: SiteContent): SiteContent {
     ? savedLooks.imgs.filter((s) => typeof s === 'string' && s.trim() && !BANNED_IMG.test(s))
     : [...DEFAULT_CONTENT.looks.imgs];
   // Migrate previously saved content to the new defaults (preserving client-written text)
-  const savedFeatures: string[] = Array.isArray((c as any).features)
-    ? (c as any).features.map((t: any) => String(t ?? '').replace(/100% Refundable Security Deposit/gi, '100% Refundable Extra (30%)'))
+  // NOTE: hardcoded "(30%)" nahi — current pct se sync, taaki purana save bhi naya rate dikhaye.
+  const savedFeaturesRaw: string[] = Array.isArray((c as any).features)
+    ? (c as any).features.map((t: any) => String(t ?? '').replace(/100% Refundable Security Deposit/gi, `100% Refundable Extra (${refundablePct}%)`))
     : [...DEFAULT_CONTENT.features];
+  const savedFeatures = savedFeaturesRaw.map((t) => applyRefundPctToText(t, refundablePct));
   if (!savedFeatures.some((t) => /secure/i.test(t))) savedFeatures.push('100% Secure QR Payments');
   const savedAnn = (c as any).announcement || {};
   const annMsg = savedAnn.msg === 'Rent from ₹799 · Same-day delivery'
@@ -242,14 +306,10 @@ function normalize(c: SiteContent): SiteContent {
   const cleanHeroImgs = rawHeroImgs.filter((s: any) => typeof s === 'string' && s.trim()).slice(0, 3);
   while (cleanHeroImgs.length < 3) cleanHeroImgs.push(DEFAULT_CONTENT.hero.imgs[cleanHeroImgs.length]);
   const rawNote = typeof (c as any).shopNote === 'string' && (c as any).shopNote.trim()
-    ? (c as any).shopNote.replace(/\s*[·•|]\s*Codes:.*$/i, '').replace(/1-day, 3-day or 9-day rentals/i, '1-day rentals').replace(/100% refundable deposit/i, '100% refundable 30% extra').trim()
+    ? (c as any).shopNote.replace(/\s*[·•|]\s*Codes:.*$/i, '').replace(/1-day, 3-day or 9-day rentals/i, '1-day rentals').replace(/100% refundable deposit/i, `100% refundable ${refundablePct}% extra`).trim()
     : '';
-  const shopNote = rawNote || DEFAULT_CONTENT.shopNote;
-  // Refundable extra % — admin sets it (0–90). Invalid/old values fall back to 30.
-  // Note: null/undefined/'' = not set → 30. Explicit 0 = no extra (allowed).
-  const rawPctIn = (c as any).refundablePct;
-  const rawPct = rawPctIn == null || rawPctIn === '' ? NaN : Number(rawPctIn);
-  const refundablePct = Number.isFinite(rawPct) ? Math.min(90, Math.max(0, Math.round(rawPct))) : 30;
+  const shopNoteRaw = rawNote || DEFAULT_CONTENT.shopNote;
+  const shopNote = applyRefundPctToText(shopNoteRaw, refundablePct);
   return {
     ...DEFAULT_CONTENT,
     ...c,
@@ -276,24 +336,26 @@ function normalize(c: SiteContent): SiteContent {
     booking: {
       ...DEFAULT_CONTENT.booking,
       ...(c.booking || {}),
-      // Replace the old "Presize available" point with "Free size available"
-      points: Array.isArray((c as any).booking?.points)
+      // Replace the old "Presize available" point with "Free size available" + refund % sync
+      points: (Array.isArray((c as any).booking?.points)
         ? (c as any).booking.points.map((t: any) =>
             String(t ?? '').replace(/presize available/gi, 'Free size available'))
-        : [...DEFAULT_CONTENT.booking.points],
+        : [...DEFAULT_CONTENT.booking.points]
+      ).map((t: string) => applyRefundPctToText(t, refundablePct)),
     },
     footer: { ...DEFAULT_CONTENT.footer, ...(c.footer || {}), credit: typeof (c as any).footer?.credit === 'string' && (c as any).footer.credit.trim() && (c as any).footer.credit.trim() !== 'Built by Mayur' ? (c as any).footer.credit : DEFAULT_CONTENT.footer.credit },
-    // Remove the old saved FAQ line ("wrong size..." sentence) + migrate the deposit answer to the 30% extra
-    faqs: Array.isArray(c.faqs)
+    // Remove the old saved FAQ line ("wrong size..." sentence) + migrate the deposit answer + refund % sync
+    faqs: (Array.isArray(c.faqs)
       ? c.faqs
         .filter((f: any) => !/buy instead of renting/i.test(String(f?.q ?? '')))
         .map((f: any) => ({
           q: String(f?.q ?? ''),
           a: String(f?.a ?? '')
             .replace(/ — a wrong size gets exchanged at your doorstep\./g, '')
-            .replace(/^Yes, 100%\. Refunded via UPI\/cash within 24 hours of return and quality check\. Normal wear is never charged\.$/, 'Yes, 100%. Every dress has a 30% refundable extra over the rent — refunded via UPI/cash within 24 hours of return and quality check. Normal wear is never charged.'),
+            .replace(/^Yes, 100%\. Refunded via UPI\/cash within 24 hours of return and quality check\. Normal wear is never charged\.$/, `Yes, 100%. Every dress has a ${refundablePct}% refundable extra over the rent — refunded via UPI/cash within 24 hours of return and quality check. Normal wear is never charged.`),
         }))
-      : [...DEFAULT_CONTENT.faqs],
+      : [...DEFAULT_CONTENT.faqs]
+    ).map((f) => ({ q: applyRefundPctToText(f.q, refundablePct), a: applyRefundPctToText(f.a, refundablePct) })),
     // Remove "Codes: ..." from the old saved line, convert old plan text to 1-day
     shopNote,
     completeLook: normalizeCompleteLook((c as any).completeLook),
