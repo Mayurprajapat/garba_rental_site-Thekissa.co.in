@@ -991,6 +991,25 @@ export default function Admin() {
                           </span>
                           <button title="Delete" onClick={() => { if (confirm(`Delete "${c.label}"?`)) persistCats(cats.filter((x) => x.id !== c.id)); }} className="shrink-0 w-10 grid place-items-center rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-600 hover:text-white transition"><Trash2 size={13} /></button>
                         </div>
+                        {/* File upload wale browsers me na chale to bhi — product photo dropdown se chuno (typing jaisa, hamesha chalta hai) */}
+                        {products.length > 0 && (
+                          <label className="label-pro block">Ya product photo chuno — select karte hi lag jayegi
+                            <select
+                              value=""
+                              onChange={(e) => {
+                                const u = e.target.value;
+                                e.target.value = '';
+                                if (u) persistCats(cats.map((x) => (x.id === c.id ? { ...x, img: u } : x)));
+                              }}
+                              className="admin-input mt-1.5"
+                            >
+                              <option value="">— Photo chuno —</option>
+                              {products.slice(0, 30).map((p) => (
+                                <option key={p.id} value={p.img}>{p.id} — {String(p.name || '').slice(0, 32)}</option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
                       </div>
                     </div>
                   ))}
