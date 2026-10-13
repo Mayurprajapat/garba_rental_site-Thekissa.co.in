@@ -22,6 +22,7 @@ import {
   Users,
 } from 'lucide-react';
 import {
+  ADMIN_PATH,
   adminLockRemaining,
   clearAdminFails,
   deleteLocalBooking,
@@ -38,7 +39,7 @@ import {
   type LocalBooking,
 } from '../lib/localAdmin';
 import { dataUrlToBlob, fileToCompressedDataUrl } from '../lib/proof';
-import { dressInTile, getCategories, itemInTile, resetCategories, saveCategories, type ShopCategory } from '../lib/categories';
+import { categoriesEvent, dressInTile, getCategories, itemInTile, pullCategoriesFromCloud, pushCategoriesToCloud, resetCategories, saveCategories, type ShopCategory } from '../lib/categories';
 import type { Accessory } from '../data/products';
 import { ALL_SIZES, normalizeSizes, normalizeTags } from '../data/products';
 import { singlesFor } from '../components/Shop';
@@ -309,7 +310,18 @@ export default function Admin() {
     }
   };
 
-  useEffect(() => { if (loggedIn) { loadProducts(); loadBookings(); setCats(getCategories()); } }, [loggedIn]);
+  useEffect(() => { if (loggedIn) { loadProducts(); loadBookings(); setCats(getCategories()); pullCategoriesFromCloud().then((changed) => { if (changed) setCats(getCategories()); }); } }, [loggedIn]);
+  // Cloud/dusre tab se tile badle to admin list bhi turant refresh
+  useEffect(() => {
+    const refresh = () => setCats(getCategories());
+    const evt = categoriesEvent();
+    window.addEventListener(evt, refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener(evt, refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
 
   // Live bookings — the customer's new order / status change shows instantly.
   // Same-tab event → instant, other tab → storage event, tab-switch → focus refresh.
@@ -390,11 +402,24 @@ export default function Admin() {
     return () => window.removeEventListener('keydown', onKey);
   }, [preview]);
 
+  const catsPushTimer = useRef<number | null>(null);
+
   const persistCats = (list: ShopCategory[]) => {
     setCats(list);
     saveCategories(list);
-    setMsg('Category saved — live on website.');
-    setTimeout(() => setMsg(''), 2500);
+    // Cloud ho to thoda rukkar push karo (har keystroke par nahi) — sab devices par live tiles
+    if (useCloud && supabase) {
+      setMsg('Category saved — cloud (live shop) me bhej rahe hain…');
+      if (catsPushTimer.current) window.clearTimeout(catsPushTimer.current);
+      catsPushTimer.current = window.setTimeout(async () => {
+        const r = await pushCategoriesToCloud(getCategories());
+        setMsg(r.ok ? 'Category saved — live on website ✓' : `Phone me saved ✓, par CLOUD fail: ${r.error || ''}`);
+        setTimeout(() => setMsg(''), r.ok ? 2500 : 9000);
+      }, 1200);
+    } else {
+      setMsg('Category saved — isi browser me live (live website par dikhane ke liye live admin link use karo).');
+      setTimeout(() => setMsg(''), 5000);
+    }
   };
 
   const stats = useMemo(() => {
@@ -632,7 +657,7 @@ export default function Admin() {
             <div className="px-4 sm:px-8 py-4 flex items-center gap-3">
               <div>
                 <h1 className="font-display font-black text-xl sm:text-2xl capitalize">{view}</h1>
-                <p className="text-xs text-[#8a7584]">{useCloud ? 'Cloud connected · Supabase' : 'Local mode · changes go live instantly'}</p>
+                <p className="text-xs text-[#8a7584]">{useCloud ? 'Cloud connected · Supabase' : 'Local mode · sirf isi browser me live'}</p>
               </div>
               <div className="ml-auto flex items-center gap-2">
                 <span className="hidden sm:inline text-xs font-semibold bg-white border rounded-full px-3 py-1.5">{useCloud ? cloudUser?.email : 'Store owner'}</span>
@@ -647,6 +672,11 @@ export default function Admin() {
           </header>
 
           <main className="px-4 sm:px-8 py-6 max-w-6xl">
+            {!useCloud && (
+              <p className="text-[13px] bg-amber-50 text-amber-900 border border-amber-300 rounded-xl px-4 py-2.5 mb-4">
+                <b>⚠ Local mode:</b> ye changes sirf isi laptop/browser me dikhenge. Customer website (phones) par dikhane ke liye <b>live admin link</b> kholo — apni live domain par <span className="font-mono font-bold">/{ADMIN_PATH}</span> (jaise thekissa.co.in/{ADMIN_PATH}) — wahan login karke badlo, turant live hoga.
+              </p>
+            )}
             {msg && <p className="text-sm bg-white border rounded-xl px-4 py-2.5 mb-4">{msg}</p>}
 
             {view === 'overview' && (

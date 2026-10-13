@@ -3,6 +3,7 @@ import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
 import { ADMIN_PATH } from './lib/localAdmin';
 import { ProductsProvider } from './lib/ProductsContext';
 import { initSiteContentSync } from './lib/siteContent';
+import { initCategoriesSync } from './lib/categories';
 import Home from './pages/Home';
 
 const Admin = lazy(() => import('./pages/Admin'));
@@ -27,9 +28,10 @@ function PageLoader() {
 }
 
 export default function App() {
-  // Website text/photos (Admin → Website) cloud se turant sync — sab devices par live
+  // Website text/photos (Admin → Website) + category tiles cloud se turant sync — sab devices par live
   useEffect(() => {
     initSiteContentSync();
+    initCategoriesSync();
   }, []);
   return (
     <BrowserRouter>

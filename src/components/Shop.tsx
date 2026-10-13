@@ -3,7 +3,7 @@ import { Gem, Heart, Search, SearchX, ShoppingBasket, SlidersHorizontal, Star, X
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { lookFor, spinFramesFor, type Product } from '../data/products';
 import type { LiveProduct } from '../lib/ProductsContext';
-import { categoriesEvent, dressInTile, getCategories, itemInTile, type ShopCategory } from '../lib/categories';
+import { categoriesEvent, dressInTile, getCategories, isOutfit, itemInTile, type ShopCategory } from '../lib/categories';
 import { itemImgFor } from '../lib/items';
 import { refundableExtra, getRefundablePct } from '../lib/order';
 import { useProducts } from '../lib/ProductsContext';
@@ -218,6 +218,9 @@ export default function Shop() {
     if (activeCat?.kind === 'dress') {
       // Tile rule: dress par tags tick hain to sirf ticked tiles — warna keyword + group match
       l = l.filter((p) => dressInTile(p, activeCat));
+    } else if (!activeCat) {
+      // All Outfits = sirf outfits — Jewellery / Blouse bahar (wo apni tile me dikhenge)
+      l = l.filter((p) => isOutfit(p));
     }
     l = l.filter((p) => p.rent1 <= maxPrice);
     if (search.trim()) {

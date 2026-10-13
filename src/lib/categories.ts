@@ -6,6 +6,7 @@
 // Comma ke andar likhe shabd AND hain — `oxidised jhumka` = dono shabd ek saath hone chahiye.
 
 import type { Category } from '../data/products';
+import { isSupabaseConfigured, supabase } from './supabase';
 
 export interface ShopCategory {
   id: string;
@@ -92,6 +93,24 @@ export function itemInTile(itemName: string, parent: TileProduct, tile: Pick<Sho
   return !q || matchesCategory(itemName.toLowerCase(), q);
 }
 
+/**
+ * All Outfits me sirf outfits — Jewellery / Blouse products bahar (wo apni tile me dikhenge).
+ * Tags tick hain to wahi final; bina-tags products ka naam dekho (desc me "blouse" mention wale
+ * chaniya sets bahar na hon — isliye sirf naam match, description nahi).
+ */
+const NON_OUTFIT_TAGS = ['jewellery', 'blouse'];
+const JEWELLERY_NAME_Q = 'jewellery, choker, necklace, haar, jhumka, kamarbandh, mojari, brooch, earring, bali';
+const BLOUSE_NAME_Q = 'blouse';
+export function isOutfit(p: TileProduct): boolean {
+  const tags = cleanTags(p);
+  if (tags.length) return !tags.some((t) => NON_OUTFIT_TAGS.includes(t));
+  const name = `${p.name ?? ''} ${p.hindi ?? ''}`.toLowerCase();
+  if (!name.trim()) return true;
+  if (matchesCategory(name, JEWELLERY_NAME_Q)) return false;
+  if (matchesCategory(name, BLOUSE_NAME_Q)) return false;
+  return true;
+}
+
 const KEY = 'raasleela-admin-categories';
 const EVT = 'raasleela-categories-updated';
 // Purani 3-tile wali list — isko nayi granular list se auto-upgrade kar do
@@ -139,10 +158,114 @@ export function getCategories(): ShopCategory[] {
   return [...DEFAULT_CATEGORIES];
 }
 
+const CLOUD_SAVED_AT = 'raasleela-cats-saved-at';
+
+function getCatsSavedAt(): number {
+  try {
+    return Number(localStorage.getItem(CLOUD_SAVED_AT) || 0) || 0;
+  } catch {
+    return 0;
+  }
+}
+
 export function saveCategories(list: ShopCategory[]) {
   try {
     localStorage.setItem(KEY, JSON.stringify(list));
+  } catch { /* ignore */ }
+  try {
+    localStorage.setItem(CLOUD_SAVED_AT, String(Date.now()));
+  } catch { /* ignore */ }
+  try {
     window.dispatchEvent(new Event(EVT));
+  } catch { /* ignore */ }
+}
+
+/** Category tiles cloud (Supabase categories table, id=1) me push — sab devices par live tiles. */
+export async function pushCategoriesToCloud(list: ShopCategory[]): Promise<{ ok: boolean; error?: string; missingTable?: boolean }> {
+  if (!isSupabaseConfigured || !supabase) return { ok: false, error: 'Cloud connected nahi hai (local mode).' };
+  try {
+    const { error } = await supabase
+      .from('categories')
+      .upsert({ id: 1, data: list as any, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+    if (error) {
+      const m = `${error.message || ''} ${(error as any)?.code || ''}`;
+      if (/categories/i.test(m) && /does not exist|schema cache|relation|PGRST/i.test(m)) {
+        return {
+          ok: false,
+          missingTable: true,
+          error: 'Cloud table bani nahi hai — Supabase > SQL Editor me supabase/migration_categories.sql ek baar Run karo, phir dobara try karo.',
+        };
+      }
+      return { ok: false, error: `Cloud save fail: ${error.message}` };
+    }
+    try {
+      localStorage.setItem(CLOUD_SAVED_AT, String(Date.now()));
+    } catch { /* ignore */ }
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: `Cloud save fail: ${e?.message || 'network error'}` };
+  }
+}
+
+/** Cloud se tiles kheecho — nayi copy mile to local me lagao + shop ko batao. Last-write-wins. */
+export async function pullCategoriesFromCloud(): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return false;
+  try {
+    const { data, error } = await supabase.from('categories').select('data,updated_at').eq('id', 1).maybeSingle();
+    if (error || !data?.data || !valid(data.data)) return false;
+    const cloudTime = data.updated_at ? new Date(data.updated_at).getTime() : 0;
+    if (cloudTime && cloudTime <= getCatsSavedAt()) return false;
+    const incoming = normalize(data.data as ShopCategory[]);
+    let current = '';
+    try {
+      current = JSON.stringify(normalize(getCategories()));
+    } catch { /* ignore */ }
+    if (JSON.stringify(incoming) === current) {
+      try {
+        localStorage.setItem(CLOUD_SAVED_AT, String(cloudTime || Date.now()));
+      } catch { /* ignore */ }
+      return false;
+    }
+    try {
+      localStorage.setItem(KEY, JSON.stringify(incoming));
+      localStorage.setItem(CLOUD_SAVED_AT, String(cloudTime || Date.now()));
+    } catch {
+      return false;
+    }
+    try {
+      window.dispatchEvent(new Event(EVT));
+    } catch { /* ignore */ }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+let catsSyncStarted = false;
+
+/** App start par ek baar chalao — cloud pull + Realtime subscribe + focus refresh. */
+export function initCategoriesSync(): void {
+  if (catsSyncStarted) return;
+  catsSyncStarted = true;
+  if (!isSupabaseConfigured || !supabase) return;
+  pullCategoriesFromCloud();
+  try {
+    const sb = supabase;
+    sb.channel('categories-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+        pullCategoriesFromCloud();
+      })
+      .subscribe();
+  } catch { /* realtime na mile to focus/pull fallback kaafi */ }
+  const onFocus = () => {
+    pullCategoriesFromCloud();
+  };
+  const onVisible = () => {
+    if (document.visibilityState === 'visible') pullCategoriesFromCloud();
+  };
+  try {
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
   } catch { /* ignore */ }
 }
 

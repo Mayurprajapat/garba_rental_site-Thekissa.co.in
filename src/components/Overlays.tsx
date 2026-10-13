@@ -1118,7 +1118,11 @@ export function CartDrawer() {
                   {rows.length === 0 && orders.length === 0 && <p className="text-center text-black/50 py-16">Your list is empty.<br />Add a dress from the shop 👆</p>}
                   {rows.map((r) => (
                     <div key={`${r.id}-${r.size}-${r.plan}-${(r.addons ?? []).join('+')}-${r.single?.name ?? ''}`} className="flex gap-3 bg-white rounded-2xl p-2.5 border border-black/10">
-                      <img src={r.single?.img ?? r.p.img} className="w-16 h-20 object-contain rounded-xl" alt={r.single?.name ?? r.p.name} />
+                                            {/* Booking-list photo bhi tap-to-zoom (My Orders jaisa) */}
+                      <button onClick={() => setViewPhoto({ src: r.single?.img ?? r.p.img, name: r.single?.name ?? r.p.name })} title="Tap to view full photo" className="relative shrink-0 group">
+                        <img src={r.single?.img ?? r.p.img} className="w-16 h-20 object-contain rounded-xl border border-black/10 group-hover:opacity-90 transition" alt={r.single?.name ?? r.p.name} />
+                        <span className="absolute bottom-1 right-1 bg-black/65 text-white text-[9px] font-bold rounded-full px-2 py-0.5">⤢</span>
+                      </button>
                       <div className="flex-1 text-sm">
                         {r.single ? (
                           <>

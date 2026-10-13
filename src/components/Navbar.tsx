@@ -98,11 +98,13 @@ export default function Navbar() {
               className="hidden md:inline-flex items-center gap-1.5 text-[12.5px] font-bold text-white rounded-full px-4 py-2.5 bg-gradient-to-r from-[#2ecc71] to-[#1e9e52] shadow-[0_8px_20px_-10px_rgba(46,204,113,.7)] hover:brightness-110 transition">
               <MessageCircle size={14} /> WhatsApp Support
             </a>
+            {/* Navbar search — chhote phones (<380px) par hidden: Hero + filter bar me search pehle se hai,
+                isse 320px screen par buttons kat-te nahi */}
             <button onClick={() => {
                 document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' });
                 setTimeout(() => document.getElementById('shop-search')?.focus({ preventScroll: true }), 500);
               }}
-              className="w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-full border border-black/10 bg-white hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)] transition" title="Search collection" aria-label="Search collection">
+              className="hidden min-[380px]:grid w-9 h-9 sm:w-10 sm:h-10 place-items-center rounded-full border border-black/10 bg-white hover:border-black hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,.3)] transition" title="Search collection" aria-label="Search collection">
               <Search size={16} />
             </button>
             <button onClick={toggleWishlist} title={wishOnly ? 'Show all outfits' : 'Show wishlist only'} aria-label="Wishlist"
@@ -110,7 +112,7 @@ export default function Navbar() {
               <Heart size={16} className={wishOnly ? 'fill-white text-white' : wishlist.length ? 'fill-black text-black' : 'text-black'} />
               {wishlist.length > 0 && <span className={`absolute -top-1 -right-1 text-[10px] font-bold min-w-5 h-5 px-1 grid place-items-center rounded-full ${wishOnly ? 'bg-white text-black' : 'bg-black text-white'}`}>{wishlist.length}</span>}
             </button>
-            <button onClick={() => setCartOpen(true)} className="flex items-center gap-2 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] text-[#f7ead0] text-[13px] font-semibold rounded-full pl-4 pr-1.5 py-1.5 hover:brightness-125 transition ring-1 ring-[#c9a44a]/40 shadow-[0_10px_24px_-12px_rgba(34,17,20,.6),inset_0_1px_0_rgba(240,215,140,.25)]">
+            <button onClick={() => setCartOpen(true)} className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] text-[#f7ead0] text-[13px] font-semibold rounded-full pl-3 sm:pl-4 pr-1.5 py-1.5 hover:brightness-125 transition ring-1 ring-[#c9a44a]/40 shadow-[0_10px_24px_-12px_rgba(34,17,20,.6),inset_0_1px_0_rgba(240,215,140,.25)]">
               <ShoppingBasket size={15} />
               <span className="hidden sm:inline">Booking list</span>
               <span className="bg-gradient-to-b from-[#f0d78c] to-[#c9a44a] text-[#3d0a1a] text-xs font-bold min-w-7 h-7 px-1.5 grid place-items-center rounded-full">{count}</span>
