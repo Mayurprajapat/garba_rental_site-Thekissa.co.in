@@ -38,7 +38,7 @@ import {
   verifyAdminPassword,
   type LocalBooking,
 } from '../lib/localAdmin';
-import { dataUrlToBlob, fileToCompressedDataUrl } from '../lib/proof';
+import { dataUrlToBlob, fileToCompressedDataUrl, withTimeout } from '../lib/proof';
 import { categoriesEvent, dressInTile, getCategories, itemInTile, pullCategoriesFromCloud, pushCategoriesToCloud, resetCategories, saveCategories, type ShopCategory } from '../lib/categories';
 import type { Accessory } from '../data/products';
 import { ALL_SIZES, normalizeSizes, normalizeTags } from '../data/products';
@@ -435,25 +435,32 @@ export default function Admin() {
   const saveCatsToCloud = async () => {
     if (catSaving) return;
     setCatSaving(true);
-    const list = getCategories();
-    setCats(list);
-    const saved = saveCategories(list);
-    if (!saved.ok) {
-      setMsg(saved.error || 'Save fail ho gaya.');
-      setTimeout(() => setMsg(''), 9000);
+    try {
+      const list = getCategories();
+      setCats(list);
+      const saved = saveCategories(list);
+      if (!saved.ok) {
+        setMsg(saved.error || 'Save fail ho gaya.');
+        setTimeout(() => setMsg(''), 9000);
+        return;
+      }
+      if (!useCloud || !supabase) {
+        setMsg('Local mode — tiles isi browser me saved hain. Live website par dikhane ke liye live admin link use karo.');
+        setTimeout(() => setMsg(''), 6000);
+      } else {
+        setMsg('Cloud (live shop) me bhej rahe hain…');
+        let r: { ok: boolean; error?: string };
+        try {
+          r = await withTimeout(pushCategoriesToCloud(list), 25000);
+        } catch {
+          r = { ok: false, error: 'Net atak gaya (timeout) — dobara Save dabao.' };
+        }
+        setMsg(r.ok ? 'Saved — live on website ✓ (3 category cards sab devices par update)' : `CLOUD fail: ${r.error || ''}`);
+        setTimeout(() => setMsg(''), r.ok ? 6000 : 12000);
+      }
+    } finally {
       setCatSaving(false);
-      return;
     }
-    if (!useCloud || !supabase) {
-      setMsg('Local mode — tiles isi browser me saved hain. Live website par dikhane ke liye live admin link use karo.');
-      setTimeout(() => setMsg(''), 6000);
-    } else {
-      setMsg('Cloud (live shop) me bhej rahe hain…');
-      const r = await pushCategoriesToCloud(list);
-      setMsg(r.ok ? 'Saved — live on website ✓ (3 category cards sab devices par update)' : `CLOUD fail: ${r.error || ''}`);
-      setTimeout(() => setMsg(''), r.ok ? 6000 : 12000);
-    }
-    setCatSaving(false);
   };
 
   const persistCats = (list: ShopCategory[]) => {
@@ -469,7 +476,12 @@ export default function Admin() {
       setMsg('Category saved — cloud (live shop) me bhej rahe hain…');
       if (catsPushTimer.current) window.clearTimeout(catsPushTimer.current);
       catsPushTimer.current = window.setTimeout(async () => {
-        const r = await pushCategoriesToCloud(getCategories());
+        let r: { ok: boolean; error?: string };
+        try {
+          r = await withTimeout(pushCategoriesToCloud(getCategories()), 25000);
+        } catch {
+          r = { ok: false, error: 'Net atak gaya (timeout) — Save button se dobara try karo.' };
+        }
         setMsg(r.ok ? 'Category saved — live on website ✓' : `Phone me saved ✓, par CLOUD fail: ${r.error || ''}`);
         setTimeout(() => setMsg(''), r.ok ? 2500 : 9000);
       }, 1200);
@@ -614,15 +626,31 @@ export default function Admin() {
   const uploadImage = async (file: File): Promise<string | null> => {
     // Phone se 3-4MB photo aati hai — pehle compress (~1200px, JPEG) taaki
     // website phone par fast khule aur storage full na ho.
-    const small = await fileToCompressedDataUrl(file, 1200, 0.78);
+    // Dono steps time-bound hain — hang ho to button atka nahi rahega, message aayega.
+    let small: string | null = null;
+    try {
+      small = await withTimeout(fileToCompressedDataUrl(file, 1200, 0.78), 20000);
+    } catch {
+      small = null;
+    }
     if (useCloud && supabase) {
       setUploading(true);
-      const blob = (small ? dataUrlToBlob(small) : null) ?? (file.type.startsWith('image/') ? file : null);
-      const name = `p-${Date.now()}.jpg`;
-      const { error } = await supabase.storage.from('product-images').upload(name, blob as Blob, { contentType: 'image/jpeg', upsert: true });
-      setUploading(false);
-      if (error) { setMsg('Upload failed: ' + error.message); return null; }
-      return supabase.storage.from('product-images').getPublicUrl(name).data.publicUrl;
+      try {
+        const blob = (small ? dataUrlToBlob(small) : null) ?? (file.type.startsWith('image/') ? file : null);
+        if (!blob) { setMsg('Photo padhi nahi gayi — JPG photo try karo.'); return null; }
+        const name = `p-${Date.now()}.jpg`;
+        const { error } = await withTimeout(
+          supabase.storage.from('product-images').upload(name, blob as Blob, { contentType: 'image/jpeg', upsert: true }),
+          30000
+        );
+        if (error) { setMsg('Upload failed: ' + error.message); return null; }
+        return supabase.storage.from('product-images').getPublicUrl(name).data.publicUrl;
+      } catch {
+        setMsg('Upload atak gaya (net slow?) — dobara try karo.');
+        return null;
+      } finally {
+        setUploading(false);
+      }
     }
     if (small) return small;
     return await new Promise((res) => {

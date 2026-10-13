@@ -40,3 +40,22 @@ export function dataUrlToBlob(dataUrl: string): Blob | null {
     return null;
   }
 }
+
+/**
+ * Network/canvas kaam ko time-bound karo — hang ho to reject, taaki UI (Save/upload
+ * buttons) kabhi atki na rahe. Supabase builders thenable hote hain, isliye .finally
+ * ke bajaye then/clearTimeout pattern (sab par safe).
+ */
+export function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let t: ReturnType<typeof setTimeout> | null = null;
+  const timeout = new Promise<never>((_, rej) => {
+    t = setTimeout(() => rej(new Error('timeout')), ms);
+  });
+  return Promise.race([
+    p.then(
+      (v) => { if (t) clearTimeout(t); return v; },
+      (e) => { if (t) clearTimeout(t); throw e; }
+    ),
+    timeout,
+  ]);
+}
