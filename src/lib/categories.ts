@@ -185,16 +185,29 @@ function getCatsSavedAt(): number {
   }
 }
 
-export function saveCategories(list: ShopCategory[]) {
+export function saveCategories(list: ShopCategory[]): { ok: boolean; error?: string } {
+  let json = '';
+  try {
+    json = JSON.stringify(list);
+  } catch {
+    return { ok: false, error: 'Data ready nahi hua.' };
+  }
   try {
     localStorage.setItem(KEY, JSON.stringify(list));
-  } catch { /* ignore */ }
+  } catch (e: any) {
+    const m = `${e?.name || ''} ${e?.message || ''} ${e?.code ?? ''}`;
+    if (/quota|QUOTA|22/.test(m)) {
+      return { ok: false, error: 'Phone storage FULL — photo save nahi hui. Badi photos hatao ya live admin (cloud) use karo, wahan storage ki dikkat nahi.' };
+    }
+    return { ok: false, error: 'Save fail: browser storage blocked hai.' };
+  }
   try {
     localStorage.setItem(CLOUD_SAVED_AT, String(Date.now()));
   } catch { /* ignore */ }
   try {
     window.dispatchEvent(new Event(EVT));
   } catch { /* ignore */ }
+  return { ok: true };
 }
 
 /** Category tiles cloud (Supabase categories table, id=1) me push — sab devices par live tiles. */

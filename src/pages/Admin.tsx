@@ -403,6 +403,7 @@ export default function Admin() {
   }, [preview]);
 
   const catsPushTimer = useRef<number | null>(null);
+  const [catImgBusy, setCatImgBusy] = useState<string | null>(null);
 
   // Website jaisa bada Save button — photo/naam/keyword badlo, phir Save dabao = sab devices par live
   const [catSaving, setCatSaving] = useState(false);
@@ -411,7 +412,13 @@ export default function Admin() {
     setCatSaving(true);
     const list = getCategories();
     setCats(list);
-    saveCategories(list);
+    const saved = saveCategories(list);
+    if (!saved.ok) {
+      setMsg(saved.error || 'Save fail ho gaya.');
+      setTimeout(() => setMsg(''), 9000);
+      setCatSaving(false);
+      return;
+    }
     if (!useCloud || !supabase) {
       setMsg('Local mode — tiles isi browser me saved hain. Live website par dikhane ke liye live admin link use karo.');
       setTimeout(() => setMsg(''), 6000);
@@ -426,7 +433,12 @@ export default function Admin() {
 
   const persistCats = (list: ShopCategory[]) => {
     setCats(list);
-    saveCategories(list);
+    const saved = saveCategories(list);
+    if (!saved.ok) {
+      setMsg(saved.error || 'Save fail ho gaya.');
+      setTimeout(() => setMsg(''), 9000);
+      return;
+    }
     // Cloud ho to thoda rukkar push karo (har keystroke par nahi) — sab devices par live tiles
     if (useCloud && supabase) {
       setMsg('Category saved — cloud (live shop) me bhej rahe hain…');
@@ -912,12 +924,25 @@ export default function Admin() {
                         )}
                         <div className="flex gap-1.5">
                           <input value={c.img} onChange={(e) => persistCats(cats.map((x) => (x.id === c.id ? { ...x, img: e.target.value } : x)))} placeholder="/images/… or URL" className="admin-input" />
-                          <label title="Upload photo" className="shrink-0 grid place-items-center w-10 rounded-lg border cursor-pointer hover:bg-black hover:text-white transition text-sm">⇪
+                          <label title="Upload photo" className="shrink-0 grid place-items-center w-10 rounded-lg border cursor-pointer hover:bg-black hover:text-white transition text-sm">
+                            {catImgBusy === c.id ? '…' : '⇪'}
                             <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                               const f = e.target.files?.[0];
+                              e.target.value = '';
                               if (!f) return;
-                              const url = await uploadImage(f);
-                              if (url) persistCats(cats.map((x) => (x.id === c.id ? { ...x, img: url } : x)));
+                              if (!f.type.startsWith('image/')) { setMsg('Sirf JPG/PNG photo lagao.'); setTimeout(() => setMsg(''), 4000); return; }
+                              setCatImgBusy(c.id);
+                              try {
+                                const url = await uploadImage(f);
+                                if (url) {
+                                  persistCats(cats.map((x) => (x.id === c.id ? { ...x, img: url } : x)));
+                                } else {
+                                  setMsg('Photo lagi nahi — chhoti (2MB se kam) JPG try karo, ya net check karke dobara lagao.');
+                                  setTimeout(() => setMsg(''), 8000);
+                                }
+                              } finally {
+                                setCatImgBusy(null);
+                              }
                             }} />
                           </label>
                           <button title="Delete" onClick={() => { if (confirm(`Delete "${c.label}"?`)) persistCats(cats.filter((x) => x.id !== c.id)); }} className="shrink-0 w-10 grid place-items-center rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-600 hover:text-white transition"><Trash2 size={13} /></button>
