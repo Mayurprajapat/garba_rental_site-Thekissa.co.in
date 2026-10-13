@@ -937,6 +937,7 @@ export default function Admin() {
                     <div key={c.id} className="admin-card p-4 flex gap-3">
                       <CatImg key={c.img} src={c.img} />
                       <div className="flex-1 min-w-0 space-y-2">
+                        <p className="text-[10px] font-mono text-black/40 break-all">lagi hui file: {(c.img || '(khaali)').split('/').pop()}</p>
                         <label className="label-pro block">Name<input value={c.label} onChange={(e) => persistCats(cats.map((x) => (x.id === c.id ? { ...x, label: e.target.value } : x)))} className="admin-input mt-1" /></label>
                         {(() => {
                           const n = catCounts.get(c.id) ?? 0;
