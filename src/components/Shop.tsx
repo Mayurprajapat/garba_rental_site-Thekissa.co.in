@@ -3,7 +3,7 @@ import { Gem, Heart, Search, SearchX, ShoppingBasket, SlidersHorizontal, Star, X
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { lookFor, spinFramesFor, type Product } from '../data/products';
 import type { LiveProduct } from '../lib/ProductsContext';
-import { categoriesEvent, dressInTile, getCategories, isOutfit, itemInTile, type ShopCategory } from '../lib/categories';
+import { categoriesEvent, dressInTile, getCategories, isBuyOnly, isBuyOnlySingle, isOutfit, itemInTile, type ShopCategory } from '../lib/categories';
 import { itemImgFor } from '../lib/items';
 import { refundableExtra, getRefundablePct } from '../lib/order';
 import { useProducts } from '../lib/ProductsContext';
@@ -46,10 +46,11 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
   const wishlist = useStore((s) => s.wishlist);
   const setQuickView = useStore((s) => s.setQuickView);
   const wished = wishlist.includes(p.id);
-  const price = p.rent1;
+  const buyOnly = isBuyOnly(p);
+  const price = buyOnly ? p.buy : p.rent1;
   const buyPrice = p.buy;
   const rank = index < 3 ? `N°0${index + 1}` : null;
-  const savePct = p.buy > price ? Math.round((1 - price / p.buy) * 100) : 0;
+  const savePct = !buyOnly && p.buy > price ? Math.round((1 - price / p.buy) * 100) : 0;
   const freeDandiya = lookFor(p).some((a) => a.tag === 'free' && /dandiya/i.test(a.name));
   const frames = spinFramesFor(p);
   const soldOut = (p.stock ?? 1) <= 0;
@@ -98,33 +99,54 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
         <div className="flex items-center gap-1 text-xs font-semibold text-[#8a6d00] mt-1.5">
           <Star size={12} className="fill-[#c9960a] text-[#c9960a]" /> {p.rating}
           <span className="text-[#8a7584] font-normal">({p.reviews})</span>
-          <span className="ml-auto text-[9.5px] sm:text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">1-day</span>
+          {buyOnly
+            ? <span className="ml-auto text-[9.5px] sm:text-[10px] font-black text-white bg-[#641629] rounded-full px-2 py-0.5">BUY ONLY</span>
+            : <span className="ml-auto text-[9.5px] sm:text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">1-day</span>}
         </div>
         <div className="hairline-premium my-1.5 sm:my-2" />
-        <div className="grid grid-cols-2 gap-1 sm:gap-1.5 mt-auto">
-          <div className="rounded-lg sm:rounded-xl border border-[#c9a44a]/60 bg-gradient-to-b from-[#fdf6e3] to-[#f5e3ae] px-1 py-1 sm:py-1.5 text-center min-w-0 overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,.7)]">
-            <span className="block text-[7.5px] sm:text-[8.5px] font-black tracking-[0.06em] text-[#8a6d1f] whitespace-nowrap">RENT · 1-DAY</span>
-            <b className="block font-display text-[13px] sm:text-[16px] text-[#4d0f1f] tabular-nums leading-tight truncate">₹{price.toLocaleString('en-IN')}</b>
-          </div>
-          <div className="rounded-lg sm:rounded-xl border border-[#641629]/25 bg-[#641629]/[.05] px-1 py-1 sm:py-1.5 text-center min-w-0 overflow-hidden">
-            <span className="block text-[7.5px] sm:text-[8.5px] font-black tracking-[0.06em] text-[#641629] whitespace-nowrap">BUY</span>
+        {buyOnly ? (
+          <div className="rounded-lg sm:rounded-xl border border-[#641629]/25 bg-[#641629]/[.05] px-1 py-1 sm:py-1.5 text-center min-w-0 overflow-hidden mt-auto">
+            <span className="block text-[7.5px] sm:text-[8.5px] font-black tracking-[0.06em] text-[#641629] whitespace-nowrap">BUY · YOURS FOREVER</span>
             <b className="block font-display text-[13px] sm:text-[16px] text-[#641629] tabular-nums leading-tight truncate">₹{buyPrice.toLocaleString('en-IN')}</b>
           </div>
-        </div>
-        <p className="text-[10.5px] sm:text-[11.5px] font-bold text-[#8a6d1f] mt-1 sm:mt-1.5 leading-snug">Rent + ₹{refundableExtra(price).toLocaleString('en-IN')} refundable ({getRefundablePct()}%) · Buy no return</p>
-        {freeDandiya && <p className="text-[10.5px] sm:text-[11.5px] font-black text-emerald-700 mt-0.5">✓ FREE Dandiya</p>}
-        <div className="grid grid-cols-2 gap-1 sm:gap-1.5 mt-1.5 sm:mt-2">
-          <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id, 'rent'); }}
-            disabled={soldOut}
-            className="inline-flex items-center justify-center gap-1 text-white text-[12px] sm:text-[12.5px] font-bold rounded-full py-2.5 px-1 bg-[#1e7a45] shadow-[0_12px_22px_-12px_rgba(30,122,69,.6)] hover:brightness-110 transition disabled:opacity-40 whitespace-nowrap">
-            <ShoppingBasket size={13} className="shrink-0" /> {soldOut ? 'Stock out' : 'Rent'}
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id, 'buy'); }}
-            disabled={soldOut}
-            className="inline-flex items-center justify-center gap-1 text-[#f7ead0] text-[12px] sm:text-[12.5px] font-bold rounded-full py-2.5 px-1 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] ring-1 ring-[#c9a44a]/40 shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 transition disabled:opacity-40 whitespace-nowrap">
-            <ShoppingBasket size={13} className="shrink-0" /> {soldOut ? 'Stock out' : 'Buy'}
-          </button>
-        </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-1 sm:gap-1.5 mt-auto">
+            <div className="rounded-lg sm:rounded-xl border border-[#c9a44a]/60 bg-gradient-to-b from-[#fdf6e3] to-[#f5e3ae] px-1 py-1 sm:py-1.5 text-center min-w-0 overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,.7)]">
+              <span className="block text-[7.5px] sm:text-[8.5px] font-black tracking-[0.06em] text-[#8a6d1f] whitespace-nowrap">RENT · 1-DAY</span>
+              <b className="block font-display text-[13px] sm:text-[16px] text-[#4d0f1f] tabular-nums leading-tight truncate">₹{price.toLocaleString('en-IN')}</b>
+            </div>
+            <div className="rounded-lg sm:rounded-xl border border-[#641629]/25 bg-[#641629]/[.05] px-1 py-1 sm:py-1.5 text-center min-w-0 overflow-hidden">
+              <span className="block text-[7.5px] sm:text-[8.5px] font-black tracking-[0.06em] text-[#641629] whitespace-nowrap">BUY</span>
+              <b className="block font-display text-[13px] sm:text-[16px] text-[#641629] tabular-nums leading-tight truncate">₹{buyPrice.toLocaleString('en-IN')}</b>
+            </div>
+          </div>
+        )}
+        {buyOnly
+          ? <p className="text-[10.5px] sm:text-[11.5px] font-bold text-[#641629] mt-1 sm:mt-1.5 leading-snug">Buy only · no rent, no return, no deposit</p>
+          : <p className="text-[10.5px] sm:text-[11.5px] font-bold text-[#8a6d1f] mt-1 sm:mt-1.5 leading-snug">Rent + ₹{refundableExtra(price).toLocaleString('en-IN')} refundable ({getRefundablePct()}%) · Buy no return</p>}
+        {freeDandiya && !buyOnly && <p className="text-[10.5px] sm:text-[11.5px] font-black text-emerald-700 mt-0.5">✓ FREE Dandiya</p>}
+        {buyOnly ? (
+          <div className="grid grid-cols-1 gap-1 sm:gap-1.5 mt-1.5 sm:mt-2">
+            <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id, 'buy'); }}
+              disabled={soldOut}
+              className="inline-flex items-center justify-center gap-1 text-[#f7ead0] text-[12px] sm:text-[12.5px] font-bold rounded-full py-2.5 px-1 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] ring-1 ring-[#c9a44a]/40 shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 transition disabled:opacity-40 whitespace-nowrap">
+              <ShoppingBasket size={13} className="shrink-0" /> {soldOut ? 'Stock out' : 'Buy'}
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-1 sm:gap-1.5 mt-1.5 sm:mt-2">
+            <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id, 'rent'); }}
+              disabled={soldOut}
+              className="inline-flex items-center justify-center gap-1 text-white text-[12px] sm:text-[12.5px] font-bold rounded-full py-2.5 px-1 bg-[#1e7a45] shadow-[0_12px_22px_-12px_rgba(30,122,69,.6)] hover:brightness-110 transition disabled:opacity-40 whitespace-nowrap">
+              <ShoppingBasket size={13} className="shrink-0" /> {soldOut ? 'Stock out' : 'Rent'}
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); if (!soldOut) setQuickView(p.id, 'buy'); }}
+              disabled={soldOut}
+              className="inline-flex items-center justify-center gap-1 text-[#f7ead0] text-[12px] sm:text-[12.5px] font-bold rounded-full py-2.5 px-1 bg-gradient-to-b from-[#2b141b] to-[#1c0d12] ring-1 ring-[#c9a44a]/40 shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 transition disabled:opacity-40 whitespace-nowrap">
+              <ShoppingBasket size={13} className="shrink-0" /> {soldOut ? 'Stock out' : 'Buy'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -133,6 +155,9 @@ function ProductCard({ p, index }: { p: LiveProduct; index: number }) {
 function SingleCard({ item, index = 0 }: { item: SingleItem; index?: number }) {
   const addToCart = useStore((s) => s.addToCart);
   const setQuickView = useStore((s) => s.setQuickView);
+  const { products } = useProducts();
+  const parent = products.find((x) => x.id === item.productId);
+  const buyOnly = isBuyOnlySingle(item.name, parent ?? undefined);
 
   return (
     <div className="card card-hover card-shine card-glow-border group h-full overflow-hidden flex flex-col !rounded-[18px] ring-1 ring-[#c9a44a]/30 hover:ring-[#c9a44a]/70" style={{ '--glow-delay': `${-((index % 6) * 1.08)}s` } as CSSProperties}>
@@ -140,7 +165,7 @@ function SingleCard({ item, index = 0 }: { item: SingleItem; index?: number }) {
         <img src={item.img} alt={item.name} loading="lazy" decoding="async" className="w-full h-full object-contain transition duration-700 group-hover:scale-[1.06]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300" />
         <div aria-hidden className="pointer-events-none absolute inset-2 rounded-xl ring-1 ring-inset ring-[#e8c66a]/60 z-[1]" />
-        <span className="absolute top-3 left-3 z-[2] bg-gradient-to-br from-[#f0d78c] to-[#c9a44a] text-[#1a0f1e] text-[10px] font-black tracking-[0.1em] rounded-full px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)]">ONLY ITEM</span>
+        <span className="absolute top-3 left-3 z-[2] bg-gradient-to-br from-[#f0d78c] to-[#c9a44a] text-[#1a0f1e] text-[10px] font-black tracking-[0.1em] rounded-full px-2.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)]">{buyOnly ? 'BUY ONLY' : 'ONLY ITEM'}</span>
       </div>
       <div className="p-3 sm:p-3.5 flex flex-col flex-1">
         <div className="flex items-center gap-1 text-xs font-semibold text-[#8a6d00]">
@@ -148,15 +173,15 @@ function SingleCard({ item, index = 0 }: { item: SingleItem; index?: number }) {
           <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">Without dress · One-size</span>
         </div>
         <h3 className="font-display font-semibold text-[14.5px] sm:text-[15.5px] leading-snug mt-1.5 line-clamp-2 text-black tracking-tight min-h-[42px]">{item.name}</h3>
-        <p className="text-[12px] text-neutral-500 mt-2 leading-relaxed line-clamp-2">Rent alone — wear with any look, no dress needed.</p>
+        <p className="text-[12px] text-neutral-500 mt-2 leading-relaxed line-clamp-2">{buyOnly ? 'Buy alone — yours forever, no return needed.' : 'Rent alone — wear with any look, no dress needed.'}</p>
         <div className="hairline-premium my-2" />
         <div className="flex items-baseline gap-2 mt-auto">
           <b className="font-display text-[19px] sm:text-[20px] text-[#641629] tabular-nums leading-none">₹{item.price.toLocaleString('en-IN')}</b>
-          <span className="text-[11.5px] font-semibold text-neutral-500">rent</span>
+          <span className="text-[11.5px] font-semibold text-neutral-500">{buyOnly ? 'buy' : 'rent'}</span>
         </div>
-        <button onClick={() => addToCart(item.productId, 'One-size', '1day', undefined, { name: item.name, price: item.price, img: item.img })}
+        <button onClick={() => addToCart(item.productId, 'One-size', buyOnly ? 'buy' : '1day', undefined, { name: item.name, price: item.price, img: item.img })}
           className="mt-3 w-full inline-flex items-center justify-center gap-2 text-white text-[13px] font-bold rounded-full py-2.5 bg-[#221114] shadow-[0_12px_22px_-12px_rgba(34,17,20,.55)] hover:brightness-125 hover:-translate-y-px active:translate-y-0 transition">
-          <ShoppingBasket size={14} /> Rent Only This
+          <ShoppingBasket size={14} /> {buyOnly ? 'Buy Only This' : 'Rent Only This'}
         </button>
         <button onClick={() => setQuickView(item.productId)} className="mt-1.5 text-[12px] font-semibold text-neutral-400 hover:text-[#641629] transition">View dress →</button>
       </div>
@@ -222,7 +247,7 @@ export default function Shop() {
       // All Outfits = sirf outfits — Jewellery / Blouse bahar (wo apni tile me dikhenge)
       l = l.filter((p) => isOutfit(p));
     }
-    l = l.filter((p) => p.rent1 <= maxPrice);
+    l = l.filter((p) => (isBuyOnly(p) ? p.buy : p.rent1) <= maxPrice);
     if (search.trim()) {
       const words = search.toLowerCase().split(/\s+/).filter(Boolean);
       l = l.filter((p) => {
@@ -230,8 +255,8 @@ export default function Shop() {
         return words.every((w) => hay.includes(w));
       });
     }
-    if (sort === 'low') l = [...l].sort((a, b) => a.rent1 - b.rent1);
-    if (sort === 'high') l = [...l].sort((a, b) => b.rent1 - a.rent1);
+    if (sort === 'low') l = [...l].sort((a, b) => (isBuyOnly(a) ? a.buy : a.rent1) - (isBuyOnly(b) ? b.buy : b.rent1));
+    if (sort === 'high') l = [...l].sort((a, b) => (isBuyOnly(b) ? b.buy : b.rent1) - (isBuyOnly(a) ? a.buy : a.rent1));
     if (sort === 'rating') l = [...l].sort((a, b) => b.rating - a.rating);
     if (wishOnly) l = l.filter((p) => wishlist.includes(p.id));
     return l;
@@ -383,7 +408,7 @@ export default function Shop() {
               </select>
               <label className="flex items-center gap-2 text-[12.5px] text-neutral-500 font-semibold">
                 Max <b className="text-black">₹{maxPrice.toLocaleString('en-IN')}</b>
-                <input type="range" min={299} max={Math.max(4000, ...PRODUCTS.map((p) => p.rent1))} step={100} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-32 accent-black" aria-label="Maximum price" />
+                <input type="range" min={299} max={Math.max(4000, ...PRODUCTS.map((p) => (isBuyOnly(p) ? p.buy : p.rent1)))} step={100} value={maxPrice} onChange={(e) => setMaxPrice(Number(e.target.value))} className="w-32 accent-black" aria-label="Maximum price" />
               </label>
               {activeFilters > 0 && (
                 <button onClick={() => { setMaxPrice(4000); setSort('pop'); setSearch(''); clearCat(); setWishOnly(false); }} className="text-[12px] font-semibold text-black underline underline-offset-2">Clear all</button>

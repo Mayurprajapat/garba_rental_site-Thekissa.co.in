@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { BadgeCheck, Check, CheckCircle2, CreditCard, Download, Heart, Mail, MapPin, MessageCircle, Minus, Plus, ReceiptText, ShieldCheck, ShoppingBasket, Sparkles, Star, Trash2, Truck, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { addonTotal, lookFor, normalizeSizes, photosFor, spinFramesFor, STORE, waLink, type Accessory, type Category } from '../data/products';
+import { isBuyOnly, isBuyOnlySingle } from '../lib/categories';
 import { itemImgFor } from '../lib/items';
 import { fetchOrderById, fetchOrdersByPhone, cloudLookupDiag, isUtrUsed, saveBooking } from '../lib/db';
 import { looksFakeUtr } from '../lib/utr';
@@ -41,7 +42,10 @@ export function QuickView() {
   // Date availability checker (additive — Add to list flow stays the same)
   const [availDate, setAvailDate] = useState('');
   const [avail, setAvail] = useState<{ checking: boolean; qty: number } | null>(null);
-  useEffect(() => { setPicked([]); setPhotoIdx(0); setSpin(false); setQty(1); setSize(''); setMode(initialMode ?? 'rent'); setAvailDate(''); setAvail(null); }, [id, initialMode]);
+  const buyOnly = p ? isBuyOnly(p) : false;
+  useEffect(() => { setPicked([]); setPhotoIdx(0); setSpin(false); setQty(1); setSize(''); setMode(p && isBuyOnly(p) ? 'buy' : (initialMode ?? 'rent')); setAvailDate(''); setAvail(null); }, [id, initialMode]);
+  // Buy-only product khulne par mode hamesha buy rahe (purana rent mode na atke)
+  useEffect(() => { if (p && isBuyOnly(p)) setMode('buy'); }, [p?.id]);
   // When the modal is open, lock the background page — all scrolling stays inside the card
   useEffect(() => {
     if (!p) return;
@@ -64,7 +68,7 @@ export function QuickView() {
   const paidAddons = look.filter((a) => a.tag === 'addon');
   const pickedTotal = p ? addonTotal(p, picked) : 0;
   const soldOut = (p?.stock ?? 1) <= 0;
-  const isBuy = mode === 'buy';
+  const isBuy = buyOnly ? true : mode === 'buy';
   const basePrice = p ? (isBuy ? p.buy : p.rent1) : 0;
   const lineTotal = basePrice + pickedTotal;
   const togglePick = (name: string) =>
@@ -149,6 +153,7 @@ export function QuickView() {
                     ))}
                     {paidAddons.map((a) => {
                       const on = picked.includes(a.name);
+                      const singleBuyOnly = buyOnly || isBuyOnlySingle(a.name, p);
                       return (
                         <div key={a.name} className="flex gap-1.5">
                           <button onClick={() => togglePick(a.name)} title="Add with the dress"
@@ -160,20 +165,30 @@ export function QuickView() {
                             <b className="text-[12px]">+₹{(a.price ?? 0).toLocaleString('en-IN')}</b>
                           </button>
                           <button
-                            onClick={() => { addToCart(p.id, 'One-size', '1day', undefined, { name: a.name, price: a.price ?? 0, img: itemImgFor(a.name, p.img) }, qty); }}
-                            title="Rent only this item, without the dress"
+                            onClick={() => { addToCart(p.id, 'One-size', singleBuyOnly ? 'buy' : '1day', undefined, { name: a.name, price: a.price ?? 0, img: itemImgFor(a.name, p.img) }, qty); }}
+                            title={singleBuyOnly ? 'Buy only this item, without the dress' : 'Rent only this item, without the dress'}
                             className="shrink-0 text-[11px] font-bold border border-emerald-600 text-emerald-700 rounded-xl px-2.5 hover:bg-emerald-600 hover:text-white transition">
-                            Only<br />this
+                            {singleBuyOnly ? <>Buy<br />only</> : <>Only<br />this</>}
                           </button>
                         </div>
                       );
                     })}
                   </div>
                   {!!paidAddons.length && (
-                    <p className="text-[11px] text-[#6f5b6a] mt-2">{lookHint}</p>
+                    <p className="text-[11px] text-[#6f5b6a] mt-2">{buyOnly ? 'Tick = joins the dress · Buy only = buy the item alone, without the dress.' : lookHint}</p>
                   )}
                 </div>
               )}
+              {buyOnly ? (
+                <div className="mt-4 rounded-2xl border border-[#641629]/25 bg-[#faf7ef] p-3.5">
+                  <p className="label-pro">Buy only</p>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <b className="text-[18px]">₹{p.buy.toLocaleString('en-IN')}</b>
+                    <span className="text-[11px] font-black text-white bg-[#641629] rounded-full px-2 py-0.5">BUY · NO RETURN</span>
+                  </div>
+                  <p className="text-[12px] text-black/55 font-medium mt-1 leading-snug">This blouse / jewellery piece is for purchase only — no rent, no deposit, no return needed.</p>
+                </div>
+              ) : (
               <div className="mt-4">
                 <p className="label-pro">Rent or Buy — you choose</p>
                 <div className="grid grid-cols-2 gap-2 mt-2">
@@ -197,6 +212,7 @@ export function QuickView() {
                   </button>
                 </div>
               </div>
+              )}
               <div className="mt-3">
                 <p className="label-pro">Select size</p>
                 <div className="flex flex-wrap gap-1.5 mt-2">

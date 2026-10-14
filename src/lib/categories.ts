@@ -123,6 +123,22 @@ export function isOutfit(p: TileProduct): boolean {
   return true;
 }
 
+/**
+ * Buy-only products — Blouse + Jewellery tiles wale items sirf BUY honge, RENT nahi.
+ * Rule = isOutfit ka inverse (tags ya naam se blouse/jewellery lage to buy-only).
+ */
+export function isBuyOnly(p: TileProduct): boolean {
+  return !isOutfit(p);
+}
+
+/** Single-rent item (Only this) buy-only hoga ya rent — parent buy-only ho ya naam jewellery wala ho to BUY. */
+export function isBuyOnlySingle(itemName: string, parent?: TileProduct): boolean {
+  if (parent && !isOutfit(parent)) return true;
+  const n = (itemName ?? '').toLowerCase();
+  if (!n.trim()) return false;
+  return matchesCategory(n, JEWELLERY_NAME_Q);
+}
+
 const KEY = 'raasleela-admin-categories';
 const EVT = 'raasleela-categories-updated';
 // Purani default lists — inhe nayi list se auto-upgrade kar do.
